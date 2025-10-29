@@ -22,7 +22,6 @@ def state_codes():
     }
     return codes
 
-
 def get_invoices_for_xero(state, start_date, end_date):
 
     def account_codes():
@@ -73,3 +72,6 @@ def convert_df_for_download(df):
     if df is None:
         df = pd.DataFrame()
     return df.to_csv(index=False).encode("utf-8")
+
+# def get_commission_data(state, start_date, end_date):
+
