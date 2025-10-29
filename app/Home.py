@@ -25,7 +25,8 @@ authenticator = stauth.Authenticate(
 authenticator.login(location='main')
 
 if ss["authentication_status"]:
-    authenticator.logout(location='main')  
+
+    st.subheader("Invoices to Xero exporter")
 
     time_now = datetime.now(ZoneInfo("Australia/Sydney"))
     today = time_now.date()
