@@ -1,0 +1,11 @@
+streamlit
+streamlit-authenticator
+pandas
+datetime
+numpy
+pyyaml
+git+https://github.com/AE-servco/servicepytan.git#egg=servicepytan
+google-cloud-storage
+google-cloud-secret-manager
+oauth2client
+google-auth
