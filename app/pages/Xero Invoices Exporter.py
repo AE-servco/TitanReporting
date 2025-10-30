@@ -60,27 +60,27 @@ if ss["authentication_status"]:
 
     if "invoice_data" not in ss:
         ss.invoice_data = None
-        ss.start_date = "NO_DATE_SELECTED"
-        ss.end_date = None
+        ss.invoice_start_date = "NO_DATE_SELECTED"
+        ss.invoice_end_date = None
 
     with st.container(horizontal=True):
         if st.button("Fetch Invoice Data", key="invoice_data_button"):
             ss.invoice_data = get_invoices_for_xero(state, start_date, end_date)
-            ss.start_date = start_date
-            ss.end_date = end_date
+            ss.invoice_start_date = start_date
+            ss.invoice_end_date = end_date
 
         st.download_button(
             label="Download Invoices",
             data=convert_df_for_download(ss.invoice_data),
-            file_name=f"invoices_{ss.start_date}-{ss.end_date}.csv",
+            file_name=f"invoices_{ss.invoice_start_date}-{ss.invoice_end_date}.csv",
             mime="text/csv",
             icon=":material/download:",
         )
 
         if st.button("Clear Data", key="clear_data_button"):
             ss.invoice_data = None
-            ss.start_date = "NO_DATE_SELECTED"
-            ss.end_date = None
+            ss.invoice_start_date = "NO_DATE_SELECTED"
+            ss.invoice_end_date = None
     st.write("Current Data:")
     st.dataframe(ss.invoice_data)
 
