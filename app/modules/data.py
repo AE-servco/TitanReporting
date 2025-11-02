@@ -27,6 +27,14 @@ def state_codes():
     }
     return codes
 
+def get_data_service(state):
+    state_code = state_codes()[state]
+    st_conn = sp.auth.servicepytan_connect(app_key=get_secret("ST_app_key_tester"), tenant_id=get_secret(f"ST_tenant_id_{state_code}"), client_id=get_secret(f"ST_client_id_{state_code}"), 
+    client_secret=get_secret(f"ST_client_secret_{state_code}"), timezone="Australia/Sydney")
+    st_data_service = sp.DataService(conn=st_conn)
+
+    return st_data_service
+
 def get_invoices_for_xero(state, start_date, end_date):
 
     def account_codes():
@@ -66,10 +74,7 @@ def get_invoices_for_xero(state, start_date, end_date):
         formatted['*AccountCode'] = account_codes()[state]
         return formatted
 
-    state_code = state_codes()[state]
-    st_conn = sp.auth.servicepytan_connect(app_key=get_secret("ST_app_key_tester"), tenant_id=get_secret(f"ST_tenant_id_{state_code}"), client_id=get_secret(f"ST_client_id_{state_code}"), 
-    client_secret=get_secret(f"ST_client_secret_{state_code}"), timezone="Australia/Sydney")
-    st_data_service = sp.DataService(conn=st_conn)
+    st_data_service = get_data_service(state)
 
     start_time = datetime.combine(start_date, time(0,0,0))
     end_time = datetime.combine(end_date, time(23,59,59))
@@ -144,10 +149,7 @@ def get_commission_data(state, start_date, end_date):
     # def get_job_ids(job_response):
     #     return [str(job['id']) for job in job_response]
 
-    state_code = state_codes()[state]
-    st_conn = sp.auth.servicepytan_connect(app_key=get_secret("ST_app_key_tester"), tenant_id=get_secret(f"ST_tenant_id_{state_code}"), client_id=get_secret(f"ST_client_id_{state_code}"), 
-    client_secret=get_secret(f"ST_client_secret_{state_code}"), timezone="Australia/Sydney")
-    st_data_service = sp.DataService(conn=st_conn)
+    st_data_service = get_data_service(state)
 
     start_time = datetime.combine(start_date, time(0,0,0))
     end_time = datetime.combine(end_date, time(23,59,59))
@@ -176,3 +178,31 @@ def get_commission_data(state, start_date, end_date):
     merged_reordered = merged.loc[:, ['Sold By', 'Created Date', 'Job #', 'Suburb', 'Jobs Subtotal', 'Payment Types', 'Status', 'Completion Date', 'Payments']]
 
     return merged_reordered.sort_values(by=['Sold By', 'Status'])
+
+def get_doc_check_checker_data(state):
+
+    # def format_invoice(invoice):
+    #     formatted = {}
+    #     invoice_num = invoice['referenceNumber']
+    #     if state == "WA" and invoice_num.startswith("1"):
+    #         formatted['*InvoiceNumber'] = 'W' + invoice_num
+    #     else:
+    #         formatted['*InvoiceNumber'] = invoice_num
+    #     formatted['Invoice Date'] = datetime.fromisoformat(invoice['invoiceDate'].replace('Z', '+00:00')).strftime("%m/%d/%Y")
+    #     formatted['*ContactName'] = invoice['customer']['name']
+    #     formatted['Location Address'] = format_address(invoice['customerAddress'])
+    #     formatted['*Description'] = invoice['job']['type']
+    #     formatted['*UnitAmount'] = invoice['subTotal']
+    #     formatted['*TaxType'] = "GST on Income"
+    #     formatted['Sum'] = invoice['total']
+    #     formatted['*AccountCode'] = account_codes()[state]
+    #     return formatted
+
+    # st_data_service = get_data_service(state)
+
+    # invoice_response = st_data_service.get_invoices_between(start_time, end_time)
+
+    # invoices = [format_invoice(invoice) for invoice in invoice_response]
+    
+    # return pd.DataFrame(invoices)
+    return

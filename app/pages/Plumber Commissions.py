@@ -4,7 +4,7 @@ import streamlit_authenticator as stauth
 from datetime import datetime, time, date, timedelta
 from zoneinfo import ZoneInfo
 
-from modules.data import get_invoices_for_xero, get_commission_data, convert_df_for_download
+from modules.data import get_commission_data, convert_df_for_download
 import modules.google_store as gs
 
 st.set_page_config(
@@ -58,7 +58,6 @@ if ss["authentication_status"]:
 
     if "commission_data" not in ss:
         ss.commission_data = None
-        ss.test_data = None
         ss.commission_start_date = "NO_DATE_SELECTED"
         ss.commission_end_date = None
 
