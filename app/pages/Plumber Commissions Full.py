@@ -33,13 +33,20 @@ if ss["authentication_status"]:
     yesterday = today - timedelta(days=1)
     with st.container(horizontal=True):
         with st.container(width=200):
-            date_range = st.date_input(
+            start_of_week = st.date_input(
                 "Date filter:",
-                (yesterday, today),
+                yesterday,
                 date(2025,1,1),
                 today,
                 format="DD/MM/YYYY",
             )
+            # date_range = st.date_input(
+            #     "Date filter:",
+            #     (yesterday, today),
+            #     date(2025,1,1),
+            #     today,
+            #     format="DD/MM/YYYY",
+            # )
         with st.container(width=200):
             state = st.selectbox(
                 "State:",
@@ -52,8 +59,9 @@ if ss["authentication_status"]:
     if "confirmed_range" not in ss:
         ss.confirmed_range = None
 
-    if len(date_range) == 2:
-        ss.confirmed_range = tuple(date_range)
+    # if len(date_range) == 2:
+    #     ss.confirmed_range = tuple(date_range)
+    ss.confirmed_range = (start_of_week, start_of_week + timedelta(days=6))
 
     start_date = ss.confirmed_range[0]
     end_date = ss.confirmed_range[1]

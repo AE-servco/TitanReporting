@@ -1,9 +1,10 @@
 import pandas as pd
 from google.cloud import secretmanager
-from datetime import datetime, time, date
+from datetime import datetime, time, date, timedelta
 from zoneinfo import ZoneInfo
 from io import BytesIO
 import pytz
+import holidays
 
 import servicepytan as sp
 
@@ -27,6 +28,25 @@ def state_codes():
         'QLD': 'bravogolf',
     }
     return codes
+
+def get_public_holidays(state):
+    national = holidays.Australia()
+    state_hols = holidays.Australia(subdiv=state)
+
+    combined = holidays.HolidayBase()
+    combined.update(national)
+    combined.update(state_hols)
+    return combined
+
+def check_dates_for_hols(date_range, holidays):
+    holidays_in_range = set()
+    date_iter = date_range[0]
+    date_end = date_range[1] + timedelta(days=1)
+    while date_iter != date_end:
+        if date_iter in holidays:
+            holidays_in_range.add(date_iter)
+        date_iter += timedelta(days=1)
+    return holidays_in_range
 
 def get_data_service(state):
     state_code = state_codes()[state]
@@ -224,6 +244,14 @@ def get_full_commission_data(state, start_date, end_date):
     # 4. output similar to current spreadsheet so we can compare
     #   - per plumber, per job, per status (completed, etc.)
 
+    public_hols = get_public_holidays(state)
+    public_hols_in_week = check_dates_for_hols((start_date, end_date), public_hols)
+
+    if public_hols_in_week:
+        threshold = 5000 * len(public_hols_in_week)
+    else:
+        threshold = 25000
+
     def get_unsuccessful_tag():
         tags = st_data_service.get_all_tag_types()
         for tag in tags:
@@ -235,6 +263,10 @@ def get_full_commission_data(state, start_date, end_date):
         for technician in technicians_response:
             formatted[technician['id']] = technician['name']
         return formatted
+
+    def get_job_cost(invoice):
+        # TODO: will be used to get job cost when that data is available.
+        return 0.0
 
     def format_job(job, technicians, unsuccessful_tag):
         formatted = {}
@@ -258,7 +290,7 @@ def get_full_commission_data(state, start_date, end_date):
         formatted['Suburb'] = invoice['customerAddress']['city']
         formatted['Jobs Subtotal'] = float(invoice['subTotal'])
         formatted['Balance'] = float(invoice['balance'])
-        formatted['Costs'] = float(0)
+        formatted['Costs'] = get_job_cost(invoice)
         formatted['Commissionable Sales'] = round(formatted['Jobs Subtotal'] - formatted['Costs'],2)
         formatted['invoiceId'] = invoice['id']
         return formatted
@@ -302,18 +334,26 @@ def get_full_commission_data(state, start_date, end_date):
     del invoices
 
     jobs = pd.merge(jobs_df, invoices_df, on='invoiceId', how='left')
+    jobs = jobs.loc[:, ['Sold By', 'Created Date', 'Job #', 'Suburb', 'Jobs Subtotal', 'Status', 'Completion Date', 'Commissionable Sales']]
+    jobs = jobs.sort_values(by='Status')
+    jobs['completed'] = jobs['Status'] == 'Completed'
     
     unsuccessful_jobs = jobs[jobs['Status'] == "Unsuccessful"]
     successful_jobs = jobs[jobs['Status'] != "Unsuccessful"]
 
-    # unique_techs = successful_jobs['Sold By'].unique()
 
-    commission_summary = successful_jobs[['Sold By', 'Commissionable Sales']].groupby(by=['Sold By'], as_index=False).sum()
+
+    commission_summary = successful_jobs.groupby(by=['Sold By'], as_index=False).agg({
+        'Commissionable Sales': 'sum',
+        'completed': 'all'
+    })
+
+    commission_summary.rename(columns={'completed': 'All Jobs Completed?'}, inplace=True)
 
     # Create an Excel file in memory
     buffer = BytesIO()
     with pd.ExcelWriter(buffer) as writer:
-        commission_summary.to_excel(writer, sheet_name="Summaryfdsfsd", index=False)
+        commission_summary.to_excel(writer, sheet_name="Summary", index=False)
         
         techs = commission_summary['Sold By'].to_list()
         for tech in techs:
