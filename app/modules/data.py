@@ -2,6 +2,7 @@ import pandas as pd
 from google.cloud import secretmanager
 from datetime import datetime, time, date
 from zoneinfo import ZoneInfo
+from io import BytesIO
 import pytz
 
 import servicepytan as sp
@@ -146,7 +147,7 @@ def get_commission_data(state, start_date, end_date):
 
     start_time = datetime.combine(start_date, time(0,0,0))
     end_time = datetime.combine(end_date, time(23,59,59))
-
+ 
     technicians_response = st_data_service.get_all_technicians()
     technicians = format_technicians_list(technicians_response)
 
@@ -156,6 +157,7 @@ def get_commission_data(state, start_date, end_date):
     jobs_df = pd.DataFrame(jobs)
     
     invoice_ids = get_invoice_ids(job_response)
+
     invoice_response = st_data_service.get_invoices_by_id(invoice_ids)
     invoices = [format_invoice(invoice) for invoice in invoice_response]
     invoices_df = pd.DataFrame(invoices)
@@ -199,3 +201,121 @@ def get_doc_check_checker_data(state):
     
     # return pd.DataFrame(invoices)
     return
+
+def get_full_commission_data(state, start_date, end_date):
+    # 25k threshold p week or 5k per day
+    # net sold, not gross sold - need materials and things - problem for later
+    # doc check - assume we have this per job from other app in the works
+    # OT/weekend/PH rates
+
+    # Order of Ops:
+    # 1. get weekly sold per plumber (put code in place that will be able to work out reductions)
+    #   - get all jobs created btwn dates
+    #   - get invoices attached to them
+    # 2. doc check checker (just put code in place, waiting on data from other report for full functionality)
+    # 3. check for payments
+    # 4. output similar to current spreadsheet so we can compare
+    #   - per plumber, per job, per status (completed, etc.)
+
+    def get_unsuccessful_tag():
+        tags = st_data_service.get_all_tag_types()
+        for tag in tags:
+            if 'Unsuccessful' in tag['name']:
+                return tag['id']
+
+    def format_technicians_list(technicians_response):
+        formatted = {}
+        for technician in technicians_response:
+            formatted[technician['id']] = technician['name']
+        return formatted
+
+    def format_job(job, technicians, unsuccessful_tag):
+        formatted = {}
+        if unsuccessful_tag in job['tagTypeIds']:
+            formatted['Status'] = "Unsuccessful"
+        else:
+            # formatted['unsuccessful'] = 0
+            formatted['Status'] = job['jobStatus'] if job['jobStatus'] is not None else "None"
+        if job['soldById'] is not None:
+            formatted['Sold By'] = technicians[job['soldById']]
+        else:
+            formatted['Sold By'] = None
+        formatted['Created Date'] = sp.convert_utc_datetime_to_local(sp.convert_ST_datetime_to_object(job['createdOn']), "Australia/Sydney").strftime("%m/%d/%Y")
+        formatted['Completion Date'] = sp.convert_utc_datetime_to_local(sp.convert_ST_datetime_to_object(job['completedOn']), "Australia/Sydney").strftime("%m/%d/%Y") if job['completedOn'] is not None else "None"
+        formatted['Job #'] = job['jobNumber'] if job['jobNumber'] is not None else "None"
+        formatted['invoiceId'] = job['invoiceId'] if job['invoiceId'] is not None else "None"
+        return formatted
+
+    def format_invoice(invoice):
+        formatted = {}
+        formatted['Suburb'] = invoice['customerAddress']['city']
+        formatted['Jobs Subtotal'] = float(invoice['subTotal'])
+        formatted['Balance'] = float(invoice['balance'])
+        formatted['Costs'] = float(0)
+        formatted['Commissionable Sales'] = round(formatted['Jobs Subtotal'] - formatted['Costs'],2)
+        formatted['invoiceId'] = invoice['id']
+        return formatted
+
+    def format_payment(payment):
+        output = []
+        for invoice in payment['appliedTo']:
+            formatted = {}
+            formatted['invoiceId'] = invoice['appliedTo']
+            formatted['Payment Types'] = payment['type']
+            output.append(formatted)
+
+        return output
+
+    def get_invoice_ids(job_response):
+        return [str(job['invoiceId']) for job in job_response]
+    
+    st_data_service = get_data_service(state)
+
+    start_time = datetime.combine(start_date, time(0,0,0))
+    end_time = datetime.combine(end_date, time(23,59,59))
+ 
+    technicians_response = st_data_service.get_all_technicians()
+    technicians = format_technicians_list(technicians_response)
+
+    job_response = st_data_service.get_jobs_created_between(start_time, end_time)
+    invoice_ids = get_invoice_ids(job_response)
+
+    unsuccessful_tag = get_unsuccessful_tag()
+    jobs = [format_job(job, technicians, unsuccessful_tag) for job in job_response]
+    jobs_df = pd.DataFrame(jobs)
+
+    del job_response
+    del jobs
+
+    invoice_response = st_data_service.get_invoices_by_id(invoice_ids)
+    invoices = [format_invoice(invoice) for invoice in invoice_response]
+    invoices_df = pd.DataFrame(invoices)
+
+    del invoice_response
+    del invoices
+
+    jobs = pd.merge(jobs_df, invoices_df, on='invoiceId', how='left')
+    
+    unsuccessful_jobs = jobs[jobs['Status'] == "Unsuccessful"]
+    successful_jobs = jobs[jobs['Status'] != "Unsuccessful"]
+
+    # unique_techs = successful_jobs['Sold By'].unique()
+
+    commission_summary = successful_jobs[['Sold By', 'Commissionable Sales']].groupby(by=['Sold By'], as_index=False).sum()
+
+    # Create an Excel file in memory
+    buffer = BytesIO()
+    with pd.ExcelWriter(buffer) as writer:
+        commission_summary.to_excel(writer, sheet_name="Summaryfdsfsd", index=False)
+        
+        techs = commission_summary['Sold By'].to_list()
+        for tech in techs:
+            tech_successful = successful_jobs[successful_jobs['Sold By'] == tech]
+            tech_unsuccessful = unsuccessful_jobs[unsuccessful_jobs['Sold By'] == tech]
+            tech_full = pd.concat([tech_successful, tech_unsuccessful], ignore_index=True)
+            tech_full.to_excel(writer, sheet_name=tech, index=False)
+
+    # successful_jobs = pd.merge(successful_jobs, invoices_df, on='invoiceId', how='left')
+    # successful_jobs_income = successful_jobs[successful_jobs['Jobs Subtotal'] > 0]
+
+    return buffer
