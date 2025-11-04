@@ -36,11 +36,11 @@ def get_invoices_for_xero(state, start_date, end_date):
         }
         return codes
 
-    def format_address(customerAddress):
-        address = f"{customerAddress['street']}, {customerAddress['city']}, {customerAddress['state']} {customerAddress['zip']}, {customerAddress['country']}"
-        if customerAddress['unit']:
-            address = f"{customerAddress['unit']}/{address}"
-        return address
+    # def format_address(customerAddress):
+    #     address = f"{customerAddress['street']}, {customerAddress['city']}, {customerAddress['state']} {customerAddress['zip']}, {customerAddress['country']}"
+    #     if customerAddress['unit']:
+    #         address = f"{customerAddress['unit']}/{address}"
+    #     return address
 
     def format_invoice(invoice):
         formatted = {}
@@ -51,7 +51,14 @@ def get_invoices_for_xero(state, start_date, end_date):
             formatted['*InvoiceNumber'] = invoice_num
         formatted['Invoice Date'] = datetime.fromisoformat(invoice['invoiceDate'].replace('Z', '+00:00')).strftime("%m/%d/%Y")
         formatted['*ContactName'] = invoice['customer']['name']
-        formatted['Location Address'] = format_address(invoice['customerAddress'])
+        # formatted['Location Address'] = format_address(invoice['customerAddress'])
+        formatted['POAddressLine1'] = invoice['customerAddress']['street']
+        if invoice['customerAddress']['unit']:
+            formatted['POAddressLine1'] = f"{invoice['customerAddress']['unit']}/{formatted['POAddressLine1']}"
+        formatted['POCity'] = invoice['customerAddress']['city']
+        formatted['PORegion'] = invoice['customerAddress']['state']
+        formatted['POPostalCode'] = invoice['customerAddress']['zip']
+        formatted['POCountry'] = invoice['customerAddress']['country']
         formatted['*Description'] = invoice['job']['type']
         formatted['*UnitAmount'] = invoice['subTotal']
         formatted['*TaxType'] = "GST on Income"
