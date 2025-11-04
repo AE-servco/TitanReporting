@@ -111,18 +111,19 @@ def convert_df_for_download(df):
         df = pd.DataFrame()
     return df.to_csv(index=False).encode("utf-8")
 
+
+def format_technicians_list(technicians_response):
+    formatted = {}
+    for technician in technicians_response:
+        formatted[technician['id']] = technician['name']
+    return formatted
+
 def get_commission_data(state, start_date, end_date):
 
     unsucessfultag = 116255355
     # Filter for unsuccessful tag on job, soldBy should be in job, get technician name through settings endpoint
     # Payment type???
     # Do they get comms if its just the call out fee?
-
-    def format_technicians_list(technicians_response):
-        formatted = {}
-        for technician in technicians_response:
-            formatted[technician['id']] = technician['name']
-        return formatted
 
     def format_job(job, technicians):
         if 116255355 in job['tagTypeIds'] or job['jobStatus'] == 'Canceled': # Unsuccessful or cancelled 
@@ -366,3 +367,26 @@ def get_full_commission_data(state, start_date, end_date):
     # successful_jobs_income = successful_jobs[successful_jobs['Jobs Subtotal'] > 0]
 
     return buffer
+
+def get_timesheets_for_tech(tech_id, state, start_date, end_date):
+    
+    def format_timesheet(timesheet):
+        formatted = {}
+        formatted['id'] = timesheet['id']
+        formatted['jobId'] = timesheet['jobId']
+        formatted['appointmentId'] = timesheet['appointmentId']
+        formatted['dispatchedOn'] = sp.convert_ST_datetime_to_local_obj(timesheet['dispatchedOn'], st_data_service.timezone) if timesheet['dispatchedOn'] is not None else None
+        formatted['arrivedOn'] = sp.convert_ST_datetime_to_local_obj(timesheet['arrivedOn'], st_data_service.timezone) if timesheet['arrivedOn'] is not None else None
+        formatted['doneOn'] = sp.convert_ST_datetime_to_local_obj(timesheet['doneOn'], st_data_service.timezone) if timesheet['doneOn'] is not None else None
+        return formatted
+
+
+    st_data_service = get_data_service(state)
+
+    start_time = datetime.combine(start_date, time(0,0,0))
+    end_time = datetime.combine(end_date, time(23,59,59))
+
+    data = st_data_service.get_api_data_between('payroll', 'jobs/timesheets', start_time, end_time, 'created', options={'technicianId': tech_id})
+    data = [format_timesheet(timesheet) for timesheet in data]
+    
+    return data
