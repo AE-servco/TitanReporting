@@ -373,6 +373,7 @@ def get_timesheets_for_tech(tech_id, state, start_date, end_date):
     def format_timesheet(timesheet):
         formatted = {}
         formatted['id'] = timesheet['id']
+        formatted['technicianId'] = timesheet['technicianId']
         formatted['jobId'] = timesheet['jobId']
         formatted['appointmentId'] = timesheet['appointmentId']
         formatted['dispatchedOn'] = sp.convert_ST_datetime_to_local_obj(timesheet['dispatchedOn'], st_data_service.timezone) if timesheet['dispatchedOn'] is not None else None
@@ -386,7 +387,19 @@ def get_timesheets_for_tech(tech_id, state, start_date, end_date):
     start_time = datetime.combine(start_date, time(0,0,0))
     end_time = datetime.combine(end_date, time(23,59,59))
 
-    data = st_data_service.get_api_data_between('payroll', 'jobs/timesheets', start_time, end_time, 'created', options={'technicianId': tech_id})
-    data = [format_timesheet(timesheet) for timesheet in data]
+    timesheet_data = st_data_service.get_api_data_between('payroll', 'jobs/timesheets', start_time, end_time, 'created')
+    # timesheet_data = st_data_service.get_api_data_between('payroll', 'jobs/timesheets', start_time, end_time, 'created', options={'technicianId': tech_id})
+    timesheet_data = [format_timesheet(timesheet) for timesheet in timesheet_data]
     
-    return data
+    timesheet_data = pd.DataFrame(timesheet_data).sort_values(by=['arrivedOn'])
+
+    timesheet_data['arrivedOn'] = timesheet_data['arrivedOn'].dt.round('15min')
+    timesheet_data['doneOn'] = timesheet_data['doneOn'].dt.round('15min')
+    timesheet_data['arrivedDate'] = timesheet_data['arrivedOn'].dt.date
+    timesheet_data['arrivedTime'] = timesheet_data['arrivedOn'].dt.time
+    timesheet_data['doneTime'] = timesheet_data['doneOn'].dt.time
+    first_rows = timesheet_data.groupby(['technicianId', 'arrivedDate'], as_index=False).first()[['technicianId', 'arrivedDate', 'arrivedTime', 'jobId']]
+    last_rows = timesheet_data.groupby(['technicianId', 'arrivedDate'], as_index=False).last()[['technicianId', 'arrivedDate', 'doneTime', 'jobId']]
+    timesheet_data = pd.merge(first_rows, last_rows, left_on=['technicianId', 'arrivedDate'], right_on=['technicianId', 'arrivedDate'])
+
+    return timesheet_data
