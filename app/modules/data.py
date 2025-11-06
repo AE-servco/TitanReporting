@@ -3,13 +3,38 @@ from google.cloud import secretmanager
 from datetime import datetime, time, date, timedelta
 from zoneinfo import ZoneInfo
 from io import BytesIO
+from PIL import Image
 import pytz
 import holidays
+from concurrent.futures import ThreadPoolExecutor
+import threading
+from streamlit import session_state as ss
 
 import servicepytan as sp
 
 def flatten_list(nested_list):
     return [item for sublist in nested_list for item in sublist]
+
+def clear_ss():
+    for key in ss.keys():
+        ss[key] = None
+
+def format_employee_list(employee_response):
+    # input can be either technician response or employee response
+    formatted = {}
+    for employee in employee_response:
+        formatted[employee['id']] = employee['name']
+    return formatted
+
+def get_all_employee_ids(state):
+    check_and_update_ss_for_data_service(state)
+    techs = format_employee_list(ss[f'st_data_service_{state}'].get_all_technicians())
+    office = format_employee_list(ss[f'st_data_service_{state}'].get_api_data('settings', 'employees', options={'active': 'Any'}))
+    return techs | office
+
+
+def format_ST_date(ST_date, format_str='%Y-%m-%dT%H:%M:%S'):
+    return sp.convert_ST_datetime_to_local_str(ST_date, local_tz="Australia/Sydney", format_str=format_str)
 
 def get_secret(secret_id, project_id="servco1", version_id="latest"):
     client = secretmanager.SecretManagerServiceClient()
@@ -56,6 +81,10 @@ def get_data_service(state):
 
     return st_data_service
 
+def check_and_update_ss_for_data_service(state):
+    if f'st_data_service_{state}' not in ss or f'st_data_service_{state}' is None:
+        ss[f'st_data_service_{state}'] = get_data_service(state)
+
 def get_invoices_for_xero(state, start_date, end_date):
 
     def account_codes():
@@ -88,12 +117,12 @@ def get_invoices_for_xero(state, start_date, end_date):
         formatted['*AccountCode'] = account_codes()[state]
         return formatted
 
-    st_data_service = get_data_service(state)
+    check_and_update_ss_for_data_service(state)
 
     start_time = datetime.combine(start_date, time(0,0,0))
     end_time = datetime.combine(end_date, time(23,59,59))
 
-    invoice_response = st_data_service.get_invoices_between(start_time, end_time)
+    invoice_response = ss[f'st_data_service_{state}'].get_invoices_between(start_time, end_time)
 
     invoices = [format_invoice(invoice) for invoice in invoice_response]
     
@@ -105,14 +134,9 @@ def convert_df_for_download(df):
     return df.to_csv(index=False).encode("utf-8")
 
 
-def format_technicians_list(technicians_response):
-    formatted = {}
-    for technician in technicians_response:
-        formatted[technician['id']] = technician['name']
-    return formatted
-
 def get_commission_data(state, start_date, end_date):
 
+    app_guid = get_secret('ST_servco_integrations_guid')
     unsucessfultag = 116255355
     # Filter for unsuccessful tag on job, soldBy should be in job, get technician name through settings endpoint
     # Payment type???
@@ -125,7 +149,7 @@ def get_commission_data(state, start_date, end_date):
         if job['soldById'] is not None:
             formatted['Sold By'] = technicians[job['soldById']]
         else:
-            appts = st_data_service.get_appointment_assignments_by_job_id(job['id'])
+            appts = ss[f'st_data_service_{state}'].get_appointment_assignments_by_job_id(job['id'])
             formatted['Sold By'] = ','.join([appt['technicianName'] for appt in appts]) + ' (Primary Tech)'
         # formatted['Sold By'] = technicians[job['soldById']] if job['soldById'] is not None else "None"
         # formatted['Primary Technician'] = invoice['customer']['name']
@@ -138,6 +162,7 @@ def get_commission_data(state, start_date, end_date):
         # formatted['Payment Types'] = job['total']
         formatted['Status'] = job['jobStatus'] if job['jobStatus'] is not None else "None"
         formatted['invoiceId'] = job['invoiceId'] if job['invoiceId'] is not None else "None"
+        formatted['externalData'] = job['externalData'][0] if job['externalData'] is not None and job['externalData'] != [] else "None"
         return formatted
 
     def format_invoice(invoice):
@@ -164,26 +189,26 @@ def get_commission_data(state, start_date, end_date):
     # def get_job_ids(job_response):
     #     return [str(job['id']) for job in job_response]
 
-    st_data_service = get_data_service(state)
+    check_and_update_ss_for_data_service(state)
 
     start_time = datetime.combine(start_date, time(0,0,0))
     end_time = datetime.combine(end_date, time(23,59,59))
  
-    technicians_response = st_data_service.get_all_technicians()
-    technicians = format_technicians_list(technicians_response)
+    technicians_response = ss[f'st_data_service_{state}'].get_all_technicians()
+    technicians = format_employee_list(technicians_response)
 
-    job_response = st_data_service.get_jobs_created_between(start_time, end_time)
+    job_response = ss[f'st_data_service_{state}'].get_jobs_created_between(start_time, end_time, app_guid=app_guid)
     jobs_w_nones = [format_job(job, technicians) for job in job_response]
     jobs = [job for job in jobs_w_nones if job is not None]
     jobs_df = pd.DataFrame(jobs)
     
     invoice_ids = get_invoice_ids(job_response)
 
-    invoice_response = st_data_service.get_invoices_by_id(invoice_ids)
+    invoice_response = ss[f'st_data_service_{state}'].get_invoices_by_id(invoice_ids)
     invoices = [format_invoice(invoice) for invoice in invoice_response]
     invoices_df = pd.DataFrame(invoices)
 
-    payments_response = st_data_service.get_payments_for_invoices(invoice_ids)
+    payments_response = ss[f'st_data_service_{state}'].get_payments_for_invoices(invoice_ids)
     payments = [format_payment(payment) for payment in payments_response]
     payments_flat = flatten_list(payments)
     payments_df = pd.DataFrame(payments_flat)
@@ -191,7 +216,7 @@ def get_commission_data(state, start_date, end_date):
 
     merged = pd.merge(pd.merge(jobs_df, invoices_df, on='invoiceId', how='left'), payments_grouped, on='invoiceId', how='left')
 
-    merged_reordered = merged.loc[:, ['Sold By', 'Created Date', 'Job #', 'Suburb', 'Jobs Subtotal', 'Payment Types', 'Status', 'Completion Date', 'Payments']]
+    merged_reordered = merged.loc[:, ['Sold By', 'Created Date', 'Job #', 'Suburb', 'Jobs Subtotal', 'Payment Types', 'Status', 'Completion Date', 'Payments', 'externalData']]
 
     return merged_reordered.sort_values(by=['Sold By', 'Status'])
 
@@ -214,9 +239,9 @@ def get_doc_check_checker_data(state):
     #     formatted['*AccountCode'] = account_codes()[state]
     #     return formatted
 
-    # st_data_service = get_data_service(state)
+    # check_and_update_ss_for_data_service(state)
 
-    # invoice_response = st_data_service.get_invoices_between(start_time, end_time)
+    # invoice_response = ss[f'st_data_service_{state}'].get_invoices_between(start_time, end_time)
 
     # invoices = [format_invoice(invoice) for invoice in invoice_response]
     
@@ -247,16 +272,10 @@ def get_full_commission_data(state, start_date, end_date):
         threshold = 25000
 
     def get_unsuccessful_tag():
-        tags = st_data_service.get_all_tag_types()
+        tags = ss[f'st_data_service_{state}'].get_all_tag_types()
         for tag in tags:
             if 'Unsuccessful' in tag['name']:
                 return tag['id']
-
-    def format_technicians_list(technicians_response):
-        formatted = {}
-        for technician in technicians_response:
-            formatted[technician['id']] = technician['name']
-        return formatted
 
     def get_job_cost(invoice):
         # TODO: will be used to get job cost when that data is available.
@@ -302,15 +321,15 @@ def get_full_commission_data(state, start_date, end_date):
     def get_invoice_ids(job_response):
         return [str(job['invoiceId']) for job in job_response]
     
-    st_data_service = get_data_service(state)
+    check_and_update_ss_for_data_service(state)
 
     start_time = datetime.combine(start_date, time(0,0,0))
     end_time = datetime.combine(end_date, time(23,59,59))
  
-    technicians_response = st_data_service.get_all_technicians()
-    technicians = format_technicians_list(technicians_response)
+    technicians_response = ss[f'st_data_service_{state}'].get_all_technicians()
+    technicians = format_employee_list(technicians_response)
 
-    job_response = st_data_service.get_jobs_created_between(start_time, end_time)
+    job_response = ss[f'st_data_service_{state}'].get_jobs_created_between(start_time, end_time)
     invoice_ids = get_invoice_ids(job_response)
 
     unsuccessful_tag = get_unsuccessful_tag()
@@ -320,7 +339,7 @@ def get_full_commission_data(state, start_date, end_date):
     del job_response
     del jobs
 
-    invoice_response = st_data_service.get_invoices_by_id(invoice_ids)
+    invoice_response = ss[f'st_data_service_{state}'].get_invoices_by_id(invoice_ids)
     invoices = [format_invoice(invoice) for invoice in invoice_response]
     invoices_df = pd.DataFrame(invoices)
 
@@ -369,19 +388,19 @@ def get_timesheets_for_tech(tech_id, state, start_date, end_date):
         formatted['technicianId'] = timesheet['technicianId']
         formatted['jobId'] = timesheet['jobId']
         formatted['appointmentId'] = timesheet['appointmentId']
-        formatted['dispatchedOn'] = sp.convert_ST_datetime_to_local_obj(timesheet['dispatchedOn'], st_data_service.timezone) if timesheet['dispatchedOn'] is not None else None
-        formatted['arrivedOn'] = sp.convert_ST_datetime_to_local_obj(timesheet['arrivedOn'], st_data_service.timezone) if timesheet['arrivedOn'] is not None else None
-        formatted['doneOn'] = sp.convert_ST_datetime_to_local_obj(timesheet['doneOn'], st_data_service.timezone) if timesheet['doneOn'] is not None else None
+        formatted['dispatchedOn'] = sp.convert_ST_datetime_to_local_obj(timesheet['dispatchedOn'], ss[f'st_data_service_{state}'].timezone) if timesheet['dispatchedOn'] is not None else None
+        formatted['arrivedOn'] = sp.convert_ST_datetime_to_local_obj(timesheet['arrivedOn'], ss[f'st_data_service_{state}'].timezone) if timesheet['arrivedOn'] is not None else None
+        formatted['doneOn'] = sp.convert_ST_datetime_to_local_obj(timesheet['doneOn'], ss[f'st_data_service_{state}'].timezone) if timesheet['doneOn'] is not None else None
         return formatted
 
 
-    st_data_service = get_data_service(state)
+    check_and_update_ss_for_data_service(state)
 
     start_time = datetime.combine(start_date, time(0,0,0))
     end_time = datetime.combine(end_date, time(23,59,59))
 
-    timesheet_data = st_data_service.get_api_data_between('payroll', 'jobs/timesheets', start_time, end_time, 'created')
-    # timesheet_data = st_data_service.get_api_data_between('payroll', 'jobs/timesheets', start_time, end_time, 'created', options={'technicianId': tech_id})
+    timesheet_data = ss[f'st_data_service_{state}'].get_api_data_between('payroll', 'jobs/timesheets', start_time, end_time, 'created')
+    # timesheet_data = ss[f'st_data_service_{state}'].get_api_data_between('payroll', 'jobs/timesheets', start_time, end_time, 'created', options={'technicianId': tech_id})
     timesheet_data = [format_timesheet(timesheet) for timesheet in timesheet_data]
     
     timesheet_data = pd.DataFrame(timesheet_data).sort_values(by=['arrivedOn'])
@@ -396,3 +415,77 @@ def get_timesheets_for_tech(tech_id, state, start_date, end_date):
     timesheet_data = pd.merge(first_rows, last_rows, left_on=['technicianId', 'arrivedDate'], right_on=['technicianId', 'arrivedDate'])
 
     return timesheet_data
+
+def fetch_many_photos(attachment_ids, state, max_workers=10):
+    print('Fetching many photos')
+    with ThreadPoolExecutor(max_workers=max_workers) as ex:
+        return list(ex.map(ss[f'st_data_service_{state}'].get_attachment, attachment_ids))
+    
+def prefetch_batch_into_session(key: str, attachment_ids, state):
+    """Runs in a separate thread."""
+    try:
+        print("Fetching inside prefetch_batch_into_session..")
+        imgs = fetch_many_photos(attachment_ids, state)
+        print("Fetched inside prefetch_batch_into_session.")
+        ss[key] = imgs
+        print(ss[key])
+    except Exception as e:
+        # optional: store the error
+        ss[key] = {"error": str(e)}
+
+def start_prefetch(key: str, attachment_ids, state):
+    """Kick off a background thread that itself uses a thread pool."""
+    if key in ss:
+        return  # already prefetched or in progress
+    t = threading.Thread(
+        target=prefetch_batch_into_session,
+        args=(key, attachment_ids, state),
+        daemon=True,
+    )
+    t.start()
+    
+def get_photos_from_job(job_id, state):
+    print(f"Getting Photos for {job_id}, {state}")
+    images = []
+
+    print(f"Checking data service for {job_id}, {state}")
+    check_and_update_ss_for_data_service(state)
+
+    print(f"Attachments start for {job_id}, {state}")
+    s = datetime.now()
+    attachments = ss[f'st_data_service_{state}'].get_api_data('forms', f'jobs/{job_id}/attachments', options=None, version=2)
+    
+    img_types = ('jpg', 'jpeg', 'png')
+
+    img_attachments = [a for a in attachments if a['fileName'].endswith(img_types)]
+    e = datetime.now()
+    print(f"Attachments end for {job_id}, {state}, took {e-s} sec")
+
+
+    print(f"Looping through attachments start for {job_id}, {state}")
+    s = datetime.now()
+    images = fetch_many_photos([a['id'] for a in img_attachments], state)
+    # for attachment in attachments:
+    #     print(f"single attachment start for {job_id}, {state}")
+    #     s1 = datetime.now()
+    #     if attachment['fileName'].endswith(img_types):
+    #         img_bytes = ss[f'st_data_service_{state}'].get_attachment(attachment['id'])
+    #         # img = Image.open(BytesIO(img_bytes))
+    #         images.append((img_bytes, attachment['createdById'], attachment['createdOn']))
+    #     e1 = datetime.now()
+    # print(f"single attachments end for {job_id}, {state}, took {e1-s1} sec")
+    e = datetime.now()
+    print(f"Looping through attachments end for {job_id}, {state}, took {e-s} sec")
+
+    return images
+
+def update_job_external_data(job_id, state, data):
+    # data is just a dict with keys and values, it gets converted here.
+    external_data_payload = [
+        {"key": key, "value": value}
+        for key, value in data.items()
+    ]
+
+    check_and_update_ss_for_data_service(state)
+    print(external_data_payload)
+    ss[f'st_data_service_{state}'].patch_job_external_data(job_id, external_data_payload, ss.app_guid, patch_mode="Replace")
