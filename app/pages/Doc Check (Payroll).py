@@ -7,6 +7,7 @@ from PIL import Image
 from io import BytesIO
 
 import modules.data as data
+import modules.photos as photos
 
 import modules.google_store as gs
 
@@ -84,7 +85,7 @@ def job_data_template():
                 ss.imgs = ss.next_batch
             else:
                 print('loading current')
-                ss.imgs = data.get_photos_from_job(job_id, state)
+                ss.imgs = photos.get_photos_from_job(job_id, state)
 
     with st.container(horizontal=True, height=1000):
         for img_tup in ss.imgs:
@@ -106,7 +107,7 @@ def job_data_template():
     next_img_attachments = [a for a in next_attachments if a['fileName'].endswith(img_types)]
     print("Starting prefetch...")
     print(len(next_img_attachments))
-    data.start_prefetch("next_batch", next_img_attachments, state)
+    photos.start_prefetch("next_batch", next_img_attachments, state)
 
 
 def doc_check_template():

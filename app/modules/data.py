@@ -227,165 +227,137 @@ def get_commission_data(state, start_date, end_date):
 
     return merged_reordered.sort_values(by=['Sold By', 'Status'])
 
-def get_doc_check_checker_data(state):
+# def get_full_commission_data(state, start_date, end_date):
+#     # 25k threshold p week or 5k per day
+#     # net sold, not gross sold - need materials and things - problem for later
+#     # doc check - assume we have this per job from other app in the works
+#     # OT/weekend/PH rates
 
-    # def format_invoice(invoice):
-    #     formatted = {}
-    #     invoice_num = invoice['referenceNumber']
-    #     if state == "WA" and invoice_num.startswith("1"):
-    #         formatted['*InvoiceNumber'] = 'W' + invoice_num
-    #     else:
-    #         formatted['*InvoiceNumber'] = invoice_num
-    #     formatted['Invoice Date'] = datetime.fromisoformat(invoice['invoiceDate'].replace('Z', '+00:00')).strftime("%m/%d/%Y")
-    #     formatted['*ContactName'] = invoice['customer']['name']
-    #     formatted['Location Address'] = format_address(invoice['customerAddress'])
-    #     formatted['*Description'] = invoice['job']['type']
-    #     formatted['*UnitAmount'] = invoice['subTotal']
-    #     formatted['*TaxType'] = "GST on Income"
-    #     formatted['Sum'] = invoice['total']
-    #     formatted['*AccountCode'] = account_codes()[state]
-    #     return formatted
+#     # Order of Ops:
+#     # 1. get weekly sold per plumber (put code in place that will be able to work out reductions)
+#     #   - get all jobs created btwn dates
+#     #   - get invoices attached to them
+#     # 2. doc check checker (just put code in place, waiting on data from other report for full functionality)
+#     # 3. check for payments
+#     # 4. output similar to current spreadsheet so we can compare
+#     #   - per plumber, per job, per status (completed, etc.)
 
-    # check_and_update_ss_for_data_service(state)
+#     public_hols = get_public_holidays(state)
+#     public_hols_in_week = check_dates_for_hols((start_date, end_date), public_hols)
 
-    # invoice_response = ss[f'st_data_service_{state}'].get_invoices_between(start_time, end_time)
+#     if public_hols_in_week:
+#         threshold = 5000 * len(public_hols_in_week)
+#     else:
+#         threshold = 25000
 
-    # invoices = [format_invoice(invoice) for invoice in invoice_response]
+#     def get_unsuccessful_tag():
+#         tags = ss[f'st_data_service_{state}'].get_all_tag_types()
+#         for tag in tags:
+#             if 'Unsuccessful' in tag['name']:
+#                 return tag['id']
+
+#     def get_job_cost(invoice):
+#         # TODO: will be used to get job cost when that data is available.
+#         return 0.0
+
+#     def format_job(job, technicians, unsuccessful_tag):
+#         formatted = {}
+#         if unsuccessful_tag in job['tagTypeIds']:
+#             formatted['Status'] = "Unsuccessful"
+#         else:
+#             # formatted['unsuccessful'] = 0
+#             formatted['Status'] = job['jobStatus'] if job['jobStatus'] is not None else "None"
+#         if job['soldById'] is not None:
+#             formatted['Sold By'] = technicians[job['soldById']]
+#         else:
+#             formatted['Sold By'] = None
+#         formatted['Created Date'] = sp.convert_utc_datetime_to_local(sp.convert_ST_datetime_to_object(job['createdOn']), "Australia/Sydney").strftime("%m/%d/%Y")
+#         formatted['Completion Date'] = sp.convert_utc_datetime_to_local(sp.convert_ST_datetime_to_object(job['completedOn']), "Australia/Sydney").strftime("%m/%d/%Y") if job['completedOn'] is not None else "None"
+#         formatted['Job #'] = job['jobNumber'] if job['jobNumber'] is not None else "None"
+#         formatted['invoiceId'] = job['invoiceId'] if job['invoiceId'] is not None else "None"
+#         return formatted
+
+#     def format_invoice(invoice):
+#         formatted = {}
+#         formatted['Suburb'] = invoice['customerAddress']['city']
+#         formatted['Jobs Subtotal'] = float(invoice['subTotal'])
+#         formatted['Balance'] = float(invoice['balance'])
+#         formatted['Costs'] = get_job_cost(invoice)
+#         formatted['Commissionable Sales'] = round(formatted['Jobs Subtotal'] - formatted['Costs'],2)
+#         formatted['invoiceId'] = invoice['id']
+#         return formatted
+
+#     def format_payment(payment):
+#         output = []
+#         for invoice in payment['appliedTo']:
+#             formatted = {}
+#             formatted['invoiceId'] = invoice['appliedTo']
+#             formatted['Payment Types'] = payment['type']
+#             output.append(formatted)
+
+#         return output
+
+#     def get_invoice_ids(job_response):
+#         return [str(job['invoiceId']) for job in job_response]
     
-    # return pd.DataFrame(invoices)
-    return
+#     check_and_update_ss_for_data_service(state)
 
-def get_full_commission_data(state, start_date, end_date):
-    # 25k threshold p week or 5k per day
-    # net sold, not gross sold - need materials and things - problem for later
-    # doc check - assume we have this per job from other app in the works
-    # OT/weekend/PH rates
-
-    # Order of Ops:
-    # 1. get weekly sold per plumber (put code in place that will be able to work out reductions)
-    #   - get all jobs created btwn dates
-    #   - get invoices attached to them
-    # 2. doc check checker (just put code in place, waiting on data from other report for full functionality)
-    # 3. check for payments
-    # 4. output similar to current spreadsheet so we can compare
-    #   - per plumber, per job, per status (completed, etc.)
-
-    public_hols = get_public_holidays(state)
-    public_hols_in_week = check_dates_for_hols((start_date, end_date), public_hols)
-
-    if public_hols_in_week:
-        threshold = 5000 * len(public_hols_in_week)
-    else:
-        threshold = 25000
-
-    def get_unsuccessful_tag():
-        tags = ss[f'st_data_service_{state}'].get_all_tag_types()
-        for tag in tags:
-            if 'Unsuccessful' in tag['name']:
-                return tag['id']
-
-    def get_job_cost(invoice):
-        # TODO: will be used to get job cost when that data is available.
-        return 0.0
-
-    def format_job(job, technicians, unsuccessful_tag):
-        formatted = {}
-        if unsuccessful_tag in job['tagTypeIds']:
-            formatted['Status'] = "Unsuccessful"
-        else:
-            # formatted['unsuccessful'] = 0
-            formatted['Status'] = job['jobStatus'] if job['jobStatus'] is not None else "None"
-        if job['soldById'] is not None:
-            formatted['Sold By'] = technicians[job['soldById']]
-        else:
-            formatted['Sold By'] = None
-        formatted['Created Date'] = sp.convert_utc_datetime_to_local(sp.convert_ST_datetime_to_object(job['createdOn']), "Australia/Sydney").strftime("%m/%d/%Y")
-        formatted['Completion Date'] = sp.convert_utc_datetime_to_local(sp.convert_ST_datetime_to_object(job['completedOn']), "Australia/Sydney").strftime("%m/%d/%Y") if job['completedOn'] is not None else "None"
-        formatted['Job #'] = job['jobNumber'] if job['jobNumber'] is not None else "None"
-        formatted['invoiceId'] = job['invoiceId'] if job['invoiceId'] is not None else "None"
-        return formatted
-
-    def format_invoice(invoice):
-        formatted = {}
-        formatted['Suburb'] = invoice['customerAddress']['city']
-        formatted['Jobs Subtotal'] = float(invoice['subTotal'])
-        formatted['Balance'] = float(invoice['balance'])
-        formatted['Costs'] = get_job_cost(invoice)
-        formatted['Commissionable Sales'] = round(formatted['Jobs Subtotal'] - formatted['Costs'],2)
-        formatted['invoiceId'] = invoice['id']
-        return formatted
-
-    def format_payment(payment):
-        output = []
-        for invoice in payment['appliedTo']:
-            formatted = {}
-            formatted['invoiceId'] = invoice['appliedTo']
-            formatted['Payment Types'] = payment['type']
-            output.append(formatted)
-
-        return output
-
-    def get_invoice_ids(job_response):
-        return [str(job['invoiceId']) for job in job_response]
-    
-    check_and_update_ss_for_data_service(state)
-
-    start_time = datetime.combine(start_date, time(0,0,0))
-    end_time = datetime.combine(end_date, time(23,59,59))
+#     start_time = datetime.combine(start_date, time(0,0,0))
+#     end_time = datetime.combine(end_date, time(23,59,59))
  
-    technicians_response = ss[f'st_data_service_{state}'].get_all_technicians()
-    technicians = format_employee_list(technicians_response)
+#     technicians_response = ss[f'st_data_service_{state}'].get_all_technicians()
+#     technicians = format_employee_list(technicians_response)
 
-    job_response = ss[f'st_data_service_{state}'].get_jobs_created_between(start_time, end_time)
-    invoice_ids = get_invoice_ids(job_response)
+#     job_response = ss[f'st_data_service_{state}'].get_jobs_created_between(start_time, end_time)
+#     invoice_ids = get_invoice_ids(job_response)
 
-    unsuccessful_tag = get_unsuccessful_tag()
-    jobs = [format_job(job, technicians, unsuccessful_tag) for job in job_response]
-    jobs_df = pd.DataFrame(jobs)
+#     unsuccessful_tag = get_unsuccessful_tag()
+#     jobs = [format_job(job, technicians, unsuccessful_tag) for job in job_response]
+#     jobs_df = pd.DataFrame(jobs)
 
-    del job_response
-    del jobs
+#     del job_response
+#     del jobs
 
-    invoice_response = ss[f'st_data_service_{state}'].get_invoices_by_id(invoice_ids)
-    invoices = [format_invoice(invoice) for invoice in invoice_response]
-    invoices_df = pd.DataFrame(invoices)
+#     invoice_response = ss[f'st_data_service_{state}'].get_invoices_by_id(invoice_ids)
+#     invoices = [format_invoice(invoice) for invoice in invoice_response]
+#     invoices_df = pd.DataFrame(invoices)
 
-    del invoice_response
-    del invoices
+#     del invoice_response
+#     del invoices
 
-    jobs = pd.merge(jobs_df, invoices_df, on='invoiceId', how='left')
-    jobs = jobs.loc[:, ['Sold By', 'Created Date', 'Job #', 'Suburb', 'Jobs Subtotal', 'Status', 'Completion Date', 'Commissionable Sales']]
-    jobs = jobs.sort_values(by='Status')
-    jobs['completed'] = jobs['Status'] == 'Completed'
+#     jobs = pd.merge(jobs_df, invoices_df, on='invoiceId', how='left')
+#     jobs = jobs.loc[:, ['Sold By', 'Created Date', 'Job #', 'Suburb', 'Jobs Subtotal', 'Status', 'Completion Date', 'Commissionable Sales']]
+#     jobs = jobs.sort_values(by='Status')
+#     jobs['completed'] = jobs['Status'] == 'Completed'
     
-    unsuccessful_jobs = jobs[jobs['Status'] == "Unsuccessful"]
-    successful_jobs = jobs[jobs['Status'] != "Unsuccessful"]
+#     unsuccessful_jobs = jobs[jobs['Status'] == "Unsuccessful"]
+#     successful_jobs = jobs[jobs['Status'] != "Unsuccessful"]
 
 
 
-    commission_summary = successful_jobs.groupby(by=['Sold By'], as_index=False).agg({
-        'Commissionable Sales': 'sum',
-        'completed': 'all'
-    })
+#     commission_summary = successful_jobs.groupby(by=['Sold By'], as_index=False).agg({
+#         'Commissionable Sales': 'sum',
+#         'completed': 'all'
+#     })
 
-    commission_summary.rename(columns={'completed': 'All Jobs Completed?'}, inplace=True)
+#     commission_summary.rename(columns={'completed': 'All Jobs Completed?'}, inplace=True)
 
-    # Create an Excel file in memory
-    buffer = BytesIO()
-    with pd.ExcelWriter(buffer) as writer:
-        commission_summary.to_excel(writer, sheet_name="Summary", index=False)
+#     # Create an Excel file in memory
+#     buffer = BytesIO()
+#     with pd.ExcelWriter(buffer) as writer:
+#         commission_summary.to_excel(writer, sheet_name="Summary", index=False)
         
-        techs = commission_summary['Sold By'].to_list()
-        for tech in techs:
-            tech_successful = successful_jobs[successful_jobs['Sold By'] == tech]
-            tech_unsuccessful = unsuccessful_jobs[unsuccessful_jobs['Sold By'] == tech]
-            tech_full = pd.concat([tech_successful, tech_unsuccessful], ignore_index=True)
-            tech_full.to_excel(writer, sheet_name=tech, index=False)
+#         techs = commission_summary['Sold By'].to_list()
+#         for tech in techs:
+#             tech_successful = successful_jobs[successful_jobs['Sold By'] == tech]
+#             tech_unsuccessful = unsuccessful_jobs[unsuccessful_jobs['Sold By'] == tech]
+#             tech_full = pd.concat([tech_successful, tech_unsuccessful], ignore_index=True)
+#             tech_full.to_excel(writer, sheet_name=tech, index=False)
 
-    # successful_jobs = pd.merge(successful_jobs, invoices_df, on='invoiceId', how='left')
-    # successful_jobs_income = successful_jobs[successful_jobs['Jobs Subtotal'] > 0]
+#     # successful_jobs = pd.merge(successful_jobs, invoices_df, on='invoiceId', how='left')
+#     # successful_jobs_income = successful_jobs[successful_jobs['Jobs Subtotal'] > 0]
 
-    return buffer
+#     return buffer
 
 def get_timesheets_for_tech(tech_id, state, start_date, end_date):
     
@@ -423,68 +395,6 @@ def get_timesheets_for_tech(tech_id, state, start_date, end_date):
 
     return timesheet_data
 
-def fetch_many_photos(attachment_ids, state, max_workers=10):
-    print('Fetching many photos')
-    with ThreadPoolExecutor(max_workers=max_workers) as ex:
-        return list(ex.map(ss[f'st_data_service_{state}'].get_attachment, attachment_ids))
-    
-def prefetch_batch_into_session(key: str, attachment_ids, state):
-    """Runs in a separate thread."""
-    try:
-        print("Fetching inside prefetch_batch_into_session..")
-        imgs = fetch_many_photos(attachment_ids, state)
-        print("Fetched inside prefetch_batch_into_session.")
-        ss[key] = imgs
-        print(ss[key])
-    except Exception as e:
-        # optional: store the error
-        ss[key] = {"error": str(e)}
-
-def start_prefetch(key: str, attachment_ids, state):
-    """Kick off a background thread that itself uses a thread pool."""
-    if key in ss:
-        return  # already prefetched or in progress
-    t = threading.Thread(
-        target=prefetch_batch_into_session,
-        args=(key, attachment_ids, state),
-        daemon=True,
-    )
-    t.start()
-    
-def get_photos_from_job(job_id, state):
-    print(f"Getting Photos for {job_id}, {state}")
-    images = []
-
-    print(f"Checking data service for {job_id}, {state}")
-    check_and_update_ss_for_data_service(state)
-
-    print(f"Attachments start for {job_id}, {state}")
-    s = datetime.now()
-    attachments = ss[f'st_data_service_{state}'].get_api_data('forms', f'jobs/{job_id}/attachments', options=None, version=2)
-    
-    img_types = ('jpg', 'jpeg', 'png')
-
-    img_attachments = [a for a in attachments if a['fileName'].endswith(img_types)]
-    e = datetime.now()
-    print(f"Attachments end for {job_id}, {state}, took {e-s} sec")
-
-
-    print(f"Looping through attachments start for {job_id}, {state}")
-    s = datetime.now()
-    images = fetch_many_photos([a['id'] for a in img_attachments], state)
-    # for attachment in attachments:
-    #     print(f"single attachment start for {job_id}, {state}")
-    #     s1 = datetime.now()
-    #     if attachment['fileName'].endswith(img_types):
-    #         img_bytes = ss[f'st_data_service_{state}'].get_attachment(attachment['id'])
-    #         # img = Image.open(BytesIO(img_bytes))
-    #         images.append((img_bytes, attachment['createdById'], attachment['createdOn']))
-    #     e1 = datetime.now()
-    # print(f"single attachments end for {job_id}, {state}, took {e1-s1} sec")
-    e = datetime.now()
-    print(f"Looping through attachments end for {job_id}, {state}, took {e-s} sec")
-
-    return images
 
 def update_job_external_data(job_id, state, data):
     # data is just a dict with keys and values, it gets converted here.
