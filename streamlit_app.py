@@ -214,6 +214,15 @@ def download_images_for_job(job_id: str, client: ServiceTitanClient) -> List[Tup
             images.append((filename, data))
     return images
 
+def get_job_external_data(job_id, client, application_guid):
+    url = client.build_url('jpm', 'jobs', resource_id=job_id)
+    params = {"externalDataApplicationGuid": application_guid}
+    job_data = client.get(url, params=params)
+    external_entries = job_data.get("externalData", [])
+    for entry in external_entries:
+        if entry.get("key") == "docchecks":
+            return entry.get("value")
+    return None
 
 ###############################################################################
 # Streamlit app logic
@@ -233,6 +242,8 @@ def main() -> None:
         st.session_state.prefetched: Dict[str, List[Tuple[str, bytes]]] = {}
     if "prefetch_futures" not in st.session_state:
         st.session_state.prefetch_futures: Dict[str, Future] = {}
+    if "app_guid" not in st.session_state:
+        st.session_state.app_guid = get_secret('ST_servco_integrations_guid')
 
     # Sidebar controls for date range and patch URL
     with st.sidebar:
@@ -275,18 +286,32 @@ def main() -> None:
         job_id = str(job.get("id"))
         job_num = str(job.get("jobNumber"))
 
+
         # Sidebar form for the current job
         with st.sidebar.form(key=f"form_{job_num}"):
             st.subheader(f"Job {job_num} form")
             checks = {}
-            for i in range(1, 8):
-                checks[f"check{i}"] = st.checkbox(f"Check {i}", key=f"{job_num}_check{i}")
+            initial_bits = get_job_external_data(job_id, client, st.session_state.app_guid)
+            for i in range(1, 8): # TODO: Might want to change this logic to make it more robust to future changes
+                default = initial_bits and len(initial_bits) >= i and initial_bits[i-1] == "1"
+                checks[f"check{i}"] = st.checkbox(f"Check {i}", key=f"{job_num}_check{i}", value=default)
+            # for i in range(1, 8):
+            #     checks[f"check{i}"] = st.checkbox(f"Check {i}", key=f"{job_num}_check{i}")
             submitted = st.form_submit_button("Submit")
             if submitted:
                 # Prepare payload and send PATCH request
-                payload = {**checks, "jobId": job_id}
+                encoded = ''.join(['1' if checks[f"check{i}"] else '0' for i in range(1, 8)])
+                external_data_payload = {
+                    "externalData": {
+                        "patchMode": "Replace",
+                        "applicationGuid": st.session_state.app_guid,
+                        "externalData": [{"key": "docchecks", "value": encoded}]
+                    }
+                }
+
+                patch_url = client.build_url('jpm', 'jobs', resource_id=job_id)
                 try:
-                    client.patch(patch_url, json=payload)
+                    client.patch(patch_url, json=external_data_payload)
                     st.success("Form submitted successfully")
                 except Exception as e:
                     st.error(f"Failed to submit form: {e}")
