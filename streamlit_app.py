@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import datetime as _dt
 from typing import Dict, List, Tuple, Optional, Any, Iterable
+import json
 from google.cloud import secretmanager
 
 import streamlit as st
@@ -221,8 +222,26 @@ def get_job_external_data(job_id, client, application_guid):
     external_entries = job_data.get("externalData", [])
     for entry in external_entries:
         if entry.get("key") == "docchecks":
-            return entry.get("value")
-    return None
+            try:
+                return json.loads(entry["value"])
+            except Exception:
+                return {}
+    return {}
+
+def get_doc_check_criteria():
+    checks = {
+        'pb': 'Before Photo',
+        'pa': 'After Photo',
+        'pr': 'Receipt Photo',
+        'qd': 'Quote Description',
+        'qs': 'Quote Signed',
+        'qe': 'Quote Emailed',
+        'id': 'Invoice Description',
+        'is': 'Invoice Signed',
+        'ie': 'Invoice Emailed',
+        '5s': '5 Star Review',
+    }
+    return checks
 
 ###############################################################################
 # Streamlit app logic
@@ -232,6 +251,8 @@ def main() -> None:
     st.set_page_config(page_title="ServiceTitan Job Browser", layout="wide")
     st.title("ServiceTitan Job Image Browser")
     client = get_client('NSW')
+
+    doc_checks = get_doc_check_criteria()
 
     # Initialise session state collections
     if "jobs" not in st.session_state:
@@ -291,16 +312,23 @@ def main() -> None:
         with st.sidebar.form(key=f"form_{job_num}"):
             st.subheader(f"Job {job_num} form")
             checks = {}
-            initial_bits = get_job_external_data(job_id, client, st.session_state.app_guid)
-            for i in range(1, 8): # TODO: Might want to change this logic to make it more robust to future changes
-                default = initial_bits and len(initial_bits) >= i and initial_bits[i-1] == "1"
-                checks[f"check{i}"] = st.checkbox(f"Check {i}", key=f"{job_num}_check{i}", value=default)
+            # initial_bits = get_job_external_data(job_id, client, st.session_state.app_guid)
+            initial_checks = get_job_external_data(job_id, client, st.session_state.app_guid)
+            for check_code, check in doc_checks.items():
+                default = bool(initial_checks.get(check_code, False))
+                checks[check_code] = int(st.checkbox(check, key=f"{job_num}_{check_code}", value=default))
+
+            # for i in range(1, 8): # TODO: Might want to change this logic to make it more robust to future changes
+            #     default = initial_bits and len(initial_bits) >= i and initial_bits[i-1] == "1"
+            #     checks[f"check{i}"] = st.checkbox(f"Check {i}", key=f"{job_num}_check{i}", value=default)
             # for i in range(1, 8):
             #     checks[f"check{i}"] = st.checkbox(f"Check {i}", key=f"{job_num}_check{i}")
             submitted = st.form_submit_button("Submit")
             if submitted:
                 # Prepare payload and send PATCH request
-                encoded = ''.join(['1' if checks[f"check{i}"] else '0' for i in range(1, 8)])
+                # encoded = ''.join(['1' if checks[f"check{i}"] else '0' for i in range(1, 8)])
+                encoded = json.dumps(checks)
+                print(encoded)
                 external_data_payload = {
                     "externalData": {
                         "patchMode": "Replace",
