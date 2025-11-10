@@ -46,9 +46,11 @@ import json
 from google.cloud import secretmanager
 
 import streamlit as st
+import streamlit_authenticator as stauth
 from concurrent.futures import ThreadPoolExecutor, Future, as_completed
 
 from servicetitan_api_client import ServiceTitanClient
+import modules.google_store as gs
 
 
 ###############################################################################
@@ -144,35 +146,6 @@ def fetch_jobs(
 
         jobs = _client.get_all(base_path, params=params)
 
-    # while True:
-    #     params = {
-    #         "page": page,
-    #         "pageSize": 50,
-    #         "createdOnOrAfter": created_after,
-    #         "createdBefore": created_before,
-    #     }
-    #     try:
-    #         resp = _client.get(base_path, params=params)
-    #     except Exception:
-    #         break
-    #     if not isinstance(resp, dict):
-    #         break
-    #     page_data: Iterable[Dict[str, Any]] = resp.get("data") or []
-    #     for job in page_data:
-    #         created = job.get("createdOn")
-    #         if not created:
-    #             continue
-    #         try:
-    #             dt = _dt.datetime.fromisoformat(created.replace("Z", "+00:00")).date()
-    #         except Exception:
-    #             continue
-    #         if start_date <= dt <= end_date:
-    #             jobs.append(job)
-    #     has_more = resp.get("hasMore")
-    #     if has_more:
-    #         page += 1
-    #         continue
-    #     break
     return jobs
 
 
@@ -365,196 +338,216 @@ def filter_out_unsuccessful_jobs(jobs, client: ServiceTitanClient):
 def main() -> None:
     st.set_page_config(page_title="ServiceTitan Job Browser", layout="wide")
     st.title("ServiceTitan Job Image Browser")
-    client = get_client('NSW')
 
-    doc_checks = get_doc_check_criteria()
+    # ============ AUTH ============
+    CONFIG_FILENAME = 'st_auth_config_plumber_commissions.yaml'
+    config = gs.load_yaml_from_gcs(CONFIG_FILENAME)
 
-    # Initialise session state collections
-    if "jobs" not in st.session_state:
-        st.session_state.jobs: List[Dict[str, Any]] = []
-    if "current_index" not in st.session_state:
-        st.session_state.current_index: int = 0
-    if "prefetched" not in st.session_state:
-        # Cache of prefetched attachments keyed by job ID.  Each entry
-        # contains a dictionary with ``imgs`` and ``pdfs`` lists.
-        st.session_state.prefetched: Dict[str, Dict[str, List[Tuple[str, Any]]]] = {}
-    if "prefetch_futures" not in st.session_state:
-        st.session_state.prefetch_futures: Dict[str, Future] = {}
-    if "app_guid" not in st.session_state:
-        st.session_state.app_guid = get_secret('ST_servco_integrations_guid')
+    authenticator = stauth.Authenticate(
+        credentials = config['credentials']
+    )
 
-    # Sidebar controls for date range and patch URL
-    with st.sidebar.form(key=f"filter_form"):
-        st.header("Job filters")
-        today = _dt.date.today()
-        default_start = today - _dt.timedelta(days=7)
-        start_date = st.date_input("Start date", value=default_start)
-        end_date = st.date_input("End date", value=today)
-        custom_job_id = st.text_input(
-            "Job ID Search", placeholder="Manual search for job", help="Job ID is different to the job number. ID is the number at the end of the URL of the job's page in ServiceTitan"
-        )
-        job_status_filter = st.multiselect(
-            "Job statuses to include (leave empty for all)",
-            ['Scheduled', 'Dispatched', 'InProgress', 'Hold', 'Completed', 'Canceled'],
-            default=["Completed"]
-        )
-        filter_unsucessful = st.checkbox("Exclude unsuccessful jobs")
-        fetch_jobs_button = st.form_submit_button("Fetch Jobs", type="primary")
+    authenticator.login(location='main')
+    # ==============================
 
-    # When the fetch button is pressed, call the API and reset state
-    if fetch_jobs_button:
-        with st.spinner("Retrieving jobs..."):
-            if custom_job_id:
-                jobs = fetch_jobs(start_date, end_date, client, custom_job_id)
-            else:
-                jobs = fetch_jobs(start_date, end_date, client, status_filters=job_status_filter)
-                if filter_unsucessful:
-                    jobs = filter_out_unsuccessful_jobs(jobs, client)
-        st.session_state.jobs = jobs
-        st.session_state.current_index = 0
-        st.session_state.prefetched = {}
-        st.session_state.prefetch_futures = {}
-        # Kick off prefetch for the first three jobs
-        _schedule_prefetches(client)
-        # Trigger an immediate rerun to process any completed futures
-        st.rerun()
+    if st.session_state["authentication_status"]:
 
-    with st.sidebar:
-        st.markdown("---")
+        client = get_client('NSW')
+
+        doc_checks = get_doc_check_criteria()
+
+        # Initialise session state collections
+        if "jobs" not in st.session_state:
+            st.session_state.jobs: List[Dict[str, Any]] = []
+        if "current_index" not in st.session_state:
+            st.session_state.current_index: int = 0
+        if "prefetched" not in st.session_state:
+            # Cache of prefetched attachments keyed by job ID.  Each entry
+            # contains a dictionary with ``imgs`` and ``pdfs`` lists.
+            st.session_state.prefetched: Dict[str, Dict[str, List[Tuple[str, Any]]]] = {}
+        if "prefetch_futures" not in st.session_state:
+            st.session_state.prefetch_futures: Dict[str, Future] = {}
+        if "app_guid" not in st.session_state:
+            st.session_state.app_guid = get_secret('ST_servco_integrations_guid')
+
+        # Sidebar controls for date range and patch URL
+        with st.sidebar.form(key=f"filter_form"):
+            st.header("Job filters")
+            today = _dt.date.today()
+            default_start = today - _dt.timedelta(days=7)
+            start_date = st.date_input("Start date", value=default_start)
+            end_date = st.date_input("End date", value=today)
+            custom_job_id = st.text_input(
+                "Job ID Search", placeholder="Manual search for job", help="Job ID is different to the job number. ID is the number at the end of the URL of the job's page in ServiceTitan"
+            )
+            job_status_filter = st.multiselect(
+                "Job statuses to include (leave empty for all)",
+                ['Scheduled', 'Dispatched', 'InProgress', 'Hold', 'Completed', 'Canceled'],
+                default=["Completed"]
+            )
+            filter_unsucessful = st.checkbox("Exclude unsuccessful jobs")
+            fetch_jobs_button = st.form_submit_button("Fetch Jobs", type="primary")
+
+        # When the fetch button is pressed, call the API and reset state
+        if fetch_jobs_button:
+            with st.spinner("Retrieving jobs..."):
+                if custom_job_id:
+                    jobs = fetch_jobs(start_date, end_date, client, custom_job_id)
+                else:
+                    jobs = fetch_jobs(start_date, end_date, client, status_filters=job_status_filter)
+                    if filter_unsucessful:
+                        jobs = filter_out_unsuccessful_jobs(jobs, client)
+            st.session_state.jobs = jobs
+            st.session_state.current_index = 0
+            st.session_state.prefetched = {}
+            st.session_state.prefetch_futures = {}
+            # Kick off prefetch for the first three jobs
+            _schedule_prefetches(client)
+            # Trigger an immediate rerun to process any completed futures
+            st.rerun()
+
+        with st.sidebar:
+            st.markdown("---")
 
 
-    # Process completed prefetch futures and update prefetched cache
-    _process_completed_prefetches()
+        # Process completed prefetch futures and update prefetched cache
+        _process_completed_prefetches()
 
-    # Display the current job if available
-    if st.session_state.jobs:
-        idx = st.session_state.current_index
-        if idx < 0:
-            idx = 0
-        if idx >= len(st.session_state.jobs):
-            idx = len(st.session_state.jobs) - 1
-        job = st.session_state.jobs[idx]
-        job_id = str(job.get("id"))
-        job_num = str(job.get("jobNumber"))
+        # Display the current job if available
+        if st.session_state.jobs:
+            idx = st.session_state.current_index
+            if idx < 0:
+                idx = 0
+            if idx >= len(st.session_state.jobs):
+                idx = len(st.session_state.jobs) - 1
+            job = st.session_state.jobs[idx]
+            job_id = str(job.get("id"))
+            job_num = str(job.get("jobNumber"))
 
-        # Navigation buttons
-        col_prev, col_next = st.columns([1, 1])
-        with col_prev:
-            if st.button("Previous Job"):
-                if st.session_state.current_index > 0:
-                    st.session_state.current_index -= 1
-                    _schedule_prefetches(client)
-                    st.rerun()
-        with col_next:
-            if st.button("Next Job"):
-                if st.session_state.current_index < len(st.session_state.jobs) - 1:
-                    st.session_state.current_index += 1
-                    _schedule_prefetches(client)
-                    st.rerun()
+            # Navigation buttons
+            col_prev, col_next = st.columns([1, 1])
+            with col_prev:
+                if st.button("Previous Job"):
+                    if st.session_state.current_index > 0:
+                        st.session_state.current_index -= 1
+                        _schedule_prefetches(client)
+                        st.rerun()
+            with col_next:
+                if st.button("Next Job"):
+                    if st.session_state.current_index < len(st.session_state.jobs) - 1:
+                        st.session_state.current_index += 1
+                        _schedule_prefetches(client)
+                        st.rerun()
 
-        # Display job details and images
-        st.write(f"**Viewing job {job_num} ({idx + 1} of {len(st.session_state.jobs)})**")
-        prefill_txt = st.text("")
+            # Display job details and images
+            st.write(f"**Viewing job {job_num} ({idx + 1} of {len(st.session_state.jobs)})**")
+            prefill_txt = st.text("")
 
-        attachments = st.session_state.prefetched.get(job_id)
-        if attachments is None:
-            # If not already prefetched, download synchronously all attachments
-            with st.spinner("Downloading attachments..."):
-                attachments = download_attachments_for_job(job_id, client)
-            st.session_state.prefetched[job_id] = attachments
+            attachments = st.session_state.prefetched.get(job_id)
+            if attachments is None:
+                # If not already prefetched, download synchronously all attachments
+                with st.spinner("Downloading attachments..."):
+                    attachments = download_attachments_for_job(job_id, client)
+                st.session_state.prefetched[job_id] = attachments
 
-        # Display attachments in tabs: one for images and one for other docs
-        tab_images, tab_docs = st.tabs(["Images", "Other Documents"])
+            # Display attachments in tabs: one for images and one for other docs
+            tab_images, tab_docs = st.tabs(["Images", "Other Documents"])
 
-        # Show images
-        with tab_images:
-            imgs = attachments.get("imgs", [])
-            if imgs:
-                cols = st.columns(3)
-                for idx_img, (filename, file_date, file_by, data) in enumerate(imgs):
-                    with cols[idx_img % 3]:
-                        if data:
-                            st.image(data, caption=f'{file_by} at {file_date}', width=150)
-                        else:
-                            st.write(filename)
-            else:
-                st.info("No image attachments for this job.")
+            # Show images
+            with tab_images:
+                imgs = attachments.get("imgs", [])
+                if imgs:
+                    cols = st.columns(3)
+                    for idx_img, (filename, file_date, file_by, data) in enumerate(imgs):
+                        with cols[idx_img % 3]:
+                            if data:
+                                st.image(data, caption=f'{file_by} at {file_date}', width=150)
+                            else:
+                                st.write(filename)
+                else:
+                    st.info("No image attachments for this job.")
 
-        # Show other documents (e.g., PDFs)
-        with tab_docs:
-            pdfs = attachments.get("pdfs", [])
+            # Show other documents (e.g., PDFs)
+            with tab_docs:
+                pdfs = attachments.get("pdfs", [])
 
-            # Provide a search box to filter document names
-            search_query = st.text_input("Search document names", key=f"search_{job_id}")
-            filtered_pdfs = pdfs
-            if search_query:
-                query_lower = search_query.lower()
-                filtered_pdfs = [(fname, file_date, file_by, data) for fname, file_date, file_by, data in pdfs if query_lower in fname.lower()]
-            if filtered_pdfs:
-                for fname, file_date, file_by, data in filtered_pdfs:
-                    with st.container(horizontal=True):
-                        st.write(fname)
-                        # Offer a download button for PDF or other attachment bytes if available
-                        if data:
-                            st.download_button(
-                                label=f"Download",
-                                data=data,
-                                file_name=fname,
-                                mime="application/octet-stream"
-                            )
-            else:
-                st.info("No documents match your search.")
-        
+                # Provide a search box to filter document names
+                search_query = st.text_input("Search document names", key=f"search_{job_id}")
+                filtered_pdfs = pdfs
+                if search_query:
+                    query_lower = search_query.lower()
+                    filtered_pdfs = [(fname, file_date, file_by, data) for fname, file_date, file_by, data in pdfs if query_lower in fname.lower()]
+                if filtered_pdfs:
+                    for fname, file_date, file_by, data in filtered_pdfs:
+                        with st.container(horizontal=True):
+                            st.write(fname)
+                            # Offer a download button for PDF or other attachment bytes if available
+                            if data:
+                                st.download_button(
+                                    label=f"Download",
+                                    data=data,
+                                    file_name=fname,
+                                    mime="application/octet-stream"
+                                )
+                else:
+                    st.info("No documents match your search.")
+            
 
-        # Sidebar form for the current job
-        with st.sidebar.form(key=f"doccheck_{job_num}"):
-            st.subheader(f"Job {job_num} Doc Check")
-            checks = {}
-            # initial_bits = get_job_external_data(job_id, client, st.session_state.app_guid)
-            initial_checks = get_job_external_data(job_id, client, st.session_state.app_guid)
-            if not initial_checks.get("qs", False):
-                initial_checks['qs'] = pre_fill_quote_signed_check(attachments.get("pdfs", []))
-            if not initial_checks.get("is", False):
-                initial_checks['is'] = pre_fill_invoice_signed_check(attachments.get("pdfs", []))
-            if initial_checks['is'] and initial_checks['qs']:
-                prefill_txt.text("Prefilled: Quote signed and Invoice signed")
-            elif initial_checks['is']:
-                prefill_txt.text("Prefilled: Invoice signed")
-            elif initial_checks['qs']:
-                prefill_txt.text("Prefilled: Quote signed")
-            for check_code, check in doc_checks.items():
-                default = bool(initial_checks.get(check_code, False))
-                checks[check_code] = int(st.checkbox(check, key=f"{job_num}_{check_code}", value=default))
+            # Sidebar form for the current job
+            with st.sidebar.form(key=f"doccheck_{job_num}"):
+                st.subheader(f"Job {job_num} Doc Check")
+                checks = {}
+                # initial_bits = get_job_external_data(job_id, client, st.session_state.app_guid)
+                initial_checks = get_job_external_data(job_id, client, st.session_state.app_guid)
+                if not initial_checks.get("qs", False):
+                    initial_checks['qs'] = pre_fill_quote_signed_check(attachments.get("pdfs", []))
+                if not initial_checks.get("is", False):
+                    initial_checks['is'] = pre_fill_invoice_signed_check(attachments.get("pdfs", []))
+                if initial_checks['is'] and initial_checks['qs']:
+                    prefill_txt.text("Prefilled: Quote signed and Invoice signed")
+                elif initial_checks['is']:
+                    prefill_txt.text("Prefilled: Invoice signed")
+                elif initial_checks['qs']:
+                    prefill_txt.text("Prefilled: Quote signed")
+                for check_code, check in doc_checks.items():
+                    default = bool(initial_checks.get(check_code, False))
+                    checks[check_code] = int(st.checkbox(check, key=f"{job_num}_{check_code}", value=default))
 
-            # for i in range(1, 8): # TODO: Might want to change this logic to make it more robust to future changes
-            #     default = initial_bits and len(initial_bits) >= i and initial_bits[i-1] == "1"
-            #     checks[f"check{i}"] = st.checkbox(f"Check {i}", key=f"{job_num}_check{i}", value=default)
-            # for i in range(1, 8):
-            #     checks[f"check{i}"] = st.checkbox(f"Check {i}", key=f"{job_num}_check{i}")
-            submitted = st.form_submit_button("Submit")
-            if submitted:
-                # Prepare payload and send PATCH request
-                # encoded = ''.join(['1' if checks[f"check{i}"] else '0' for i in range(1, 8)])
-                encoded = json.dumps(checks)
-                print(encoded)
-                external_data_payload = {
-                    "externalData": {
-                        "patchMode": "Replace",
-                        "applicationGuid": st.session_state.app_guid,
-                        "externalData": [{"key": "docchecks", "value": encoded}]
+                # for i in range(1, 8): # TODO: Might want to change this logic to make it more robust to future changes
+                #     default = initial_bits and len(initial_bits) >= i and initial_bits[i-1] == "1"
+                #     checks[f"check{i}"] = st.checkbox(f"Check {i}", key=f"{job_num}_check{i}", value=default)
+                # for i in range(1, 8):
+                #     checks[f"check{i}"] = st.checkbox(f"Check {i}", key=f"{job_num}_check{i}")
+                submitted = st.form_submit_button("Submit")
+                if submitted:
+                    # Prepare payload and send PATCH request
+                    # encoded = ''.join(['1' if checks[f"check{i}"] else '0' for i in range(1, 8)])
+                    encoded = json.dumps(checks)
+                    print(encoded)
+                    external_data_payload = {
+                        "externalData": {
+                            "patchMode": "Replace",
+                            "applicationGuid": st.session_state.app_guid,
+                            "externalData": [{"key": "docchecks", "value": encoded}]
+                        }
                     }
-                }
 
-                patch_url = client.build_url('jpm', 'jobs', resource_id=job_id)
-                try:
-                    client.patch(patch_url, json=external_data_payload)
-                    st.success("Form submitted successfully")
-                except Exception as e:
-                    st.error(f"Failed to submit form: {e}")
+                    patch_url = client.build_url('jpm', 'jobs', resource_id=job_id)
+                    try:
+                        client.patch(patch_url, json=external_data_payload)
+                        st.success("Form submitted successfully")
+                    except Exception as e:
+                        st.error(f"Failed to submit form: {e}")
 
 
+        else:
+            st.info("Enter a date range and click 'Fetch Jobs' to begin.")
+    elif st.session_state["authentication_status"] is False:
+        st.error('Please log in.')
+    elif st.session_state["authentication_status"] is None:
+        st.warning('Please log in.')
     else:
-        st.info("Enter a date range and click 'Fetch Jobs' to begin.")
+        st.warning('Please log in.')
 
 def _schedule_prefetches(client: ServiceTitanClient) -> None:
     """Ensure up to three jobs (current and next two) are prefetched.
