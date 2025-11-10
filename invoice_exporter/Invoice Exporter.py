@@ -14,7 +14,7 @@ st.set_page_config(
 
 st.title(f"Xero Invoice Exporter")
 
-CONFIG_FILENAME = 'st_auth_config.yaml'
+CONFIG_FILENAME = 'st_auth_config_invoice_exporter.yaml'
 config = gs.load_yaml_from_gcs(CONFIG_FILENAME)
 
 authenticator = stauth.Authenticate(
