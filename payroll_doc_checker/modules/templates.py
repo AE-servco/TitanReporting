@@ -32,10 +32,10 @@ def sidebar_filters():
         )
         today = date.today()
         default_start = today - timedelta(days=7)
-        start_date = st.date_input("Start date", value=default_start)
-        end_date = st.date_input("End date", value=today)
+        start_date = st.date_input("Start date", value=default_start, format="DD/MM/YYYY")
+        end_date = st.date_input("End date", value=today, format="DD/MM/YYYY")
         custom_job_id = st.text_input(
-            "Job ID Search", placeholder="Manual search for job", help="Job ID is different to the job number. ID is the number at the end of the URL of the job's page in ServiceTitan"
+            "Job ID Search", placeholder="Manual search for job", help="Job ID is different to the job number. ID is the number at the end of the URL of the job's page in ServiceTitan. This overrides any date filters and will show only the job specified (if it exists)."
         )
         job_status_filter = st.multiselect(
             "Job statuses to include (leave empty for all)",
@@ -60,7 +60,7 @@ def job_nav_buttons(idx):
     job_num = str(job.get("jobNumber"))
 
     # Navigation buttons
-    col_prev, col_next = st.columns([1, 1])
+    col_prev, col_next = st.columns([1, 1], width=250)
     with col_prev:
         if st.button("Previous Job"):
             if st.session_state.current_index > 0:

@@ -34,7 +34,7 @@ TENANTS = [
 
 def main() -> None:
     st.set_page_config(page_title="ServiceTitan Job Browser", layout="wide")
-    st.title("ServiceTitan Job Image Browser")
+    st.title("Doc Checks Payroll")
 
     templates.authenticate_app('st_auth_config_plumber_commissions.yaml')
 
@@ -117,7 +117,7 @@ def main() -> None:
                 prefill_holder.text(st.session_state.prefill_txt)
 
         else:
-            st.info("Enter a date range and click 'Fetch Jobs' to begin.")
+            st.info("Choose a date range and click 'Fetch Jobs' to begin.")
     elif st.session_state["authentication_status"] is False:
         st.error('Please log in.')
     elif st.session_state["authentication_status"] is None:
