@@ -113,7 +113,7 @@ def main() -> None:
 
             # Sidebar form for the current job
             with st.sidebar:
-                templates.doc_check_form(job_num, job_id, attachments, doc_check_criteria)
+                templates.doc_check_form(job_num, job, attachments, doc_check_criteria)
                 prefill_holder.text(st.session_state.prefill_txt)
 
         else:

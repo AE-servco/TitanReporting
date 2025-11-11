@@ -39,11 +39,14 @@ def get_client(tenant) -> ServiceTitanClient:
             # state_code = state_codes()[state]
             client = ServiceTitanClient(
                 app_key=get_secret("ST_app_key_tester"), 
+                app_guid=get_secret("ST_servco_integrations_guid"), 
                 tenant=get_secret(f"ST_tenant_id_{tenant}"), 
                 client_id=get_secret(f"ST_client_id_{tenant}"), 
                 client_secret=get_secret(f"ST_client_secret_{tenant}"), 
                 environment="production"
             )
+            # print(client)
+            # print(client.app_guid)
             return client
     return _create_client(tenant)
 
@@ -109,23 +112,19 @@ def fetch_jobs(
             return []
         page_data: Iterable[Dict[str, Any]] = resp.get("data") or []
         return page_data
-
-    if status_filters:
-        for status in status_filters:
-            params = {
-                    "createdOnOrAfter": created_after,
-                    "createdBefore": created_before,
-                    "jobStatus": status,
-                }
-            jobs.extend(_client.get_all(base_path, params=params))
-
-    else:
-        params = {
+    params = {
                 "createdOnOrAfter": created_after,
                 "createdBefore": created_before,
             }
-
+    if _client.app_guid:
+        params["externalDataApplicationGuid"] = _client.app_guid
+    if status_filters:
+        for status in status_filters:
+            params["jobStatus"] = status
+            jobs.extend(_client.get_all(base_path, params=params))
+    else:
         jobs = _client.get_all(base_path, params=params)
+
     first_appt_ids = [str(job.get("firstAppointmentId")) for job in jobs]
     last_appt_ids = [str(job.get("lastAppointmentId")) for job in jobs]
     appt_url = _client.build_url('jpm', 'appointments')
@@ -270,13 +269,11 @@ def download_attachments_for_job(job_id: str, client: ServiceTitanClient) -> Dic
             result[category].append((filename, client.from_utc_string(file_date), file_by, data))
     return result
 
-def get_job_external_data(job_id, client, application_guid):
-    url = client.build_url('jpm', 'jobs', resource_id=job_id)
-    params = {"externalDataApplicationGuid": application_guid}
-    job_data = client.get(url, params=params)
-    external_entries = job_data.get("externalData", [])
+def get_job_external_data(job, key="docchecks"):
+    print(job)
+    external_entries = job.get("externalData", [])
     for entry in external_entries:
-        if entry.get("key") == "docchecks":
+        if entry.get("key") == key:
             try:
                 return json.loads(entry["value"])
             except Exception:

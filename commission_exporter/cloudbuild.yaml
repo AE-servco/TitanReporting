@@ -1,0 +1,37 @@
+steps:
+  # Step 1: Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'build',
+        '-t', 'australia-southeast1-docker.pkg.dev/servco1/streamlit-repo/${_IMAGE_NAME}',
+        './${_IMAGE_NAME}'
+      ]
+
+  # Step 2: Push the image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'push',
+        'australia-southeast1-docker.pkg.dev/servco1/streamlit-repo/${_IMAGE_NAME}'
+      ]
+
+  # Step 3: Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      [
+        'run', 'deploy', '${_SERVICE_NAME}',
+        '--image', 'australia-southeast1-docker.pkg.dev/servco1/streamlit-repo/${_IMAGE_NAME}',
+        '--region', 'australia-southeast1',
+        '--allow-unauthenticated'
+      ]
+
+substitutions:
+  _IMAGE_NAME: 'commission_exporter'
+
+images:
+  - 'australia-southeast1-docker.pkg.dev/servco1/streamlit-repo/${_IMAGE_NAME}'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

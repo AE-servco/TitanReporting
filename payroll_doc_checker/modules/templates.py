@@ -137,13 +137,13 @@ def show_pdfs(pdfs):
     else:
         st.info("No documents match your search.")
 
-def doc_check_form(job_num, job_id, attachments, doc_check_criteria):
+def doc_check_form(job_num, job, attachments, doc_check_criteria):
     with st.form(key=f"doccheck_{job_num}"):
         client = st.session_state.clients.get(st.session_state.current_tenant)
         st.subheader(f"Job {job_num} Doc Check")
         checks = {}
         # initial_bits = get_job_external_data(job_id, client, st.session_state.app_guid)
-        initial_checks = helpers.get_job_external_data(job_id, client, st.session_state.app_guid)
+        initial_checks = helpers.get_job_external_data(job)
         if not initial_checks.get("qs", False):
             initial_checks['qs'] = helpers.pre_fill_quote_signed_check(attachments.get("pdfs", []))
         if not initial_checks.get("is", False):
@@ -164,12 +164,12 @@ def doc_check_form(job_num, job_id, attachments, doc_check_criteria):
             external_data_payload = {
                 "externalData": {
                     "patchMode": "Replace",
-                    "applicationGuid": st.session_state.app_guid,
+                    "applicationGuid": client.app_guid,
                     "externalData": [{"key": "docchecks", "value": encoded}]
                 }
             }
 
-            patch_url = client.build_url('jpm', 'jobs', resource_id=job_id)
+            patch_url = client.build_url('jpm', 'jobs', resource_id=job['id'])
             try:
                 client.patch(patch_url, json=external_data_payload)
                 st.success("Form submitted successfully")
