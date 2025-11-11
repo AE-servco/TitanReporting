@@ -49,6 +49,32 @@ def sidebar_filters():
     if fetch_jobs_button:
         helpers.fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsucessful, custom_job_id)
 
+def job_nav_buttons(idx):
+    client = st.session_state.clients.get(st.session_state.current_tenant)
+    if idx < 0:
+        idx = 0
+    if idx >= len(st.session_state.jobs):
+        idx = len(st.session_state.jobs) - 1
+    job = st.session_state.jobs[idx]
+    job_id = str(job.get("id"))
+    job_num = str(job.get("jobNumber"))
+
+    # Navigation buttons
+    col_prev, col_next = st.columns([1, 1])
+    with col_prev:
+        if st.button("Previous Job"):
+            if st.session_state.current_index > 0:
+                st.session_state.current_index -= 1
+                helpers.schedule_prefetches(client)
+                # st.rerun()
+    with col_next:
+        if st.button("Next Job"):
+            if st.session_state.current_index < len(st.session_state.jobs) - 1:
+                st.session_state.current_index += 1
+                helpers.schedule_prefetches(client)
+                # st.rerun()
+    return job_id, job_num
+
 def doc_check_form(job_num, job_id, attachments, doc_check_criteria):
     with st.form(key=f"doccheck_{job_num}"):
         client = st.session_state.clients.get(st.session_state.current_tenant)
@@ -103,14 +129,36 @@ def show_images(imgs, num_columns=3):
         step=1,
         width=200
         )
+    client = st.session_state.clients.get(st.session_state.current_tenant)
     # cols = st.columns(num_columns)
     with st.container(horizontal=True):
         for idx_img, (filename, file_date, file_by, data) in enumerate(imgs):
         # with cols[idx_img % 3]:
             if data:
-                st.image(data, caption=f'{file_by} at {file_date}', width=img_size * 100)
+                st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(file_by)} ({file_by}) at {client.format_local(file_date, fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
             else:
                 st.write(filename)
 
+def show_pdfs(pdfs):
+    # Provide a search box to filter document names
+    search_query = st.text_input("Search document names", key=f"search_pdfs")
+    filtered_pdfs = pdfs
+    if search_query:
+        query_lower = search_query.lower()
+        filtered_pdfs = [(fname, file_date, file_by, data) for fname, file_date, file_by, data in pdfs if query_lower in fname.lower()]
+    if filtered_pdfs:
+        for fname, file_date, file_by, data in filtered_pdfs:
+            with st.container(horizontal=True):
+                st.write(fname)
+                # Offer a download button for PDF or other attachment bytes if available
+                if data:
+                    st.download_button(
+                        label=f"Download",
+                        data=data,
+                        file_name=fname,
+                        mime="application/octet-stream"
+                    )
+    else:
+        st.info("No documents match your search.")
 
 

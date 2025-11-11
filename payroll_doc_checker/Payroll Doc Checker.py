@@ -4,6 +4,7 @@ from datetime import date, timedelta
 from typing import Dict, List, Set, Tuple, Optional, Any, Iterable
 import json
 from google.cloud import secretmanager
+import time
 
 import streamlit as st
 import streamlit_authenticator as stauth
@@ -38,30 +39,31 @@ def main() -> None:
     templates.authenticate_app('st_auth_config_plumber_commissions.yaml')
 
     if st.session_state["authentication_status"]:
+        with st.spinner("Initialising..."):
+            doc_check_criteria = helpers.get_doc_check_criteria()
 
-        client = helpers.get_client('foxtrotwhiskey')
-
-        doc_check_criteria = helpers.get_doc_check_criteria()
-
-        # Initialise session state collections
-        if "jobs" not in st.session_state:
-            st.session_state.jobs: List[Dict[str, Any]] = []
-        if "clients" not in st.session_state:
-            st.session_state.clients: Dict[str, Any] = {tenant: helpers.get_client(tenant) for tenant in TENANTS}
-        if "current_tenant" not in st.session_state:
-            st.session_state.current_tenant: str = ""
-        if "current_index" not in st.session_state:
-            st.session_state.current_index: int = 0
-        if "prefetched" not in st.session_state:
-            # Cache of prefetched attachments keyed by job ID.  Each entry
-            # contains a dictionary with ``imgs`` and ``pdfs`` lists.
-            st.session_state.prefetched: Dict[str, Dict[str, List[Tuple[str, Any]]]] = {}
-        if "prefetch_futures" not in st.session_state:
-            st.session_state.prefetch_futures: Dict[str, Future] = {}
-        if "app_guid" not in st.session_state:
-            st.session_state.app_guid = helpers.get_secret('ST_servco_integrations_guid')
-        if "prefill_txt" not in st.session_state:
-            st.session_state.prefill_txt: str = ""
+            # Initialise session state collections
+            if "jobs" not in st.session_state:
+                st.session_state.jobs: List[Dict[str, Any]] = []
+            if "clients" not in st.session_state:
+                st.session_state.clients: Dict[str, Any] = {tenant: helpers.get_client(tenant) for tenant in TENANTS}
+            if "employee_lists" not in st.session_state:
+                st.session_state.employee_lists: Dict[str, Any] = {tenant: helpers.get_all_employee_ids(st.session_state.clients.get(tenant)) for tenant in TENANTS}
+            print(st.session_state.employee_lists)
+            if "current_tenant" not in st.session_state:
+                st.session_state.current_tenant: str = ""
+            if "current_index" not in st.session_state:
+                st.session_state.current_index: int = 0
+            if "prefetched" not in st.session_state:
+                # Cache of prefetched attachments keyed by job ID.  Each entry
+                # contains a dictionary with ``imgs`` and ``pdfs`` lists.
+                st.session_state.prefetched: Dict[str, Dict[str, List[Tuple[str, Any]]]] = {}
+            if "prefetch_futures" not in st.session_state:
+                st.session_state.prefetch_futures: Dict[str, Future] = {}
+            if "app_guid" not in st.session_state:
+                st.session_state.app_guid = helpers.get_secret('ST_servco_integrations_guid')
+            if "prefill_txt" not in st.session_state:
+                st.session_state.prefill_txt: str = ""
 
         templates.sidebar_filters()
 
@@ -73,29 +75,9 @@ def main() -> None:
 
         # Display the current job if available
         if st.session_state.jobs:
+            client = st.session_state.clients.get(st.session_state.current_tenant)
             idx = st.session_state.current_index
-            if idx < 0:
-                idx = 0
-            if idx >= len(st.session_state.jobs):
-                idx = len(st.session_state.jobs) - 1
-            job = st.session_state.jobs[idx]
-            job_id = str(job.get("id"))
-            job_num = str(job.get("jobNumber"))
-
-            # Navigation buttons
-            col_prev, col_next = st.columns([1, 1])
-            with col_prev:
-                if st.button("Previous Job"):
-                    if st.session_state.current_index > 0:
-                        st.session_state.current_index -= 1
-                        helpers.schedule_prefetches(client)
-                        # st.rerun()
-            with col_next:
-                if st.button("Next Job"):
-                    if st.session_state.current_index < len(st.session_state.jobs) - 1:
-                        st.session_state.current_index += 1
-                        helpers.schedule_prefetches(client)
-                        # st.rerun()
+            job_id, job_num = templates.job_nav_buttons(idx)
 
             # Display job details and images
             st.write(f"**Viewing job {job_num} ({idx + 1} of {len(st.session_state.jobs)})**")
@@ -114,6 +96,7 @@ def main() -> None:
             # Show images
             with tab_images:
                 imgs = attachments.get("imgs", [])
+                imgs.sort(key=lambda img: img[1])
                 if imgs:
                     templates.show_images(imgs)
                 else:
@@ -122,27 +105,7 @@ def main() -> None:
             # Show other documents (e.g., PDFs)
             with tab_docs:
                 pdfs = attachments.get("pdfs", [])
-
-                # Provide a search box to filter document names
-                search_query = st.text_input("Search document names", key=f"search_{job_id}")
-                filtered_pdfs = pdfs
-                if search_query:
-                    query_lower = search_query.lower()
-                    filtered_pdfs = [(fname, file_date, file_by, data) for fname, file_date, file_by, data in pdfs if query_lower in fname.lower()]
-                if filtered_pdfs:
-                    for fname, file_date, file_by, data in filtered_pdfs:
-                        with st.container(horizontal=True):
-                            st.write(fname)
-                            # Offer a download button for PDF or other attachment bytes if available
-                            if data:
-                                st.download_button(
-                                    label=f"Download",
-                                    data=data,
-                                    file_name=fname,
-                                    mime="application/octet-stream"
-                                )
-                else:
-                    st.info("No documents match your search.")
+                templates.show_pdfs(pdfs)
             
 
             # Sidebar form for the current job

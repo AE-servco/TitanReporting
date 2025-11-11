@@ -47,8 +47,21 @@ def get_client(tenant) -> ServiceTitanClient:
             return client
     return _create_client(tenant)
 
+def format_employee_list(employee_response):
+    # input can be either technician response or employee response
+    formatted = {}
+    for employee in employee_response:
+        formatted[employee['id']] = employee['name']
+    return formatted
 
-@st.cache_data(show_spinner=False)
+def get_all_employee_ids(client: ServiceTitanClient):
+    tech_url = client.build_url("settings", "technicians")
+    techs = format_employee_list(client.get_all(tech_url))
+    emp_url = client.build_url("settings", "employees")
+    office = format_employee_list(client.get_all(emp_url))
+    return techs | office
+
+# @st.cache_data(show_spinner=False)
 def fetch_jobs(
     start_date: _dt.date,
     end_date: _dt.date,
@@ -232,7 +245,7 @@ def download_attachments_for_job(job_id: str, client: ServiceTitanClient) -> Dic
                 data = fut.result()
             except Exception:
                 data = None
-            result[category].append((filename, file_date, file_by, data))
+            result[category].append((filename, client.from_utc_string(file_date), file_by, data))
     return result
 
 def get_job_external_data(job_id, client, application_guid):
