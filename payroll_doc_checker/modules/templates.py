@@ -88,13 +88,10 @@ def doc_check_form(job_num, job_id, attachments, doc_check_criteria):
             initial_checks['is'] = helpers.pre_fill_invoice_signed_check(attachments.get("pdfs", []))
         if initial_checks['is'] and initial_checks['qs']:
             st.session_state.prefill_txt = "Prefilled: Quote signed and Invoice signed"
-            # print(st.session_state.prefill_txt)
         elif initial_checks['is']:
             st.session_state.prefill_txt = "Prefilled: Invoice signed"
-            # print(st.session_state.prefill_txt)
         elif initial_checks['qs']:
             st.session_state.prefill_txt = "Prefilled: Quote signed"
-            # print(st.session_state.prefill_txt)
         for check_code, check in doc_check_criteria.items():
             default = bool(initial_checks.get(check_code, False))
             checks[check_code] = int(st.checkbox(check, key=f"{job_num}_{check_code}", value=default))
@@ -102,7 +99,6 @@ def doc_check_form(job_num, job_id, attachments, doc_check_criteria):
         submitted = st.form_submit_button("Submit")
         if submitted:
             encoded = json.dumps(checks)
-            print(encoded)
             external_data_payload = {
                 "externalData": {
                     "patchMode": "Replace",
@@ -135,7 +131,7 @@ def show_images(imgs, num_columns=3):
         for idx_img, (filename, file_date, file_by, data) in enumerate(imgs):
         # with cols[idx_img % 3]:
             if data:
-                st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(file_by)} ({file_by}) at {client.format_local(file_date, fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
+                st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(file_by)} at {client.format_local(file_date, fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
             else:
                 st.write(filename)
 

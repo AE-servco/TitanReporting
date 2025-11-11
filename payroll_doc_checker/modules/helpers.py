@@ -52,6 +52,7 @@ def format_employee_list(employee_response):
     formatted = {}
     for employee in employee_response:
         formatted[employee['id']] = employee['name']
+        formatted[employee['userId']] = employee['name']
     return formatted
 
 def get_all_employee_ids(client: ServiceTitanClient):
