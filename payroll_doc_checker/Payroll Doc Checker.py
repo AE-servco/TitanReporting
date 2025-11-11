@@ -76,11 +76,15 @@ def main() -> None:
         if st.session_state.jobs:
             client = st.session_state.clients.get(st.session_state.current_tenant)
             idx = st.session_state.current_index
-            job_id, job_num = templates.job_nav_buttons(idx)
+            job, job_id, job_num = templates.job_nav_buttons(idx)
+            idx = st.session_state.current_index
 
             # Display job details and images
             st.write(f"**Viewing job {job_num} ({idx + 1} of {len(st.session_state.jobs)})**")
+            st.link_button("Go to job on ServiceTitan", f"https://{st.session_state.current_tenant}.eh.go.servicetitan.com/#/Job/Index/{job_id}")
             prefill_holder = st.text("")
+
+            templates.show_job_info(job)
 
             attachments = st.session_state.prefetched.get(job_id)
             if attachments is None:

@@ -62,7 +62,20 @@ def get_all_employee_ids(client: ServiceTitanClient):
     office = format_employee_list(client.get_all(emp_url))
     return techs | office
 
-# @st.cache_data(show_spinner=False)
+# def fetch_first_appointment(job, client: ServiceTitanClient):
+#     appt_id = job.get("firstAppointmentId")
+#     url = client.build_url('jpm', 'appointments', resource_id=appt_id)
+#     print(url)
+    # return client.get(url)
+
+def add_appt_info(job, appt, modifier='first'):
+    job[f'{modifier}_appt_start'] = appt.get("start")
+    job[f'{modifier}_appt_end'] = appt.get("end")
+    job[f'{modifier}_appt_arrival_start'] = appt.get("arrivalWindowStart")
+    job[f'{modifier}_appt_arrival_end'] = appt.get("arrivalWindowEnd")
+    job[f'{modifier}_appt_num'] = appt.get("appointmentNumber")
+    return job
+
 def fetch_jobs(
     start_date: _dt.date,
     end_date: _dt.date,
@@ -78,7 +91,6 @@ def fetch_jobs(
 
     tenant = _client.tenant or "{tenant}"
     base_path = f"jpm/v2/tenant/{tenant}/jobs"
-    page = 1
     jobs: List[Dict[str, Any]] = []
 
     created_after = _client.start_of_day_utc_string(start_date)
@@ -114,7 +126,16 @@ def fetch_jobs(
             }
 
         jobs = _client.get_all(base_path, params=params)
-
+    first_appt_ids = [str(job.get("firstAppointmentId")) for job in jobs]
+    last_appt_ids = [str(job.get("lastAppointmentId")) for job in jobs]
+    appt_url = _client.build_url('jpm', 'appointments')
+    first_appts = _client.get_all_id_filter(appt_url, first_appt_ids)
+    first_appts = {appt.get("jobId"): appt for appt in first_appts}
+    last_appts = _client.get_all_id_filter(appt_url, last_appt_ids)
+    last_appts = {appt.get("jobId"): appt for appt in last_appts}
+    for job in jobs:
+        job = add_appt_info(job, first_appts[job['id']], modifier='first')
+        job = add_appt_info(job, last_appts[job['id']], modifier='last')
     return jobs
 
 

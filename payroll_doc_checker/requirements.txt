@@ -4,7 +4,8 @@ pandas
 datetime
 numpy
 pyyaml
-git+https://github.com/AE-servco/servicepytan.git#egg=servicepytan
+# git+https://github.com/AE-servco/servicepytan.git#egg=servicepytan
+git+https://github.com/AE-servco/ServiceTitanClient
 google-cloud-storage
 google-cloud-secret-manager
 oauth2client
