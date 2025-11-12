@@ -65,6 +65,7 @@ def get_all_employee_ids(client: ServiceTitanClient):
     office = format_employee_list(client.get_all(emp_url))
     return techs | office
 
+@st.cache_data(show_spinner=False)
 def fetch_jobs(
     start_date: _dt.date,
     end_date: _dt.date,
@@ -112,6 +113,7 @@ def fetch_jobs(
         jobs = _client.get_all(base_path, params=params)
     return jobs
 
+@st.cache_data(show_spinner=False)
 def fetch_invoices(
     ids: List,
     _client: ServiceTitanClient,
@@ -126,6 +128,7 @@ def fetch_invoices(
     invoices = _client.get_all_id_filter(base_path, ids=ids)
     return invoices
 
+@st.cache_data(show_spinner=False)
 def fetch_payments(
     invoice_ids: List,
     _client: ServiceTitanClient,
@@ -137,8 +140,12 @@ def fetch_payments(
         invoice_ids = [str(id) for id in invoice_ids]
     base_path = _client.build_url('accounting', 'payments')
 
-    invoices = _client.get_all_id_filter(base_path, ids=invoice_ids, id_filter_name='appliedToInvoiceIds')
-    return invoices
+    params = {
+        'appliedToInvoiceIds': ','.join(invoice_ids)
+    }
+
+    payments = _client.get_all(base_path, params=params)
+    return payments
 
 def get_job_external_data(job_id, client, application_guid):
     url = client.build_url('jpm', 'jobs', resource_id=job_id)
@@ -196,31 +203,49 @@ def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filte
 def get_invoice_ids(job_response):
     return [str(job['invoiceId']) for job in job_response]
 
-def format_job(job, client: ServiceTitanClient):
-    # if 116255355 in job['tagTypeIds'] or job['jobStatus'] == 'Canceled': # Unsuccessful or cancelled 
-    #     return None
+def get_external_data_by_key(data, key='docchecks'):
+    if data is None:
+        return None
+    for d in data:
+        if d['key'] == key:
+            return json.loads(d['value'])
+    return None
+
+def format_external_data_for_xl(exdata):
+    check_map = get_doc_check_criteria()
+    if exdata:
+        return {check_map[k]: v for k,v in exdata.items()}
+    return {v: 0 for k,v in check_map.items()}
+
+def format_job(job, client: ServiceTitanClient, exdata_key='docchecks'):
+    # if 116255355 in job['tagTypeIds'] or 
+    if job['jobStatus'] == 'Canceled': 
+        return None
     formatted = {}
     if job['soldById'] is not None:
-        formatted['Sold By'] = job['soldById']
+        formatted['Sold By'] = str(job['soldById'])
+    elif 116255355 in job['tagTypeIds']:
+        formatted['Sold By'] = 'No data - unsuccessful'
     else:
         url = client.build_url("dispatch", "appointment-assignments")
         appts = client.get_all(url, params={'jobId': job['id']})
         if appts:
             formatted['Sold By'] = ', '.join([str(appt['technicianId']) for appt in appts])
         else:
-            formatted['Sold By'] = -1
-    formatted['Created Date'] = client.st_date_to_local(job['createdOn'], fmt="%m/%d/%Y")
-    formatted['Completion Date'] = client.st_date_to_local(job['completedOn'], fmt="%m/%d/%Y") if job['completedOn'] is not None else "None"
-    formatted['Job #'] = job['jobNumber'] if job['jobNumber'] is not None else "None"
-    formatted['Status'] = job['jobStatus'] if job['jobStatus'] is not None else "None"
-    formatted['invoiceId'] = job['invoiceId'] if job['invoiceId'] is not None else "None"
-    formatted['externalData'] = job['externalData'][0] if job['externalData'] is not None and job['externalData'] != [] else "None"
+            formatted['Sold By'] = '-1'
+    formatted['DATE'] = client.st_date_to_local(job['createdOn'], fmt="%m/%d/%Y")
+    formatted['Completion Date'] = client.st_date_to_local(job['completedOn'], fmt="%m/%d/%Y") if job['completedOn'] is not None else "No data"
+    formatted['JOB #'] = job['jobNumber'] if job['jobNumber'] is not None else -1
+    formatted['JOB STATUS'] = job['jobStatus'] if job['jobStatus'] is not None else "No data"
+    formatted['invoiceId'] = job['invoiceId'] if job['invoiceId'] is not None else -1
+    externalData = get_external_data_by_key(job['externalData'], key=exdata_key)
+    formatted.update(format_external_data_for_xl(externalData))
     return formatted
 
 def format_invoice(invoice):
     formatted = {}
-    formatted['Suburb'] = invoice['customerAddress']['city']
-    formatted['Jobs Subtotal'] = invoice['subTotal']
+    formatted['SUBURB'] = invoice['customerAddress']['city']
+    formatted['AMOUNT EXC. GST'] = invoice['subTotal']
     formatted['Invoice Balance'] = invoice['balance']
     formatted['Payments'] = round(float(invoice['total']) - float(invoice['balance']),2)
     formatted['invoiceId'] = invoice['id']

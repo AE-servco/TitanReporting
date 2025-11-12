@@ -45,8 +45,6 @@ def get_client(tenant) -> ServiceTitanClient:
                 client_secret=get_secret(f"ST_client_secret_{tenant}"), 
                 environment="production"
             )
-            # print(client)
-            # print(client.app_guid)
             return client
     return _create_client(tenant)
 
@@ -64,12 +62,6 @@ def get_all_employee_ids(client: ServiceTitanClient):
     emp_url = client.build_url("settings", "employees")
     office = format_employee_list(client.get_all(emp_url))
     return techs | office
-
-# def fetch_first_appointment(job, client: ServiceTitanClient):
-#     appt_id = job.get("firstAppointmentId")
-#     url = client.build_url('jpm', 'appointments', resource_id=appt_id)
-#     print(url)
-    # return client.get(url)
 
 def add_appt_info(job, appt, modifier='first'):
     job[f'{modifier}_appt_start'] = appt.get("start")
@@ -104,26 +96,28 @@ def fetch_jobs(
         params = {
             "ids": job_id,
         }
+        if _client.app_guid:
+            params["externalDataApplicationGuid"] = _client.app_guid
         try:
             resp = _client.get(base_path, params=params)
         except Exception:
             return []
         if not isinstance(resp, dict):
             return []
-        page_data: Iterable[Dict[str, Any]] = resp.get("data") or []
-        return page_data
-    params = {
-                "createdOnOrAfter": created_after,
-                "createdBefore": created_before,
-            }
-    if _client.app_guid:
-        params["externalDataApplicationGuid"] = _client.app_guid
-    if status_filters:
-        for status in status_filters:
-            params["jobStatus"] = status
-            jobs.extend(_client.get_all(base_path, params=params))
+        jobs: Iterable[Dict[str, Any]] = resp.get("data") or []
     else:
-        jobs = _client.get_all(base_path, params=params)
+        params = {
+                    "createdOnOrAfter": created_after,
+                    "createdBefore": created_before,
+                }
+        if _client.app_guid:
+            params["externalDataApplicationGuid"] = _client.app_guid
+        if status_filters:
+            for status in status_filters:
+                params["jobStatus"] = status
+                jobs.extend(_client.get_all(base_path, params=params))
+        else:
+            jobs = _client.get_all(base_path, params=params)
 
     first_appt_ids = [str(job.get("firstAppointmentId")) for job in jobs]
     last_appt_ids = [str(job.get("lastAppointmentId")) for job in jobs]
@@ -270,7 +264,6 @@ def download_attachments_for_job(job_id: str, client: ServiceTitanClient) -> Dic
     return result
 
 def get_job_external_data(job, key="docchecks"):
-    print(job)
     external_entries = job.get("externalData", [])
     for entry in external_entries:
         if entry.get("key") == key:

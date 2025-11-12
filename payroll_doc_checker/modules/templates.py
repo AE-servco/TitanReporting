@@ -94,7 +94,6 @@ def show_job_info(job):
     }, index=['Appointment #', 'Recorded Start time', 'Recorded End time', 'Arrival window start', 'Arrival window end'])
     st.table(table_df)
 
-
 @st.fragment
 def show_images(imgs, num_columns=3):
     img_size = st.slider(

@@ -49,14 +49,14 @@ def build_commission_workbook(
     week_ending: dt.date,
     commission_by_tech: dict[str, str] | None = None,
 ) -> bytes:
-    # discover all doc-check keys
-    doc_keys = set()
-    for tech_jobs in jobs_by_tech.values():
-        for job in tech_jobs:
-            ext = job.get("externalData") or {}
-            for k in ext:
-                doc_keys.add(k)
-    doc_keys = sorted(doc_keys)
+    # # discover all doc-check keys
+    # doc_keys = set()
+    # for tech_jobs in jobs_by_tech.values():
+    #     for job in tech_jobs:
+    #         ext = job.get("externalData") or {}
+    #         for k in ext:
+    #             doc_keys.add(k)
+    # doc_keys = sorted(doc_keys)
 
     wb = Workbook()
     first_sheet_created = False
@@ -87,23 +87,30 @@ def build_commission_workbook(
         weekday_header_row = 12
         ws.cell(row=weekday_title_row, column=1).value = "WEEKDAY JOBS"
 
+
         headers = [
-            "JOB STATUS",      # 1
-            "DATE",            # 2
-            "JOB #",           # 3
-            "SUBURB",          # 4
-            "AMOUNT EXC. GST", # 5
-            "MATERIALS",       # 6
-            "Merchant Fees",   # 7
-            "NET PROFIT",      # 8
-            "PAID",            # 9
+            "JOB STATUS"
+            "DATE",          
+            "JOB #",    
+            "SUBURB",          
+            "AMOUNT EXC. GST",
+            "MATERIALS", 
+            "Merchant Fees", 
+            "NET PROFIT",    
+            "PAID",            
+            "All Doc Checks",          
+            "BEFORE",            
+            "AFTER",            
+            "RECEIPT",            
+            "DESCRIPTION",            
+            "SIGNED",            
+            "EMAILED",            
+            "DESCRIPTION",            
+            "SIGNED",           
+            "EMAILED",          
+            "5 Star Review",        
+            "NOTES",
         ]
-        headers.extend(doc_keys)
-        headers.append("all_doc_checks_ok")
-        headers.append("DESCRIPTION")
-        headers.append("NOTES")
-        # add weekend-specific helper col at the very end in case row is weekend:
-        headers.append("weekend_commissionable")
 
         for col_idx, h in enumerate(headers, start=1):
             ws.cell(row=weekday_header_row, column=col_idx).value = h
@@ -133,8 +140,8 @@ def build_commission_workbook(
                 r = weekend_row
                 weekend_row += 1
 
-            status = job.get("status") or ""
-            job_id = job.get("id")
+            status = job.get("Status") or ""
+            job_num = job.get("Job #")
             amount_ex_gst = job.get("subtotal") or job.get("total") or 0
             suburb = None
             loc = job.get("location") or {}
@@ -143,7 +150,7 @@ def build_commission_workbook(
 
             ws.cell(row=r, column=1).value = status
             ws.cell(row=r, column=2).value = created
-            ws.cell(row=r, column=3).value = job_id
+            ws.cell(row=r, column=3).value = job_num
             ws.cell(row=r, column=4).value = suburb
             ws.cell(row=r, column=5).value = amount_ex_gst
 

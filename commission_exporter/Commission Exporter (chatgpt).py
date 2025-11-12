@@ -2,6 +2,7 @@
 import streamlit as st
 from streamlit import session_state as ss
 import datetime as dt
+import pandas as pd
 
 from io import BytesIO
 # from your_module import ServiceTitanClient
@@ -31,107 +32,65 @@ if st.button("Fetch and build workbook"):
     # jobs = client.get_jobs_created_between(start_dt, end_dt)
 
     ss.client = helpers.get_client('foxtrotwhiskey')
-    jobs = helpers.fetch_jobs(last_monday, last_sunday, ss.client)
+    with st.spinner("Fetching employee info..."):
+        employee_map = helpers.get_all_employee_ids(ss.client)
 
-    invoice_ids = helpers.get_invoice_ids(jobs)
+    with st.spinner("Fetching jobs..."):
+        jobs = helpers.fetch_jobs(last_monday, last_sunday, ss.client)
 
-    invoices = helpers.fetch_invoices(invoice_ids, ss.client)
-    payments = helpers.fetch_payments(invoice_ids, ss.client)
+    with st.spinner("Fetching invoices..."):
+        invoice_ids = helpers.get_invoice_ids(jobs)
 
-    invoices = [helpers.format_invoice(invoice) for invoice in invoices]
-    # ---- stub ----
-    # jobs = [
-    #     {
-    #         "id": 123,
-    #         "createdOn": start_date.isoformat() + "T00:00:00Z",
-    #         "status": "Completed",
-    #         "subtotal": 5000,
-    #         "location": {"city": "Sydney"},
-    #         "primaryTechnicianId": 1,
-    #         "summary": "Hot water install",
-    #         "customerName": "Smith",
-    #         "externalData": {"photos": "yes", "invoiceEmailed": "yes"},
-    #     },
-    #     {
-    #         "id": 124,
-    #         "createdOn": end_date.isoformat() + "T00:00:00Z",
-    #         "paidOn": end_date.isoformat() + "T00:00:00Z",
-    #         "completedOn": end_date.isoformat() + "T00:00:00Z",
-    #         "status": "Completed",
-    #         "subtotal": 22000,
-    #         "location": {"city": "Sydney"},
-    #         "primaryTechnicianId": 1,
-    #         "summary": "Drain work",
-    #         "customerName": "Jones",
-    #         "externalData": {"photos": "yes", "invoiceEmailed": "yes"},
-    #     },
-    #     {
-    #         "id": 200,
-    #         "createdOn": start_date.isoformat() + "T00:00:00Z",
-    #         "status": "Completed",
-    #         "subtotal": 9000,
-    #         "location": {"city": "Parramatta"},
-    #         "primaryTechnicianId": 2,
-    #         "summary": "AC Service",
-    #         "customerName": "Brown",
-    #         "externalData": {"photos": "yes"},
-    #     },
-    #     {
-    #         "id": 300,
-    #         "createdOn": end_date.isoformat() + "T00:00:00Z",
-    #         "status": "Completed",
-    #         "subtotal": 10000,
-    #         "location": {"city": "Melbourne"},
-    #         "primaryTechnicianId": 2,
-    #         "summary": "AC Service",
-    #         "customerName": "Brown",
-    #         "externalData": {"photos": "yes"},
-    #     },
-    #     {
-    #         "id": 400,
-    #         "createdOn": start_date.isoformat() + "T00:00:00Z",
-    #         "paidOn": start_date.isoformat() + "T00:00:00Z",
-    #         "status": "Completed",
-    #         "subtotal": 9000,
-    #         "location": {"city": "Parramatta"},
-    #         "primaryTechnicianId": 2,
-    #         "summary": "AC Service",
-    #         "customerName": "Brown",
-    #         "externalData": {"photos": "yes"},
-    #     },
-    # ]
-    # # ---- end stub ----
+        invoices = helpers.fetch_invoices(invoice_ids, ss.client)
+    with st.spinner("Fetching payments..."):
+        payments = helpers.fetch_payments(invoice_ids, ss.client)
+    
+    with st.spinner("Formatting data..."):
+        jobs_w_nones = [helpers.format_job(job, ss.client) for job in jobs]
+        jobs = [job for job in jobs_w_nones if job is not None]
+        invoices = [helpers.format_invoice(invoice) for invoice in invoices]
+        payments = helpers.flatten_list([helpers.format_payment(payment) for payment in payments])
 
-    # you probably already have a technician map from ST
-    tech_id_to_name = {
-        1: "Alice Smith",
-        2: "Bob Lee",
-    }
+        jobs_df = pd.DataFrame(jobs)
+        invoices_df = pd.DataFrame(invoices)
+        payments_df = pd.DataFrame(payments)
+        # payments_grouped = payments_df.groupby('invoiceId', as_index=False).agg(','.join)
+        payments_grouped = payments_df.groupby('invoiceId', as_index=False).agg(lambda x: ', '.join(sorted(list(set(x)))))
 
-    # group by tech name
-    jobs_by_tech: dict[str, list[dict]] = {}
-    for j in jobs:
-        tid = j.get("primaryTechnicianId")
-        if not tid:
-            continue
-        name = tech_id_to_name.get(tid, f"Tech {tid}")
-        jobs_by_tech.setdefault(name, []).append(j)
+    with st.spinner("Merging data..."):
+        merged = pd.merge(pd.merge(jobs_df, invoices_df, on='invoiceId', how='left'), payments_grouped, on='invoiceId', how='left')
+        job_records = merged.to_dict(orient='records')
+    st.dataframe(merged)
+    
+    with st.spinner("Separating by technician..."):
+        # group by tech name
+        jobs_by_tech: dict[str, list[dict]] = {}
+        for j in job_records:
+            tid = j.get("Sold By")
+            if not tid:
+                continue
+            if tid == 'No data - unsuccessful' or tid == '-1':
+                name = tid
+            elif ',' in tid:
+                name = f"Tech {tid}"
+            else:
+                name = employee_map.get(int(tid), f"Tech {tid}")
+            jobs_by_tech.setdefault(name, []).append(j)
 
-    # if you have specific schemes per tech, specify here:
-    commission_by_tech = {
-        "Alice Smith": "5-or-10",
-        "Bob Lee": "flat-10-after-threshold",
-    }
+    # # if you have specific schemes per tech, specify here:
+    # commission_by_tech = {
+    #     "Alice Smith": "5-or-10",
+    #     "Bob Lee": "flat-10-after-threshold",
+    # }
 
-    excel_bytes = build_commission_workbook(
-        jobs_by_tech=jobs_by_tech,
-        week_ending=end_date,
-        commission_by_tech=commission_by_tech,
-    )
+    # excel_bytes = build_commission_workbook(
+    #     jobs_by_tech=jobs_by_tech,
+    #     week_ending=end_date,
+    # )
 
-    st.download_button(
-        "Download Excel (all technicians)",
-        data=excel_bytes,
-        file_name=f"commissions_{start_date}_{end_date}.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
+    # st.download_button(
+    #     "Download Excel (all technicians)",
+    #     data=excel_bytes,
+    #     file_name=f"commissions_{start_date}_{end_date}.xlsx",
+    #     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    # )
