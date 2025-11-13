@@ -3,7 +3,8 @@ import re
 from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
-from openpyxl.styles import Border, Side, PatternFill
+from openpyxl.styles import Border, Side, PatternFill, Font
+from openpyxl.formatting.rule import CellIsRule
 
 def build_workbook(
     jobs_by_tech: dict[str, list[dict]],
@@ -22,12 +23,17 @@ def build_workbook(
         'wkend_unsucessful': 'WEEKEND UNSUCCESSFUL JOBS'
     }
 
+
+    # =========================== STYLING ===========================
+
     thin_border = Side(style='thin', color='000000') # Black thin border
     med_border = Side(style='medium', color='000000') # Black medium border
     thick_border = Side(style='thick', color='000000') # Black thick border
     double_border = Side(style='double', color='000000')
 
     yellow_fill = PatternFill(patternType='solid', fgColor='FFFF00')
+
+    font_red = Font(color='FF0000')
 
     cell_border_full = Border(top=thin_border, bottom=thin_border, right=thin_border, left=thin_border)
     border_double_bottom = Border(bottom=double_border)
@@ -42,6 +48,8 @@ def build_workbook(
         'bottom': Border(bottom=med_border),
         'top': Border(top=med_border),
     }
+
+    # =========================== WORKBOOK ===========================
 
     wb = Workbook()
     
@@ -110,6 +118,7 @@ def build_workbook(
             ws.cell(curr_row,1,cat_text)
             curr_row += 1
             cat_row_start = curr_row
+
             if cat == 'prev':
                 for row in ws[f'A{curr_row-1}:X{curr_row+7}']:
                     for cell in row:
@@ -120,6 +129,8 @@ def build_workbook(
 
             else:
                 jobs = job_cats.get(cat, [])
+                if not jobs:
+                    curr_row += 1
                 job_count = 1
                 for job in jobs:
                     ws.cell(curr_row, 1, job_count)
@@ -146,7 +157,17 @@ def build_workbook(
                     curr_row += 1
                     job_count += 1
             
-            # TODO: Add totals row
+            # Doc check formatting 0s to red
+            dc_start_col_letter = get_column_letter(10)
+            dc_end_col_letter = get_column_letter(20)
+            # dc_range = "A1:A100"
+            dc_range = f'{dc_start_col_letter}{cat_row_start}:{dc_end_col_letter}{curr_row-1}'
+            ws.conditional_formatting.add(
+                dc_range, 
+                CellIsRule(operator="equal", formula=["0"], font=font_red)
+            )
+
+            # totals row
             amt_col = 5
             amt_letter = get_column_letter(amt_col)
             materials_col = 6
