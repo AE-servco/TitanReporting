@@ -6,7 +6,7 @@ import pandas as pd
 
 from io import BytesIO
 # from your_module import ServiceTitanClient
-from modules.excel_builder import build_commission_workbook 
+from modules.excel_builder import build_workbook 
 import modules.helpers as helpers
 import modules.templates as templates
 
@@ -21,15 +21,6 @@ start_date = st.date_input("Start date", value=last_monday)
 end_date = st.date_input("End date", value=last_sunday)
 
 if st.button("Fetch and build workbook"):
-    # 1) fetch jobs from ST (replace this with your real client)
-    # client = ...
-    # jobs = client.get_jobs_created_between(...)
-    # for demo let's say jobs is a list of dicts like in your API
-
-    # you will have real UTC datetimes here
-    # start_dt = dt.datetime.combine(start_date, dt.time.min).astimezone(dt.timezone.utc)
-    # end_dt = dt.datetime.combine(end_date, dt.time.max).astimezone(dt.timezone.utc)
-    # jobs = client.get_jobs_created_between(start_dt, end_dt)
 
     ss.client = helpers.get_client('foxtrotwhiskey')
     with st.spinner("Fetching employee info..."):
@@ -60,37 +51,40 @@ if st.button("Fetch and build workbook"):
     with st.spinner("Merging data..."):
         merged = pd.merge(pd.merge(jobs_df, invoices_df, on='invoiceId', how='left'), payments_grouped, on='invoiceId', how='left')
         job_records = merged.to_dict(orient='records')
-    st.dataframe(merged)
+    # st.dataframe(merged)
     
     with st.spinner("Separating by technician..."):
         # group by tech name
         jobs_by_tech: dict[str, list[dict]] = {}
         for j in job_records:
-            tid = j.get("Sold By")
+            tid = j.get("sold_by")
             if not tid:
                 continue
             if tid == 'No data - unsuccessful' or tid == '-1':
                 name = tid
             elif ',' in tid:
-                name = f"Tech {tid}"
+                # name = "test"
+                name = f"{tid}"
             else:
-                name = employee_map.get(int(tid), f"Tech {tid}")
-            jobs_by_tech.setdefault(name, []).append(j)
+                name = employee_map.get(int(tid), f"{tid}")
+            j_category = helpers.categorise_job(j)
+            jobs_by_tech.setdefault(name, dict()).setdefault(j_category, []).append(j)
 
-    # # if you have specific schemes per tech, specify here:
-    # commission_by_tech = {
-    #     "Alice Smith": "5-or-10",
-    #     "Bob Lee": "flat-10-after-threshold",
+    st.write(jobs_by_tech)
+
+    # jobs_by_tech = {
+    #     'Test tech 1': [{}, {}, {}],
+    #     'Test tech 2': [{}, {}, {}]
     # }
 
-    # excel_bytes = build_commission_workbook(
-    #     jobs_by_tech=jobs_by_tech,
-    #     week_ending=end_date,
-    # )
+    excel_bytes = build_workbook(
+        jobs_by_tech=jobs_by_tech,
+        week_ending=end_date,
+    )
 
-    # st.download_button(
-    #     "Download Excel (all technicians)",
-    #     data=excel_bytes,
-    #     file_name=f"commissions_{start_date}_{end_date}.xlsx",
-    #     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    # )
+    st.download_button(
+        "Download Excel (all technicians)",
+        data=excel_bytes,
+        file_name=f"commissions_{start_date}_{end_date}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )

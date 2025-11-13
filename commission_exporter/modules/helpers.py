@@ -166,7 +166,7 @@ def get_doc_check_criteria():
         'pa': 'After Photo',
         'pr': 'Receipt Photo',
         'qd': 'Quote Description',
-        'qs': 'Quote Signed',
+        'qs': 'Quote Description',
         'qe': 'Quote Emailed',
         'id': 'Invoice Description',
         'is': 'Invoice Signed',
@@ -223,31 +223,33 @@ def format_job(job, client: ServiceTitanClient, exdata_key='docchecks'):
         return None
     formatted = {}
     if job['soldById'] is not None:
-        formatted['Sold By'] = str(job['soldById'])
+        formatted['sold_by'] = str(job['soldById'])
     elif 116255355 in job['tagTypeIds']:
-        formatted['Sold By'] = 'No data - unsuccessful'
+        formatted['sold_by'] = 'No data - unsuccessful'
     else:
         url = client.build_url("dispatch", "appointment-assignments")
         appts = client.get_all(url, params={'jobId': job['id']})
         if appts:
-            formatted['Sold By'] = ', '.join([str(appt['technicianId']) for appt in appts])
+            formatted['sold_by'] = ', '.join([str(appt['technicianId']) for appt in appts])
         else:
-            formatted['Sold By'] = '-1'
-    formatted['DATE'] = client.st_date_to_local(job['createdOn'], fmt="%m/%d/%Y")
-    formatted['Completion Date'] = client.st_date_to_local(job['completedOn'], fmt="%m/%d/%Y") if job['completedOn'] is not None else "No data"
-    formatted['JOB #'] = job['jobNumber'] if job['jobNumber'] is not None else -1
-    formatted['JOB STATUS'] = job['jobStatus'] if job['jobStatus'] is not None else "No data"
+            formatted['sold_by'] = '-1'
+    formatted['created_str'] = client.st_date_to_local(job['createdOn'], fmt="%m/%d/%Y")
+    formatted['created_dt'] = client.from_utc(job['createdOn'])
+    formatted['completed_str'] = client.st_date_to_local(job['completedOn'], fmt="%m/%d/%Y") if job['completedOn'] is not None else "No data"
+    formatted['num'] = job['jobNumber'] if job['jobNumber'] is not None else -1
+    formatted['status'] = job['jobStatus'] if job['jobStatus'] is not None else "No data"
     formatted['invoiceId'] = job['invoiceId'] if job['invoiceId'] is not None else -1
     externalData = get_external_data_by_key(job['externalData'], key=exdata_key)
     formatted.update(format_external_data_for_xl(externalData))
+    formatted['unsuccessful'] = 116255355 in job['tagTypeIds']
     return formatted
 
 def format_invoice(invoice):
     formatted = {}
-    formatted['SUBURB'] = invoice['customerAddress']['city']
-    formatted['AMOUNT EXC. GST'] = invoice['subTotal']
-    formatted['Invoice Balance'] = invoice['balance']
-    formatted['Payments'] = round(float(invoice['total']) - float(invoice['balance']),2)
+    formatted['suburb'] = invoice['customerAddress']['city']
+    formatted['subtotal'] = float(invoice['subTotal'])
+    formatted['balance'] = float(invoice['balance'])
+    formatted['amt_paid'] = round(float(invoice['total']) - float(invoice['balance']),2)
     formatted['invoiceId'] = invoice['id']
     return formatted
 
@@ -256,6 +258,45 @@ def format_payment(payment):
     for invoice in payment['appliedTo']:
         formatted = {}
         formatted['invoiceId'] = invoice['appliedTo']
-        formatted['Payment Types'] = payment['type']
+        formatted['payment_types'] = payment['type']
         output.append(formatted)
     return output
+
+def categorise_job(job):
+    status = job['status']
+    day = job['created_dt'].weekday()
+    balance = float(job['balance'])
+    if day <5: # weekdays
+        if status == 'Completed' and balance == 0:
+            return 'wk_complete_paid'
+        if status == 'Completed' and balance != 0:
+            return 'wk_complete_unpaid'
+        if status == 'Hold':
+            return 'wk_wo'
+            # return 'wk_hold'
+        if status == 'In Progress':
+            return 'wk_wo'
+            # return 'wk_progress'
+        if status == 'Scheduled':
+            return 'wk_wo'
+            # return 'wk_scheduled'
+        if job['unsuccessful']:
+            return 'wk_unsucessful'
+        return 'wk_uncategorised'
+    if day >=5: # weekdays
+        if status == 'Completed' and balance == 0:
+            return 'wkend_complete_paid'
+        if status == 'Completed' and balance != 0:
+            return 'wkend_complete_unpaid'
+        if status == 'Hold':
+            return 'wkend_wo'
+            # return 'wkend_hold'
+        if status == 'In Progress':
+            return 'wkend_wo'
+            # return 'wkend_progress'
+        if status == 'Scheduled':
+            return 'wkend_wo'
+            # return 'wkend_scheduled'
+        if job['unsuccessful']:
+            return 'wkend_unsucessful'
+        return 'wkend_uncategorised'
