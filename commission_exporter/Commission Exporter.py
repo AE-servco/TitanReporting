@@ -70,7 +70,7 @@ if st.button("Fetch and build workbook"):
             j_category = helpers.categorise_job(j)
             jobs_by_tech.setdefault(name, dict()).setdefault(j_category, []).append(j)
 
-    st.write(jobs_by_tech)
+    # st.write(jobs_by_tech)
 
     # jobs_by_tech = {
     #     'Test tech 1': [{}, {}, {}],
