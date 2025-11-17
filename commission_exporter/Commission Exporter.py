@@ -63,7 +63,7 @@ if ss["authentication_status"]:
         with st.spinner("Merging data..."):
             merged = pd.merge(pd.merge(jobs_df, invoices_df, on='invoiceId', how='left'), payments_grouped, on='invoiceId', how='left')
             job_records = merged.to_dict(orient='records')
-        st.dataframe(merged)
+        # st.dataframe(merged)
         
         with st.spinner("Separating by technician..."):
             # group by tech name
