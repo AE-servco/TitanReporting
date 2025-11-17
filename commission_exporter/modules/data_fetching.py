@@ -89,18 +89,6 @@ def fetch_payments(
     return payments
 
 
-# shouldnt need this as it now just comes in with jobs
-# def get_job_external_data(job_id, client, application_guid):
-#     url = client.build_url('jpm', 'jobs', resource_id=job_id)
-#     params = {"externalDataApplicationGuid": application_guid}
-#     job_data = client.get(url, params=params)
-#     external_entries = job_data.get("externalData", [])
-#     for entry in external_entries:
-#         if entry.get("key") == "docchecks":
-#             try:
-#                 return json.loads(entry["value"])
-#             except Exception:
-#                 return {}
-#     return {}
-
-
+def fetch_tag_types(client: ServiceTitanClient):
+    url = client.build_url('settings', 'tag-types')
+    return client.get_all(url)

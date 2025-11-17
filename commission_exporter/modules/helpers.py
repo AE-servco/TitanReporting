@@ -3,7 +3,6 @@ from __future__ import annotations
 import datetime as _dt
 from typing import Dict, List, Set, Tuple, Optional, Any, Iterable
 import json
-from google.cloud import secretmanager
 
 import streamlit as st
 import streamlit_authenticator as stauth
@@ -14,40 +13,21 @@ import modules.google_store as gs
 
 import modules.data_formatting as format
 import modules.data_fetching as fetching
+import modules.lookup_tables as lookup
 
-IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"}
 
 def flatten_list(nested_list):
     return [item for sublist in nested_list for item in sublist]
 
-def get_secret(secret_id, project_id="servco1", version_id="latest"):
-    client = secretmanager.SecretManagerServiceClient()
-    name = f"projects/{project_id}/secrets/{secret_id}/versions/{version_id}"
-    response = client.access_secret_version(request={"name": name})
-    secret_payload = response.payload.data.decode("UTF-8")
-    return secret_payload
-
-def state_codes():
-    codes = {
-        'NSW_old': 'alphabravo',
-        'VIC_old': 'victortango',
-        'QLD_old': 'echozulu',
-        'NSW': 'foxtrotwhiskey',
-        'WA': 'sierradelta',
-        'QLD': 'bravogolf',
-    }
-    return codes
-
 def get_client(tenant) -> ServiceTitanClient:
     @st.cache_resource(show_spinner=False)
     def _create_client(tenant) -> ServiceTitanClient:
-            # state_code = state_codes()[state]
             client = ServiceTitanClient(
-                app_key=get_secret("ST_app_key_tester"), 
-                app_guid=get_secret("ST_servco_integrations_guid"), 
-                tenant=get_secret(f"ST_tenant_id_{tenant}"), 
-                client_id=get_secret(f"ST_client_id_{tenant}"), 
-                client_secret=get_secret(f"ST_client_secret_{tenant}"), 
+                app_key=gs.get_secret("ST_app_key_tester"), 
+                app_guid=gs.get_secret("ST_servco_integrations_guid"), 
+                tenant=gs.get_secret(f"ST_tenant_id_{tenant}"), 
+                client_id=gs.get_secret(f"ST_client_id_{tenant}"), 
+                client_secret=gs.get_secret(f"ST_client_secret_{tenant}"), 
                 environment="production"
             )
             return client
@@ -105,27 +85,8 @@ def get_sales_codes(roles_reponse):
     return sales_codes
 
 
-def get_doc_check_criteria():
-    checks = {
-        'pb': 'Before Photo',
-        'pa': 'After Photo',
-        'pr': 'Receipt Photo',
-        'qd': 'Quote Description',
-        'qs': 'Quote Description',
-        'qe': 'Quote Emailed',
-        'id': 'Invoice Description',
-        'is': 'Invoice Signed',
-        'ie': 'Invoice Emailed',
-        '5s': '5 Star Review',
-    }
-    return checks
-
-def get_tag_types(client: ServiceTitanClient):
-    url = client.build_url('settings', 'tag-types')
-    return client.get_all(url)
-
 def filter_out_unsuccessful_jobs(jobs, client: ServiceTitanClient):
-    unsuccessful_tags = [tag.get("id") for tag in get_tag_types(client) if "Unsuccessful" in tag.get("name")]
+    unsuccessful_tags = [tag.get("id") for tag in fetching.fetch_tag_types(client) if "Unsuccessful" in tag.get("name")]
     return [job for job in jobs if unsuccessful_tags[0] not in job.get("tagTypeIds")]
 
 
@@ -144,10 +105,6 @@ def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filte
         st.session_state.current_index = 0
         st.session_state.prefetched = {}
         st.session_state.prefetch_futures = {}
-
-def get_invoice_ids(job_response):
-    return [str(job['invoiceId']) for job in job_response]
-
 
 def categorise_job(job):
     status = job['status']

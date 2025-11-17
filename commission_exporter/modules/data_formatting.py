@@ -4,6 +4,7 @@ from typing import Dict, List, Set, Tuple, Optional, Any, Iterable
 import json
 
 from servicetitan_api_client import ServiceTitanClient
+import modules.lookup_tables as lookup
 
 def format_job(job, client: ServiceTitanClient, tech_sales: list, exdata_key='docchecks'):
     # if 116255355 in job['tagTypeIds'] or 
@@ -52,10 +53,13 @@ def get_external_data_by_key(data, key='docchecks'):
     return None
 
 def format_external_data_for_xl(exdata):
-    check_map = get_doc_check_criteria()
+    check_map = lookup.get_doc_check_criteria()
     if exdata:
         return {check_map[k]: v for k,v in exdata.items()}
     return {v: 0 for k,v in check_map.items()}
+
+def get_invoice_ids(job_response):
+    return [str(job['invoiceId']) for job in job_response]
 
 def format_invoice(invoice):
     formatted = {}

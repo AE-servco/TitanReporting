@@ -42,7 +42,7 @@ if ss["authentication_status"]:
             jobs = fetching.fetch_jobs(start_date, end_date, ss.client)
 
         with st.spinner("Fetching invoices..."):
-            invoice_ids = fetching.get_invoice_ids(jobs)
+            invoice_ids = format.get_invoice_ids(jobs)
 
             invoices = fetching.fetch_invoices(invoice_ids, ss.client)
         with st.spinner("Fetching payments..."):
