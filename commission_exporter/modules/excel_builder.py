@@ -171,9 +171,9 @@ def build_workbook(
                         for p in payments:
                             p_types[p[:2]].append(p[2:])
                         if p_types['EF'] or p_types['Cr']:
-                            ws.cell(curr_row, 22, f'={'+'.join(p_types['EF'] + p_types['Cr'])}')
+                            ws.cell(curr_row, 22, f"={'+'.join(p_types['EF'] + p_types['Cr'])}")
                         if p_types['Ca']:
-                            ws.cell(curr_row, 23, f'={'+'.join(p_types['Ca'])}')
+                            ws.cell(curr_row, 23, f"={'+'.join(p_types['Ca'])}")
                     curr_row += 1
                     job_count += 1
             
