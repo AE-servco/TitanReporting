@@ -44,7 +44,7 @@ if ss["authentication_status"]:
 
             invoices = helpers.fetch_invoices(invoice_ids, ss.client)
         with st.spinner("Fetching payments..."):
-            payments = helpers.fetch_payments(invoice_ids, ss.client)
+            payments = helpers.fetch_payments(invoice_ids, ss.client)#
         
         with st.spinner("Formatting data..."):
             jobs_w_nones = [helpers.format_job(job, ss.client, tech_sales) for job in jobs]
