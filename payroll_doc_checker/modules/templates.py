@@ -77,7 +77,7 @@ def job_nav_buttons(idx):
 
 def show_job_info(job):
     client = st.session_state.clients.get(st.session_state.current_tenant)
-
+    # st.write(job)
     job_amt = job['total']
     # st.write(job)
     st.write(f"Job total: ${job_amt}")
