@@ -12,6 +12,9 @@ from concurrent.futures import ThreadPoolExecutor, Future, as_completed
 from servicetitan_api_client import ServiceTitanClient
 import modules.google_store as gs
 
+import modules.data_formatting as format
+import modules.data_fetching as fetching
+
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"}
 
 def flatten_list(nested_list):
@@ -84,6 +87,16 @@ def get_client(tenant) -> ServiceTitanClient:
 #             formatted[employee['userId']] = {'name': employee['name'], 'sales': False}
 #     return formatted, sales
 
+
+def get_all_employee_ids(client: ServiceTitanClient):
+    roles_url = client.build_url("settings", "user-roles")
+    sales_codes = get_sales_codes(client.get_all(roles_url))
+    tech_url = client.build_url("settings", "technicians")
+    techs, techs_sales = format.format_employee_list(client.get_all(tech_url), sales_codes)
+    emp_url = client.build_url("settings", "employees")
+    office, _ = format.format_employee_list(client.get_all(emp_url))
+    return techs | office, techs_sales
+
 def get_sales_codes(roles_reponse):
     sales_codes = set()
     for role in roles_reponse:
@@ -91,130 +104,6 @@ def get_sales_codes(roles_reponse):
             sales_codes.add(role['id'])
     return sales_codes
 
-def format_employee_list(employee_response, sales_codes=None):
-    # input can be either technician response or employee response
-
-    def test_sales(emp_roles, sales_roles):
-        return bool(set(emp_roles) & set(sales_roles))
-
-    formatted = {}
-    sales = set()
-    for employee in employee_response:
-        if sales_codes:
-            test = test_sales(employee['roleIds'], sales_codes)
-            formatted[employee['id']] = {'name': employee['name'], 'sales': test}
-            formatted[employee['userId']] = {'name': employee['name'], 'sales': test}
-            if test:
-                sales.add(employee['id'])
-                sales.add(employee['userId'])
-        else:   
-            formatted[employee['id']] = {'name': employee['name'], 'sales': False}
-            formatted[employee['userId']] = {'name': employee['name'], 'sales': False}
-    return formatted, sales
-
-def get_all_employee_ids(client: ServiceTitanClient):
-    roles_url = client.build_url("settings", "user-roles")
-    sales_codes = get_sales_codes(client.get_all(roles_url))
-    tech_url = client.build_url("settings", "technicians")
-    techs, techs_sales = format_employee_list(client.get_all(tech_url), sales_codes)
-    emp_url = client.build_url("settings", "employees")
-    office, _ = format_employee_list(client.get_all(emp_url))
-    return techs | office, techs_sales
-
-# @st.cache_data(show_spinner=False)
-def fetch_jobs(
-    start_date: _dt.date,
-    end_date: _dt.date,
-    _client: ServiceTitanClient,
-    job_id: str = None,
-    status_filters: List = [],
-) -> List[Dict[str, Any]]:
-    """
-    Retrieve all jobs created between `start_date` and `end_date`,
-    converting the local date boundaries into UTC timestamps. If
-    job_num specified, just fetches that job.
-    """
-
-    tenant = _client.tenant or "{tenant}"
-    base_path = f"jpm/v2/tenant/{tenant}/jobs"
-    jobs: List[Dict[str, Any]] = []
-
-    created_after = _client.start_of_day_utc_string(start_date)
-    created_before = _client.end_of_day_utc_string(end_date)
-
-    # If job_id specified, only return that job
-    if job_id:
-        params = {
-            "ids": job_id,
-        }
-        try:
-            resp = _client.get(base_path, params=params)
-        except Exception:
-            return []
-        if not isinstance(resp, dict):
-            return []
-        page_data: Iterable[Dict[str, Any]] = resp.get("data") or []
-        return page_data
-    params = {
-                "createdOnOrAfter": created_after,
-                "createdBefore": created_before,
-            }
-    if _client.app_guid:
-        params["externalDataApplicationGuid"] = _client.app_guid
-    if status_filters:
-        for status in status_filters:
-            params["jobStatus"] = status
-            jobs.extend(_client.get_all(base_path, params=params))
-    else:
-        jobs = _client.get_all(base_path, params=params)
-    return jobs
-
-# @st.cache_data(show_spinner=False)
-def fetch_invoices(
-    ids: List,
-    _client: ServiceTitanClient,
-) -> List[Dict[str, Any]]:
-    """
-    Retrieve all invoices given a list of ids
-    """
-    if type(ids[0]) != str:
-        ids = [str(id) for id in ids]
-    base_path = _client.build_url('accounting', 'invoices')
-
-    invoices = _client.get_all_id_filter(base_path, ids=ids)
-    return invoices
-
-# @st.cache_data(show_spinner=False)
-def fetch_payments(
-    invoice_ids: List,
-    _client: ServiceTitanClient,
-) -> List[Dict[str, Any]]:
-    """
-    Retrieve all invoices given a list of ids
-    """
-    if type(invoice_ids[0]) != str:
-        invoice_ids = [str(id) for id in invoice_ids]
-    base_path = _client.build_url('accounting', 'payments')
-
-    params = {
-        'appliedToInvoiceIds': ','.join(invoice_ids)
-    }
-
-    payments = _client.get_all(base_path, params=params)
-    return payments
-
-def get_job_external_data(job_id, client, application_guid):
-    url = client.build_url('jpm', 'jobs', resource_id=job_id)
-    params = {"externalDataApplicationGuid": application_guid}
-    job_data = client.get(url, params=params)
-    external_entries = job_data.get("externalData", [])
-    for entry in external_entries:
-        if entry.get("key") == "docchecks":
-            try:
-                return json.loads(entry["value"])
-            except Exception:
-                return {}
-    return {}
 
 def get_doc_check_criteria():
     checks = {
@@ -246,9 +135,9 @@ def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filte
         st.session_state.current_tenant = tenant_filter
         client = st.session_state.clients.get(tenant_filter)
         if custom_job_id:
-            jobs = fetch_jobs(start_date, end_date, client, custom_job_id)
+            jobs = fetching.fetch_jobs(start_date, end_date, client, custom_job_id)
         else:
-            jobs = fetch_jobs(start_date, end_date, client, status_filters=job_status_filter)
+            jobs = fetching.fetch_jobs(start_date, end_date, client, status_filters=job_status_filter)
             if filter_unsucessful:
                 jobs = filter_out_unsuccessful_jobs(jobs, client)
         st.session_state.jobs = jobs
@@ -259,76 +148,6 @@ def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filte
 def get_invoice_ids(job_response):
     return [str(job['invoiceId']) for job in job_response]
 
-def get_external_data_by_key(data, key='docchecks'):
-    if data is None:
-        return None
-    for d in data:
-        if d['key'] == key:
-            return json.loads(d['value'])
-    return None
-
-def format_external_data_for_xl(exdata):
-    check_map = get_doc_check_criteria()
-    if exdata:
-        return {check_map[k]: v for k,v in exdata.items()}
-    return {v: 0 for k,v in check_map.items()}
-
-def format_job(job, client: ServiceTitanClient, tech_sales: list, exdata_key='docchecks'):
-    # if 116255355 in job['tagTypeIds'] or 
-    if job['jobStatus'] == 'Canceled': 
-        return None
-    formatted = {}
-    if job['soldById'] is not None:
-        formatted['sold_by'] = str(job['soldById'])
-    elif 116255355 in job['tagTypeIds']:
-        formatted['sold_by'] = 'No data - unsuccessful'
-    else:
-        url = client.build_url("dispatch", "appointment-assignments")
-        appts = client.get_all(url, params={'jobId': job['id']})
-        if appts:
-            # appt_techs = [appt['technicianId'] for appt in appts]
-            sales_techs_on_job = set()
-            for appt in appts:
-                if appt['technicianId'] in tech_sales:
-                    sales_techs_on_job.add(appt['technicianId'])
-            if len(sales_techs_on_job) == 0:
-                formatted['sold_by'] = 'No Sales Plumber'
-            elif len(sales_techs_on_job) == 1:
-                formatted['sold_by'] = str(list(sales_techs_on_job)[0])
-            else:
-                formatted['sold_by'] = ', '.join([str(tech) for tech in list(sales_techs_on_job).sort()])
-        else:
-            formatted['sold_by'] = '-1'
-
-    formatted['created_str'] = client.st_date_to_local(job['createdOn'], fmt="%d/%m/%Y")
-    formatted['created_dt'] = client.from_utc(job['createdOn'])
-    formatted['completed_str'] = client.st_date_to_local(job['completedOn'], fmt="%m/%d/%Y") if job['completedOn'] is not None else "No data"
-    formatted['num'] = job['jobNumber'] if job['jobNumber'] is not None else -1
-    formatted['status'] = job['jobStatus'] if job['jobStatus'] is not None else "No data"
-    formatted['invoiceId'] = job['invoiceId'] if job['invoiceId'] is not None else -1
-    externalData = get_external_data_by_key(job['externalData'], key=exdata_key)
-    formatted.update(format_external_data_for_xl(externalData))
-    formatted['unsuccessful'] = 116255355 in job['tagTypeIds']
-    return formatted
-
-def format_invoice(invoice):
-    formatted = {}
-    formatted['suburb'] = invoice['customerAddress']['city']
-    formatted['subtotal'] = float(invoice['subTotal'])
-    formatted['balance'] = float(invoice['balance'])
-    formatted['amt_paid'] = round(float(invoice['total']) - float(invoice['balance']),2)
-    formatted['invoiceId'] = invoice['id']
-    return formatted
-
-def format_payment(payment):
-    output = []
-    for invoice in payment['appliedTo']:
-        formatted = {}
-        formatted['invoiceId'] = invoice['appliedTo']
-        formatted['payment_types'] = payment['type']
-        formatted['payment_amt'] = payment['type'][:2] + invoice.get('appliedAmount', '0')
-        output.append(formatted)
-    return output
 
 def categorise_job(job):
     status = job['status']

@@ -9,6 +9,8 @@ import modules.google_store as gs
 from modules.excel_builder import build_workbook 
 import modules.helpers as helpers
 import modules.templates as templates
+import modules.data_formatting as format
+import modules.data_fetching as fetching
 
 st.title("Weekly Commission Sheets (per technician)")
 
@@ -37,20 +39,20 @@ if ss["authentication_status"]:
             employee_map, tech_sales = helpers.get_all_employee_ids(ss.client)
 
         with st.spinner("Fetching jobs..."):
-            jobs = helpers.fetch_jobs(start_date, end_date, ss.client)
+            jobs = fetching.fetch_jobs(start_date, end_date, ss.client)
 
         with st.spinner("Fetching invoices..."):
-            invoice_ids = helpers.get_invoice_ids(jobs)
+            invoice_ids = fetching.get_invoice_ids(jobs)
 
-            invoices = helpers.fetch_invoices(invoice_ids, ss.client)
+            invoices = fetching.fetch_invoices(invoice_ids, ss.client)
         with st.spinner("Fetching payments..."):
-            payments = helpers.fetch_payments(invoice_ids, ss.client)
+            payments = fetching.fetch_payments(invoice_ids, ss.client)
         
         with st.spinner("Formatting data..."):
-            jobs_w_nones = [helpers.format_job(job, ss.client, tech_sales) for job in jobs]
+            jobs_w_nones = [format.format_job(job, ss.client, tech_sales) for job in jobs]
             jobs = [job for job in jobs_w_nones if job is not None]
-            invoices = [helpers.format_invoice(invoice) for invoice in invoices]
-            payments = helpers.flatten_list([helpers.format_payment(payment) for payment in payments])
+            invoices = [format.format_invoice(invoice) for invoice in invoices]
+            payments = helpers.flatten_list([format.format_payment(payment) for payment in payments])
 
             jobs_df = pd.DataFrame(jobs)
             invoices_df = pd.DataFrame(invoices)
