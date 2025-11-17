@@ -50,22 +50,44 @@ def get_client(tenant) -> ServiceTitanClient:
             return client
     return _create_client(tenant)
 
-def format_employee_list(employee_response):
+def get_sales_codes(roles_reponse):
+    sales_codes = set()
+    for role in roles_reponse:
+        if role['name'] == 'Technician - Sales':
+            sales_codes.add(role['id'])
+    return sales_codes
+
+def format_employee_list(employee_response, sales_codes=None):
     # input can be either technician response or employee response
+
+    def test_sales(emp_roles, sales_roles):
+        return bool(set(emp_roles) & set(sales_roles))
+
     formatted = {}
+    sales = set()
     for employee in employee_response:
-        formatted[employee['id']] = employee['name']
-        formatted[employee['userId']] = employee['name']
-    return formatted
+        if sales_codes:
+            test = test_sales(employee['roleIds'], sales_codes)
+            formatted[employee['id']] = {'name': employee['name'], 'sales': test}
+            formatted[employee['userId']] = {'name': employee['name'], 'sales': test}
+            if test:
+                sales.add(employee['id'])
+                sales.add(employee['userId'])
+        else:   
+            formatted[employee['id']] = {'name': employee['name'], 'sales': False}
+            formatted[employee['userId']] = {'name': employee['name'], 'sales': False}
+    return formatted, sales
 
 def get_all_employee_ids(client: ServiceTitanClient):
+    roles_url = client.build_url("settings", "user-roles")
+    sales_codes = get_sales_codes(client.get_all(roles_url))
     tech_url = client.build_url("settings", "technicians")
-    techs = format_employee_list(client.get_all(tech_url))
+    techs, techs_sales = format_employee_list(client.get_all(tech_url), sales_codes)
     emp_url = client.build_url("settings", "employees")
-    office = format_employee_list(client.get_all(emp_url))
-    return techs | office
+    office, _ = format_employee_list(client.get_all(emp_url))
+    return techs | office, techs_sales
 
-@st.cache_data(show_spinner=False)
+# @st.cache_data(show_spinner=False)
 def fetch_jobs(
     start_date: _dt.date,
     end_date: _dt.date,
@@ -113,7 +135,7 @@ def fetch_jobs(
         jobs = _client.get_all(base_path, params=params)
     return jobs
 
-@st.cache_data(show_spinner=False)
+# @st.cache_data(show_spinner=False)
 def fetch_invoices(
     ids: List,
     _client: ServiceTitanClient,
@@ -128,7 +150,7 @@ def fetch_invoices(
     invoices = _client.get_all_id_filter(base_path, ids=ids)
     return invoices
 
-@st.cache_data(show_spinner=False)
+# @st.cache_data(show_spinner=False)
 def fetch_payments(
     invoice_ids: List,
     _client: ServiceTitanClient,
@@ -217,7 +239,7 @@ def format_external_data_for_xl(exdata):
         return {check_map[k]: v for k,v in exdata.items()}
     return {v: 0 for k,v in check_map.items()}
 
-def format_job(job, client: ServiceTitanClient, exdata_key='docchecks'):
+def format_job(job, client: ServiceTitanClient, tech_sales: list, exdata_key='docchecks'):
     # if 116255355 in job['tagTypeIds'] or 
     if job['jobStatus'] == 'Canceled': 
         return None
@@ -230,10 +252,21 @@ def format_job(job, client: ServiceTitanClient, exdata_key='docchecks'):
         url = client.build_url("dispatch", "appointment-assignments")
         appts = client.get_all(url, params={'jobId': job['id']})
         if appts:
-            formatted['sold_by'] = ', '.join([str(appt['technicianId']) for appt in appts])
+            # appt_techs = [appt['technicianId'] for appt in appts]
+            sales_techs_on_job = set()
+            for appt in appts:
+                if appt['technicianId'] in tech_sales:
+                    sales_techs_on_job.add(appt['technicianId'])
+            if len(sales_techs_on_job) == 0:
+                formatted['sold_by'] = 'No Sales Plumber'
+            elif len(sales_techs_on_job) == 1:
+                formatted['sold_by'] = str(list(sales_techs_on_job)[0])
+            else:
+                formatted['sold_by'] = ', '.join([str(tech) for tech in list(sales_techs_on_job).sort()])
         else:
             formatted['sold_by'] = '-1'
-    formatted['created_str'] = client.st_date_to_local(job['createdOn'], fmt="%m/%d/%Y")
+
+    formatted['created_str'] = client.st_date_to_local(job['createdOn'], fmt="%d/%m/%Y")
     formatted['created_dt'] = client.from_utc(job['createdOn'])
     formatted['completed_str'] = client.st_date_to_local(job['completedOn'], fmt="%m/%d/%Y") if job['completedOn'] is not None else "No data"
     formatted['num'] = job['jobNumber'] if job['jobNumber'] is not None else -1
@@ -259,6 +292,7 @@ def format_payment(payment):
         formatted = {}
         formatted['invoiceId'] = invoice['appliedTo']
         formatted['payment_types'] = payment['type']
+        formatted['payment_amt'] = payment['type'][:2] + invoice.get('appliedAmount', '0')
         output.append(formatted)
     return output
 

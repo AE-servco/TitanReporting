@@ -2,7 +2,7 @@ import datetime as dt
 from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
-from openpyxl.styles import Border, Side, PatternFill, Font
+from openpyxl.styles import Border, Side, PatternFill, Font, Alignment
 from openpyxl.formatting.rule import CellIsRule
 
 def build_workbook(
@@ -47,6 +47,8 @@ def build_workbook(
         'bottom': Border(bottom=med_border),
         'top': Border(top=med_border),
     }
+
+    align_center = Alignment(horizontal='center')
 
     # =========================== WORKBOOK ===========================
 
@@ -142,6 +144,8 @@ def build_workbook(
                     ws.cell(curr_row, 8, f"={get_column_letter(5)}{curr_row}-{get_column_letter(6)}{curr_row}-{get_column_letter(7)}{curr_row}").number_format = '$ 00.00'
                     ws.cell(curr_row, 9, job['payment_types'])
                     # 10 TODO: all doc checks complete
+                    doc_check_complete_col = f'=IF(OR({"=0, ".join([f"{get_column_letter(i)}{curr_row}" for i in range(11,20)])}), "N","Y")'
+                    ws.cell(curr_row, 10, doc_check_complete_col).alignment = align_center
                     ws.cell(curr_row, 11, job['Before Photo'])
                     ws.cell(curr_row, 12, job['After Photo'])
                     ws.cell(curr_row, 13, job['Receipt Photo'])
@@ -153,6 +157,23 @@ def build_workbook(
                     ws.cell(curr_row, 19, job['Invoice Emailed'])
                     ws.cell(curr_row, 20, job['5 Star Review'])
 
+                    
+                    
+                    payments = job.get('payment_amt')
+
+                    if type(payments) == str:
+                        payments = payments.split(', ')
+                        p_types = {
+                            'Cr': [],
+                            'Ca': [],
+                            'EF': [],
+                        }
+                        for p in payments:
+                            p_types[p[:2]].append(p[2:])
+                        if p_types['EF'] or p_types['Cr']:
+                            ws.cell(curr_row, 22, f'={'+'.join(p_types['EF'] + p_types['Cr'])}')
+                        if p_types['Ca']:
+                            ws.cell(curr_row, 23, f'={'+'.join(p_types['Ca'])}')
                     curr_row += 1
                     job_count += 1
             

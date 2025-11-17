@@ -34,10 +34,10 @@ if ss["authentication_status"]:
 
         ss.client = helpers.get_client('foxtrotwhiskey')
         with st.spinner("Fetching employee info..."):
-            employee_map = helpers.get_all_employee_ids(ss.client)
+            employee_map, tech_sales = helpers.get_all_employee_ids(ss.client)
 
         with st.spinner("Fetching jobs..."):
-            jobs = helpers.fetch_jobs(last_monday, last_sunday, ss.client)
+            jobs = helpers.fetch_jobs(start_date, end_date, ss.client)
 
         with st.spinner("Fetching invoices..."):
             invoice_ids = helpers.get_invoice_ids(jobs)
@@ -47,7 +47,7 @@ if ss["authentication_status"]:
             payments = helpers.fetch_payments(invoice_ids, ss.client)
         
         with st.spinner("Formatting data..."):
-            jobs_w_nones = [helpers.format_job(job, ss.client) for job in jobs]
+            jobs_w_nones = [helpers.format_job(job, ss.client, tech_sales) for job in jobs]
             jobs = [job for job in jobs_w_nones if job is not None]
             invoices = [helpers.format_invoice(invoice) for invoice in invoices]
             payments = helpers.flatten_list([helpers.format_payment(payment) for payment in payments])
@@ -58,10 +58,12 @@ if ss["authentication_status"]:
             # payments_grouped = payments_df.groupby('invoiceId', as_index=False).agg(','.join)
             payments_grouped = payments_df.groupby('invoiceId', as_index=False).agg(lambda x: ', '.join(sorted(list(set(x)))))
 
+            # st.dataframe(payments_grouped)
+
         with st.spinner("Merging data..."):
             merged = pd.merge(pd.merge(jobs_df, invoices_df, on='invoiceId', how='left'), payments_grouped, on='invoiceId', how='left')
             job_records = merged.to_dict(orient='records')
-        # st.dataframe(merged)
+        st.dataframe(merged)
         
         with st.spinner("Separating by technician..."):
             # group by tech name
@@ -70,13 +72,13 @@ if ss["authentication_status"]:
                 tid = j.get("sold_by")
                 if not tid:
                     continue
-                if tid == 'No data - unsuccessful' or tid == '-1':
+                if tid == 'No data - unsuccessful' or tid == '-1' or tid == 'No Sales Plumber':
                     name = tid
                 elif ',' in tid:
                     # name = "test"
                     name = f"{tid}"
                 else:
-                    name = employee_map.get(int(tid), f"{tid}")
+                    name = employee_map.get(int(tid)).get("name", f"{tid}")
                 j_category = helpers.categorise_job(j)
                 jobs_by_tech.setdefault(name, dict()).setdefault(j_category, []).append(j)
 
