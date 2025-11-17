@@ -5,33 +5,32 @@ import json
 
 from servicetitan_api_client import ServiceTitanClient
 import modules.lookup_tables as lookup
+import modules.helpers as helpers
 
-def format_job(job, client: ServiceTitanClient, tech_sales: list, exdata_key='docchecks'):
+def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='docchecks'):
+    
+    def check_unsuccessful(job, tags):
+        unsuccessful_tags = {tag.get("id") for tag in tags if "Unsuccessful" in tag.get("name")}
+        job_tags = set(job.get('tagTypeIds'))
+        return bool(unsuccessful_tags & job_tags)
+    
     # if 116255355 in job['tagTypeIds'] or 
     if job['jobStatus'] == 'Canceled': 
         return None
     formatted = {}
     if job['soldById'] is not None:
         formatted['sold_by'] = str(job['soldById'])
-    elif 116255355 in job['tagTypeIds']:
-        formatted['sold_by'] = 'No data - unsuccessful'
+
     else:
-        url = client.build_url("dispatch", "appointment-assignments")
-        appts = client.get_all(url, params={'jobId': job['id']})
-        if appts:
-            # appt_techs = [appt['technicianId'] for appt in appts]
-            sales_techs_on_job = set()
-            for appt in appts:
-                if appt['technicianId'] in tech_sales:
-                    sales_techs_on_job.add(appt['technicianId'])
-            if len(sales_techs_on_job) == 0:
-                formatted['sold_by'] = 'No Sales Plumber'
-            elif len(sales_techs_on_job) == 1:
-                formatted['sold_by'] = str(list(sales_techs_on_job)[0])
-            else:
-                formatted['sold_by'] = ', '.join([str(tech) for tech in list(sales_techs_on_job).sort()])
+        #TODO: reformat stuff below to use new appt attr.
+        job_appt_techs = job['appt_techs']
+        if len(job_appt_techs) == 1:
+            formatted['sold_by'] = list(job_appt_techs)[0]
+        elif len(job_appt_techs) == 0:
+            formatted['sold_by'] = 'Manual Check'
         else:
-            formatted['sold_by'] = '-1'
+            # just add to manual check list for now, might separate to different check list in future.
+            formatted['sold_by'] = 'Manual Check'
 
     formatted['created_str'] = client.st_date_to_local(job['createdOn'], fmt="%d/%m/%Y")
     formatted['created_dt'] = client.from_utc(job['createdOn'])
@@ -41,7 +40,7 @@ def format_job(job, client: ServiceTitanClient, tech_sales: list, exdata_key='do
     formatted['invoiceId'] = job['invoiceId'] if job['invoiceId'] is not None else -1
     externalData = get_external_data_by_key(job['externalData'], key=exdata_key)
     formatted.update(format_external_data_for_xl(externalData))
-    formatted['unsuccessful'] = 116255355 in job['tagTypeIds']
+    formatted['unsuccessful'] = check_unsuccessful(job, tenant_tags)
     return formatted
 
 def get_external_data_by_key(data, key='docchecks'):
@@ -80,6 +79,13 @@ def format_payment(payment):
         output.append(formatted)
     return output
 
+def format_appt_assmt(appt):
+    formatted = {}
+    formatted['job_id'] = appt['jobId']
+    formatted['tech_id'] = appt['technicianId']
+    formatted['tech_name'] = appt['technicianName']
+    return formatted
+
 def format_employee_list(employee_response, sales_codes=None):
     # input can be either technician response or employee response
 
@@ -100,3 +106,26 @@ def format_employee_list(employee_response, sales_codes=None):
             formatted[employee['id']] = {'name': employee['name'], 'sales': False}
             formatted[employee['userId']] = {'name': employee['name'], 'sales': False}
     return formatted, sales
+
+def group_jobs_by_tech(job_records, employee_map):
+    jobs_by_tech: dict[str, list[dict]] = {}
+    for j in job_records:
+        tid = j.get("sold_by")
+        if not tid:
+            continue
+        if tid == 'Manual Check':
+            name = tid
+        else:
+            name = employee_map.get(int(tid)).get("name", f"{tid}")
+        j_category = helpers.categorise_job(j)
+        jobs_by_tech.setdefault(name, dict()).setdefault(j_category, []).append(j)
+    return jobs_by_tech
+
+def group_appt_assmnts_by_job(appt_assmnts):
+    appt_assmnts_by_job: dict[str, set] = {}
+    for a in appt_assmnts:
+        job_id = a.get("job_id")
+        if not job_id: 
+            continue
+        appt_assmnts_by_job.setdefault(job_id, set()).add(a.get("tech_id"))
+    return appt_assmnts_by_job

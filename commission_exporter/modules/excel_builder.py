@@ -139,7 +139,8 @@ def build_workbook(
                     ws.cell(curr_row, 3, job['num'])
                     ws.cell(curr_row, 4, job['suburb'])
                     ws.cell(curr_row, 5, job['subtotal']).number_format = '$ 00.00'
-                    ws.cell(curr_row, 6, job['subtotal']*0.2).number_format = '$ 00.00'
+                    if not job['unsuccessful']:
+                        ws.cell(curr_row, 6, job['subtotal']*0.2).number_format = '$ 00.00'
                     # 7
                     ws.cell(curr_row, 8, f"={get_column_letter(5)}{curr_row}-{get_column_letter(6)}{curr_row}-{get_column_letter(7)}{curr_row}").number_format = '$ 00.00'
                     ws.cell(curr_row, 9, job['payment_types'])

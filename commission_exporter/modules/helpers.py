@@ -90,27 +90,14 @@ def filter_out_unsuccessful_jobs(jobs, client: ServiceTitanClient):
     return [job for job in jobs if unsuccessful_tags[0] not in job.get("tagTypeIds")]
 
 
-def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsucessful, custom_job_id=None):
-    with st.spinner("Retrieving jobs..."):
-        tenant_filter = tenant_filter.split(" ")[0].lower()
-        st.session_state.current_tenant = tenant_filter
-        client = st.session_state.clients.get(tenant_filter)
-        if custom_job_id:
-            jobs = fetching.fetch_jobs(start_date, end_date, client, custom_job_id)
-        else:
-            jobs = fetching.fetch_jobs(start_date, end_date, client, status_filters=job_status_filter)
-            if filter_unsucessful:
-                jobs = filter_out_unsuccessful_jobs(jobs, client)
-        st.session_state.jobs = jobs
-        st.session_state.current_index = 0
-        st.session_state.prefetched = {}
-        st.session_state.prefetch_futures = {}
 
 def categorise_job(job):
     status = job['status']
     day = job['created_dt'].weekday()
     balance = float(job['balance'])
     if day <5: # weekdays
+        if job['unsuccessful']:
+            return 'wk_unsucessful'
         if status == 'Completed' and balance == 0:
             return 'wk_complete_paid'
         if status == 'Completed' and balance != 0:
@@ -124,10 +111,10 @@ def categorise_job(job):
         if status == 'Scheduled':
             return 'wk_wo'
             # return 'wk_scheduled'
-        if job['unsuccessful']:
-            return 'wk_unsucessful'
         return 'wk_uncategorised'
     if day >=5: # weekdays
+        if job['unsuccessful']:
+            return 'wkend_unsucessful'
         if status == 'Completed' and balance == 0:
             return 'wkend_complete_paid'
         if status == 'Completed' and balance != 0:
@@ -141,6 +128,4 @@ def categorise_job(job):
         if status == 'Scheduled':
             return 'wkend_wo'
             # return 'wkend_scheduled'
-        if job['unsuccessful']:
-            return 'wkend_unsucessful'
         return 'wkend_uncategorised'

@@ -38,8 +38,15 @@ if ss["authentication_status"]:
         with st.spinner("Fetching employee info..."):
             employee_map, tech_sales = helpers.get_all_employee_ids(ss.client)
 
+        with st.spinner("Fetching tags..."):
+            tenant_tags = fetching.fetch_tag_types(ss.client)
+
         with st.spinner("Fetching jobs..."):
             jobs = fetching.fetch_jobs(start_date, end_date, ss.client)
+
+        with st.spinner("Fetching appointments..."):
+            # TODO: add logic to fetch more appts if job appt num != num output for that job here
+            appt_assmnts = fetching.fetch_appt_assmnts(start_date, end_date, ss.client)
 
         with st.spinner("Fetching invoices..."):
             invoice_ids = format.get_invoice_ids(jobs)
@@ -49,7 +56,12 @@ if ss["authentication_status"]:
             payments = fetching.fetch_payments(invoice_ids, ss.client)
         
         with st.spinner("Formatting data..."):
-            jobs_w_nones = [format.format_job(job, ss.client, tech_sales) for job in jobs]
+            appt_assmnts = [format.format_appt_assmt(appt) for appt in appt_assmnts]
+            appt_assmnts_by_job = format.group_appt_assmnts_by_job(appt_assmnts)
+            for job in jobs:
+                job['appt_techs'] = appt_assmnts_by_job.get(job['id'], set())
+
+            jobs_w_nones = [format.format_job(job, ss.client, tenant_tags) for job in jobs]
             jobs = [job for job in jobs_w_nones if job is not None]
             invoices = [format.format_invoice(invoice) for invoice in invoices]
             payments = helpers.flatten_list([format.format_payment(payment) for payment in payments])
@@ -69,20 +81,7 @@ if ss["authentication_status"]:
         
         with st.spinner("Separating by technician..."):
             # group by tech name
-            jobs_by_tech: dict[str, list[dict]] = {}
-            for j in job_records:
-                tid = j.get("sold_by")
-                if not tid:
-                    continue
-                if tid == 'No data - unsuccessful' or tid == '-1' or tid == 'No Sales Plumber':
-                    name = tid
-                elif ',' in tid:
-                    # name = "test"
-                    name = f"{tid}"
-                else:
-                    name = employee_map.get(int(tid)).get("name", f"{tid}")
-                j_category = helpers.categorise_job(j)
-                jobs_by_tech.setdefault(name, dict()).setdefault(j_category, []).append(j)
+            jobs_by_tech = format.group_jobs_by_tech(job_records, employee_map)
 
         excel_bytes = build_workbook(
             jobs_by_tech=jobs_by_tech,
