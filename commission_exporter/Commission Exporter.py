@@ -57,9 +57,10 @@ if ss["authentication_status"]:
         
         with st.spinner("Formatting data..."):
             appt_assmnts = [format.format_appt_assmt(appt) for appt in appt_assmnts]
-            appt_assmnts_by_job = format.group_appt_assmnts_by_job(appt_assmnts)
+            appt_assmnts_by_job, num_appts_per_job = format.group_appt_assmnts_by_job(appt_assmnts)
             for job in jobs:
-                job['appt_techs'] = appt_assmnts_by_job.get(job['id'], set())
+                job['appt_techs'] = set(appt_assmnts_by_job.get(job['id'], []))
+                job['num_of_appts_in_mem'] = num_appts_per_job.get(job['id'], 0)
 
             jobs_w_nones = [format.format_job(job, ss.client, tenant_tags) for job in jobs]
             jobs = [job for job in jobs_w_nones if job is not None]

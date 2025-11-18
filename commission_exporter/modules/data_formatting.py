@@ -22,8 +22,14 @@ def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='d
         formatted['sold_by'] = str(job['soldById'])
 
     else:
-        #TODO: reformat stuff below to use new appt attr.
-        job_appt_techs = job['appt_techs']
+        if job['appointmentCount'] != job['num_of_appts_in_mem']:
+            # print(f"Appt # not matching, {job['id']}, in mem: {job['num_of_appts_in_mem']}, in job: {job['appointmentCount']}")
+            url = client.build_url("dispatch", "appointment-assignments")
+            appt_assmnts = client.get_all(url, params={'jobId': job['id']})
+            appt_assmnts = [format_appt_assmt(appt) for appt in appt_assmnts]
+            job_appt_techs = {appt['tech_id'] for appt in appt_assmnts}
+        else:
+            job_appt_techs = job['appt_techs']
         if len(job_appt_techs) == 1:
             formatted['sold_by'] = list(job_appt_techs)[0]
         elif len(job_appt_techs) == 0:
@@ -122,10 +128,11 @@ def group_jobs_by_tech(job_records, employee_map):
     return jobs_by_tech
 
 def group_appt_assmnts_by_job(appt_assmnts):
-    appt_assmnts_by_job: dict[str, set] = {}
+    appt_assmnts_by_job: dict[str, list] = {}
     for a in appt_assmnts:
         job_id = a.get("job_id")
         if not job_id: 
             continue
-        appt_assmnts_by_job.setdefault(job_id, set()).add(a.get("tech_id"))
-    return appt_assmnts_by_job
+        appt_assmnts_by_job.setdefault(job_id, list()).append(a.get("tech_id"))
+    num_appts_per_job = {job_id: len(appts) for job_id, appts in appt_assmnts_by_job.items()}
+    return appt_assmnts_by_job, num_appts_per_job
