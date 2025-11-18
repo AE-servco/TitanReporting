@@ -164,13 +164,37 @@ def build_workbook(
 
                     if type(payments) == str:
                         payments = payments.split(', ')
+                        
+                        # All payment types:
+                        # {
+                            # 'AMEX',
+                            # 'Applied Payment for AR',
+                            # 'Cash',
+                            # 'Check',
+                            # 'Credit Card',
+                            # 'EFT/Bank Transfer',
+                            # 'Humm - Finance Fee',
+                            # 'Humm Payment Plan',
+                            # 'Imported Default Credit Card',
+                            # 'MasterCard',
+                            # 'Payment Plan',
+                            # 'Payment Plan - Fee',
+                            # 'Processed in ServiceM8',
+                            # 'Refund (check)',
+                            # 'Refund (credit card)',
+                            # 'Visa'
+                        # }
+                        
                         p_types = {
                             'Cr': [],
                             'Ca': [],
                             'EF': [],
                         }
                         for p in payments:
-                            p_types[p[:2]].append(p[2:])
+                            try:
+                                p_types[p[:2]].append(p[2:])
+                            except:
+                                continue
                         if p_types['EF'] or p_types['Cr']:
                             ws.cell(curr_row, 22, f"={'+'.join(p_types['EF'] + p_types['Cr'])}")
                         if p_types['Ca']:
