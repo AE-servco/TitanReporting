@@ -132,7 +132,7 @@ def fetch_jobs(
     return jobs
 
 
-@st.cache_data(show_spinner=False)
+# @st.cache_data(show_spinner=False)
 def fetch_job_attachments(job_id: str, _client: ServiceTitanClient) -> List[Dict[str, Any]]:
     """Retrieve attachment metadata for the given job ID.
 
@@ -146,7 +146,7 @@ def fetch_job_attachments(job_id: str, _client: ServiceTitanClient) -> List[Dict
     return attachments
 
 
-@st.cache_data(show_spinner=False)
+# @st.cache_data(show_spinner=False)
 def fetch_image_bytes(attachment_id: int, _client: ServiceTitanClient) -> bytes:
     """Download an attachment and return its raw bytes.
 
