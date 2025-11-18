@@ -56,8 +56,8 @@ def build_workbook(
     
     first_sheet_created = False
 
-    for tech, job_cats in jobs_by_tech.items():
-
+    for tech in sorted(jobs_by_tech.keys()):
+        job_cats = jobs_by_tech[tech]
         if not first_sheet_created:
             ws = wb.active
             ws.title = tech
