@@ -66,13 +66,13 @@ def job_nav_buttons(idx):
             if st.session_state.current_index > 0:
                 st.session_state.current_index -= 1
                 helpers.schedule_prefetches(client)
-                # st.rerun()
+                st.rerun()
     with col_next:
         if st.button("Next Job"):
             if st.session_state.current_index < len(st.session_state.jobs) - 1:
                 st.session_state.current_index += 1
                 helpers.schedule_prefetches(client)
-                # st.rerun()
+                st.rerun()
     return job, job_id, job_num
 
 def show_job_info(job):
@@ -99,7 +99,7 @@ def show_job_info(job):
     st.table(table_df)
 
 @st.fragment
-def show_images(imgs, num_columns=3):
+def show_images(imgs):
     img_size = st.slider(
         "Image Size:",
         min_value=1,
@@ -145,8 +145,8 @@ def doc_check_form(job_num, job, attachments, doc_check_criteria):
         client = st.session_state.clients.get(st.session_state.current_tenant)
         st.subheader(f"Job {job_num} Doc Check")
         checks = {}
-        # initial_bits = get_job_external_data(job_id, client, st.session_state.app_guid)
-        initial_checks = helpers.get_job_external_data(job)
+
+        initial_checks = job.get("tmp_doccheck_bits", helpers.get_job_external_data(job)) # get tmp bits from prev submission if they exist, otherwise fetch from job's external data.
         if not initial_checks.get("qs", False):
             initial_checks['qs'] = helpers.pre_fill_quote_signed_check(attachments.get("pdfs", []))
         if not initial_checks.get("is", False):
@@ -176,6 +176,8 @@ def doc_check_form(job_num, job, attachments, doc_check_criteria):
             try:
                 client.patch(patch_url, json=external_data_payload)
                 st.success("Form submitted successfully")
+
+                job['tmp_doccheck_bits'] = checks # add to job so that when returning to job's doc check page, they stay filled as they were. This is needed because the job data is not re-fetched on "next" or "prev" buttons.
             except Exception as e:
                 st.error(f"Failed to submit form: {e}")
 
