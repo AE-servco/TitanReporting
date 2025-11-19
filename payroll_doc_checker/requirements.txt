@@ -10,3 +10,5 @@ google-cloud-storage
 google-cloud-secret-manager
 oauth2client
 google-auth
+streamlit[pdf]
+streamlit-pdf-viewer

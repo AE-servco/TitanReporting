@@ -1,10 +1,13 @@
 import streamlit as st
 import streamlit_authenticator as stauth
+
 import modules.google_store as gs
 import modules.helpers as helpers
 from datetime import date, timedelta
 import json
 import pandas as pd
+import base64
+from streamlit_pdf_viewer import pdf_viewer
 
 def authenticate_app(config_file):
     config = gs.load_yaml_from_gcs(config_file)
@@ -97,6 +100,7 @@ def show_job_info(job):
         ]
     }, index=['Appointment #', 'Recorded Start time', 'Recorded End time', 'Arrival window start', 'Arrival window end'])
     st.table(table_df)
+    # st.write(job)
 
 @st.fragment
 def show_images(imgs):
@@ -110,7 +114,7 @@ def show_images(imgs):
         )
     client = st.session_state.clients.get(st.session_state.current_tenant)
     # cols = st.columns(num_columns)
-    with st.container(horizontal=True):
+    with st.container(horizontal=True, height=1000):
         for idx_img, (filename, file_date, file_by, data) in enumerate(imgs):
         # with cols[idx_img % 3]:
             if data:
@@ -127,9 +131,7 @@ def show_pdfs(pdfs):
         filtered_pdfs = [(fname, file_date, file_by, data) for fname, file_date, file_by, data in pdfs if query_lower in fname.lower()]
     if filtered_pdfs:
         for fname, file_date, file_by, data in filtered_pdfs:
-            with st.container(horizontal=True):
-                st.write(fname)
-                # Offer a download button for PDF or other attachment bytes if available
+            with st.expander(fname):
                 if data:
                     st.download_button(
                         label=f"Download",
@@ -137,6 +139,8 @@ def show_pdfs(pdfs):
                         file_name=fname,
                         mime="application/octet-stream"
                     )
+                    with st.container(height=1000):
+                        pdf_viewer(data)
     else:
         st.info("No documents match your search.")
 

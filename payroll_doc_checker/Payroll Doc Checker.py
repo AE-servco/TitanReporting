@@ -46,9 +46,9 @@ def main() -> None:
             if "jobs" not in st.session_state:
                 st.session_state.jobs: List[Dict[str, Any]] = []
             if "clients" not in st.session_state:
-                st.session_state.clients: Dict[str, Any] = {tenant: helpers.get_client(tenant) for tenant in TENANTS}
+                st.session_state.clients: Dict[str, Any] = {}
             if "employee_lists" not in st.session_state:
-                st.session_state.employee_lists: Dict[str, Any] = {tenant: helpers.get_all_employee_ids(st.session_state.clients.get(tenant)) for tenant in TENANTS}
+                st.session_state.employee_lists: Dict[str, Any] = {}
             if "current_tenant" not in st.session_state:
                 st.session_state.current_tenant: str = ""
             if "current_index" not in st.session_state:
