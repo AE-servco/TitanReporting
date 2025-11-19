@@ -141,8 +141,8 @@ def fetch_job_attachments(job_id: str, _client: ServiceTitanClient) -> List[Dict
     attachment is expected to contain an ``id`` and ``fileName`` key.
     """
     attachments_url = _client.build_url("forms", f"jobs/{job_id}/attachments", version=2)
-    data = _client.get(attachments_url)
-    attachments = data.get("data", []) if isinstance(data, dict) else []
+    attachments = _client.get_all(attachments_url)
+    # attachments = data.get("data", []) if isinstance(data, dict) else []
     return attachments
 
 
@@ -361,7 +361,15 @@ def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filte
     with st.spinner("Retrieving jobs..."):
         tenant_filter = tenant_filter.split(" ")[0].lower()
         st.session_state.current_tenant = tenant_filter
+
+        if tenant_filter not in st.session_state.clients:
+            st.session_state.clients[tenant_filter] = get_client(tenant_filter)
+
         client = st.session_state.clients.get(tenant_filter)
+
+        if tenant_filter not in st.session_state.employee_lists:
+            st.session_state.employee_lists[tenant_filter] = get_all_employee_ids(client)
+
         if custom_job_id:
             jobs = fetch_jobs(start_date, end_date, client, custom_job_id)
         else:
