@@ -141,8 +141,8 @@ def fetch_job_attachments(job_id: str, _client: ServiceTitanClient) -> List[Dict
     attachment is expected to contain an ``id`` and ``fileName`` key.
     """
     attachments_url = _client.build_url("forms", f"jobs/{job_id}/attachments", version=2)
-    data = _client.get(attachments_url)
-    attachments = data.get("data", []) if isinstance(data, dict) else []
+    attachments = _client.get_all(attachments_url)
+    # attachments = data.get("data", []) if isinstance(data, dict) else []
     return attachments
 
 
