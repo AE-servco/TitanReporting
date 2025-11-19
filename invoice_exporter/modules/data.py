@@ -32,8 +32,8 @@ def get_invoices_for_xero(tenant_stripped, start_date, end_date):
             'sierradelta': '210-1',
             'victortango': '210-1',
             'echozulu': '210-1',
-            'bravogolf': 'not given to Albie yet',
-            'mikeecho': 'not given to Albie yet',
+            'bravogolf': '210-4',
+            'mikeecho': '210-3',
         }
         return codes
 
