@@ -145,7 +145,7 @@ def build_workbook(
                     ws.cell(curr_row, 8, f"={get_column_letter(5)}{curr_row}-{get_column_letter(6)}{curr_row}-{get_column_letter(7)}{curr_row}").number_format = '$ 00.00'
                     ws.cell(curr_row, 9, job['payment_types'])
                     # 10 TODO: all doc checks complete
-                    doc_check_complete_col = f'=IF(OR({"=0, ".join([f"{get_column_letter(i)}{curr_row}" for i in range(11,20)])}), "N","Y")'
+                    doc_check_complete_col = f'=IF(OR({", ".join([f"{get_column_letter(i)}{curr_row}=0" for i in range(11,20)])}), "N","Y")'
                     ws.cell(curr_row, 10, doc_check_complete_col).alignment = align_center
                     ws.cell(curr_row, 11, job['Before Photo'])
                     ws.cell(curr_row, 12, job['After Photo'])
