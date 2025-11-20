@@ -3,11 +3,11 @@ from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Border, Side, PatternFill, Font, Alignment
+from openpyxl.comments import Comment
 from openpyxl.formatting.rule import CellIsRule
 
 def build_workbook(
     jobs_by_tech: dict[str, list[dict]],
-    week_ending: dt.date,
 ) -> bytes:
     
     CATEGORY_ORDER = {
@@ -19,7 +19,9 @@ def build_workbook(
         'wk_wo': 'CURRENT WORK ORDERS (AWAITING PAYMENT)', 
         'wkend_wo': 'WEEKEND WORK ORDERS (AWAITING PAYMENT)', 
         'wk_unsucessful': 'UNSUCCESSFUL JOBS',
-        'wkend_unsucessful': 'WEEKEND UNSUCCESSFUL JOBS'
+        'wkend_unsucessful': 'WEEKEND UNSUCCESSFUL JOBS',
+        'wk_uncategorised': 'WEEK UNCATEGORISED',
+        'wkend_uncategorised': 'WEEKEND UNCATEGORISED',
     }
 
 
@@ -60,10 +62,22 @@ def build_workbook(
         job_cats = jobs_by_tech[tech]
         if not first_sheet_created:
             ws = wb.active
-            ws.title = tech
+            ws.title = tech[:-1]
             first_sheet_created = True
         else:
-            ws = wb.create_sheet(title=tech)
+            ws = wb.create_sheet(title=tech[:-1])
+
+        sales_color = '3da813'
+        installer_color = 'e3b019'
+        unknown_color = '8093f2'
+
+        if tech[-1] == 'S':
+            ws.sheet_properties.tabColor = sales_color
+        elif tech[-1] == 'I':
+            ws.sheet_properties.tabColor = installer_color
+        else:
+            ws.sheet_properties.tabColor = unknown_color
+
 
         # ================ HEADERS ==================
         ws.cell(1,1, 'JOB DETAILS').border = cell_border['topleft']
@@ -141,6 +155,7 @@ def build_workbook(
                     ws.cell(curr_row, 5, job['subtotal']).number_format = '$ 00.00'
                     if not job['unsuccessful']:
                         ws.cell(curr_row, 6, job['subtotal']*0.2).number_format = '$ 00.00'
+                        ws.cell(curr_row, 6).comment = Comment(job['summary'], "automation")
                     # 7
                     ws.cell(curr_row, 8, f"={get_column_letter(5)}{curr_row}-{get_column_letter(6)}{curr_row}-{get_column_letter(7)}{curr_row}").number_format = '$ 00.00'
                     ws.cell(curr_row, 9, job['payment_types'])

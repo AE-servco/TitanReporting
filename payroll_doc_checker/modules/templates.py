@@ -172,7 +172,7 @@ def doc_check_form(job_num, job, attachments, doc_check_criteria):
                 "externalData": {
                     "patchMode": "Replace",
                     "applicationGuid": client.app_guid,
-                    "externalData": [{"key": "docchecks", "value": encoded}]
+                    "externalData": [{"key": "docchecks_testing", "value": encoded}]
                 }
             }
 

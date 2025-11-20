@@ -39,7 +39,7 @@ if ss["authentication_status"]:
         with st.spinner("Loading..."):
             ss.client = helpers.get_client('foxtrotwhiskey')
             with st.spinner("Fetching employee info..."):
-                employee_map, tech_sales = helpers.get_all_employee_ids(ss.client)
+                employee_map = helpers.get_all_employee_ids(ss.client)
 
             with st.spinner("Fetching tags..."):
                 tenant_tags = fetching.fetch_tag_types(ss.client)
@@ -65,7 +65,7 @@ if ss["authentication_status"]:
                     job['appt_techs'] = set(appt_assmnts_by_job.get(job['id'], []))
                     job['num_of_appts_in_mem'] = num_appts_per_job.get(job['id'], 0)
 
-                jobs_w_nones = [format.format_job(job, ss.client, tenant_tags) for job in jobs]
+                jobs_w_nones = [format.format_job(job, ss.client, tenant_tags, exdata_key='docchecks_testing') for job in jobs]
                 jobs = [job for job in jobs_w_nones if job is not None]
                 invoices = [format.format_invoice(invoice) for invoice in invoices]
                 payments = helpers.flatten_list([format.format_payment(payment) for payment in payments])
@@ -90,15 +90,17 @@ if ss["authentication_status"]:
             with st.spinner("Building spreadsheet..."):
                 excel_bytes = build_workbook(
                     jobs_by_tech=jobs_by_tech,
-                    week_ending=end_date,
                 )
+        
+        templates.show_download_button(excel_bytes, f"commissions_{start_date}_{end_date}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        # st.download_button(
+        #     "Download Excel (all technicians)",
+        #     data=excel_bytes,
+        #     file_name=f"commissions_{start_date}_{end_date}.xlsx",
+        #     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        # )
 
-        st.download_button(
-            "Download Excel (all technicians)",
-            data=excel_bytes,
-            file_name=f"commissions_{start_date}_{end_date}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
+        # st.write(jobs_by_tech)
 
 elif ss["authentication_status"] is False:
     st.error('Please log in.')

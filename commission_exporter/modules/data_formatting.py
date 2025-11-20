@@ -7,7 +7,7 @@ from servicetitan_api_client import ServiceTitanClient
 import modules.lookup_tables as lookup
 import modules.helpers as helpers
 
-def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='docchecks'):
+def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='docchecks_testing'):
     
     def check_unsuccessful(job, tags):
         unsuccessful_tags = {tag.get("id") for tag in tags if "Unsuccessful" in tag.get("name")}
@@ -73,6 +73,10 @@ def format_invoice(invoice):
     formatted['balance'] = float(invoice['balance'])
     formatted['amt_paid'] = round(float(invoice['total']) - float(invoice['balance']),2)
     formatted['invoiceId'] = invoice['id']
+    if invoice['items']:
+        formatted['summary'] = '\n'.join([i['description'].split('<')[0] for i in invoice['items']])
+    else:
+        formatted['summary'] = 'no invoice items'
     return formatted
 
 def format_payment(payment):
@@ -92,26 +96,62 @@ def format_appt_assmt(appt):
     formatted['tech_name'] = appt['technicianName']
     return formatted
 
-def format_employee_list(employee_response, sales_codes=None):
+def format_appt(appt): # TODO: finish figuring out what "start time" counts.
+    formatted = {}
+    formatted['job_id'] = appt['jobId']
+    formatted['appt_start'] = appt['start']
+    formatted['appt_end'] = appt['end']
+    return formatted
+
+# def get_sales_and_installer_codes(roles_reponse):
+#     role_codes = {
+#         's': [],
+#         'i': []
+#     }
+#     for role in roles_reponse:
+#         if role['name'] == 'Technician - Sales':
+#             role_codes['s'].append(role['id'])
+#         if role['name'] == 'Technician - Installer':
+#             role_codes['i'].append(role['id'])
+#     return role_codes
+
+def format_employee_list(employee_response):
     # input can be either technician response or employee response
 
-    def test_sales(emp_roles, sales_roles):
-        return bool(set(emp_roles) & set(sales_roles))
+    # def test_role(emp_roles, test_roles):
+    #     return bool(set(emp_roles) & set(test_roles))
 
     formatted = {}
-    sales = set()
     for employee in employee_response:
-        if sales_codes:
-            test = test_sales(employee['roleIds'], sales_codes)
-            formatted[employee['id']] = {'name': employee['name'], 'sales': test}
-            formatted[employee['userId']] = {'name': employee['name'], 'sales': test}
-            if test:
-                sales.add(employee['id'])
-                sales.add(employee['userId'])
-        else:   
-            formatted[employee['id']] = {'name': employee['name'], 'sales': False}
-            formatted[employee['userId']] = {'name': employee['name'], 'sales': False}
-    return formatted, sales
+        team = employee.get('team', 'O')
+        if team:
+            formatted[employee['id']] = {'name': employee['name'], 'team': team[0]}
+            formatted[employee['userId']] = {'name': employee['name'], 'team': team[0]}
+        else:
+            formatted[employee['id']] = {'name': employee['name'], 'team': 'O'}
+            formatted[employee['userId']] = {'name': employee['name'], 'team': 'O'}
+    return formatted
+
+# def format_employee_list(employee_response, sales_codes=None):
+#     # input can be either technician response or employee response
+
+#     def test_sales(emp_roles, sales_roles):
+#         return bool(set(emp_roles) & set(sales_roles))
+
+#     formatted = {}
+#     sales = set()
+#     for employee in employee_response:
+#         if sales_codes:
+#             test = test_sales(employee['roleIds'], sales_codes)
+#             formatted[employee['id']] = {'name': employee['name'], 'sales': test}
+#             formatted[employee['userId']] = {'name': employee['name'], 'sales': test}
+#             if test:
+#                 sales.add(employee['id'])
+#                 sales.add(employee['userId'])
+#         else:   
+#             formatted[employee['id']] = {'name': employee['name'], 'sales': False}
+#             formatted[employee['userId']] = {'name': employee['name'], 'sales': False}
+#     return formatted, sales
 
 def group_jobs_by_tech(job_records, employee_map):
     jobs_by_tech: dict[str, list[dict]] = {}
@@ -120,9 +160,12 @@ def group_jobs_by_tech(job_records, employee_map):
         if not tid:
             continue
         if tid == 'Manual Check':
-            name = tid
+            name = tid + 'O'
         else:
-            name = employee_map.get(int(tid)).get("name", f"{tid}")
+            tech_info = employee_map.get(int(tid))
+            name = tech_info.get("name", f"{tid}")
+            tech_role = tech_info.get('team', 'O')
+            name = name + tech_role
         j_category = helpers.categorise_job(j)
         jobs_by_tech.setdefault(name, dict()).setdefault(j_category, []).append(j)
     return jobs_by_tech

@@ -69,13 +69,14 @@ def get_client(tenant) -> ServiceTitanClient:
 
 
 def get_all_employee_ids(client: ServiceTitanClient):
-    roles_url = client.build_url("settings", "user-roles")
-    sales_codes = get_sales_codes(client.get_all(roles_url))
+    # roles_url = client.build_url("settings", "user-roles")
+    # sales_codes = get_sales_codes(client.get_all(roles_url))
+    # role_codes = format.get_sales_and_installer_codes(client.get_all(roles_url))
     tech_url = client.build_url("settings", "technicians")
-    techs, techs_sales = format.format_employee_list(client.get_all(tech_url), sales_codes)
+    techs = format.format_employee_list(client.get_all(tech_url))
     emp_url = client.build_url("settings", "employees")
-    office, _ = format.format_employee_list(client.get_all(emp_url))
-    return techs | office, techs_sales
+    office = format.format_employee_list(client.get_all(emp_url))
+    return techs | office
 
 def get_sales_codes(roles_reponse):
     sales_codes = set()
@@ -105,7 +106,7 @@ def categorise_job(job):
         if status == 'Hold':
             return 'wk_wo'
             # return 'wk_hold'
-        if status == 'In Progress':
+        if status == 'InProgress':
             return 'wk_wo'
             # return 'wk_progress'
         if status == 'Scheduled':
@@ -122,7 +123,7 @@ def categorise_job(job):
         if status == 'Hold':
             return 'wkend_wo'
             # return 'wkend_hold'
-        if status == 'In Progress':
+        if status == 'InProgress':
             return 'wkend_wo'
             # return 'wkend_progress'
         if status == 'Scheduled':

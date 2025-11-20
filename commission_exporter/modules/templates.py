@@ -15,4 +15,11 @@ def authenticate_app(config_file):
 
     authenticator.login(location='main')
 
-
+@st.fragment
+def show_download_button(data, file_name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"):
+    st.download_button(
+        "Download Excel (all technicians)",
+        data=data,
+        file_name=file_name,
+        mime=mime,
+    )
