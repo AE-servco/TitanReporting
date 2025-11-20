@@ -263,7 +263,7 @@ def download_attachments_for_job(job_id: str, client: ServiceTitanClient) -> Dic
             result[category].append((filename, client.from_utc_string(file_date), file_by, data))
     return result
 
-def get_job_external_data(job, key="docchecks"):
+def get_job_external_data(job, key="docchecks_testing"):
     external_entries = job.get("externalData", [])
     for entry in external_entries:
         if entry.get("key") == key:

@@ -140,17 +140,17 @@ def show_pdfs(pdfs):
                         mime="application/octet-stream"
                     )
                     with st.container(height=1000):
-                        pdf_viewer(data)
+                        pdf_viewer(data, key=fname)
     else:
         st.info("No documents match your search.")
 
-def doc_check_form(job_num, job, attachments, doc_check_criteria):
+def doc_check_form(job_num, job, attachments, doc_check_criteria, exdata_key='docchecks_testing'):
     with st.form(key=f"doccheck_{job_num}"):
         client = st.session_state.clients.get(st.session_state.current_tenant)
         st.subheader(f"Job {job_num} Doc Check")
         checks = {}
 
-        initial_checks = job.get("tmp_doccheck_bits", helpers.get_job_external_data(job)) # get tmp bits from prev submission if they exist, otherwise fetch from job's external data.
+        initial_checks = job.get("tmp_doccheck_bits", helpers.get_job_external_data(job, exdata_key)) # get tmp bits from prev submission if they exist, otherwise fetch from job's external data.
         if not initial_checks.get("qs", False):
             initial_checks['qs'] = helpers.pre_fill_quote_signed_check(attachments.get("pdfs", []))
         if not initial_checks.get("is", False):
@@ -172,7 +172,7 @@ def doc_check_form(job_num, job, attachments, doc_check_criteria):
                 "externalData": {
                     "patchMode": "Replace",
                     "applicationGuid": client.app_guid,
-                    "externalData": [{"key": "docchecks_testing", "value": encoded}]
+                    "externalData": [{"key": exdata_key, "value": encoded}]
                 }
             }
 
