@@ -6,6 +6,20 @@ from openpyxl.styles import Border, Side, PatternFill, Font, Alignment
 from openpyxl.comments import Comment
 from openpyxl.formatting.rule import CellIsRule
 
+def formatted_cell(worksheet, row: int, col: int, val: str | None=None, font: Font | None=None, border: Border | None=None, number_format: str | None=None):
+    if val:
+        cell = worksheet.cell(row, col, val)
+    else:
+        cell = worksheet.cell(row, col)
+    if font:
+        cell.font = font
+    if border:
+        cell.border = border
+    if number_format:
+        cell.number_format = number_format
+
+    return cell
+
 def build_workbook(
     jobs_by_tech: dict[str, list[dict]],
 ) -> bytes:
@@ -35,6 +49,9 @@ def build_workbook(
     yellow_fill = PatternFill(patternType='solid', fgColor='FFFF00')
 
     font_red = Font(color='FF0000')
+    font_red_bold = Font(color='FF0000', bold=True)
+    font_green_bold = Font(color='00FF00', bold=True)
+    font_bold = Font(bold=True)
 
     cell_border_full = Border(top=thin_border, bottom=thin_border, right=thin_border, left=thin_border)
     border_double_bottom = Border(bottom=double_border)
@@ -48,6 +65,8 @@ def build_workbook(
         'bottomtopright': Border(top=med_border, bottom=med_border, right=med_border),
         'bottom': Border(bottom=med_border),
         'top': Border(top=med_border),
+        'right': Border(right=med_border),
+        'left': Border(left=med_border),
     }
 
     align_center = Alignment(horizontal='center')
@@ -78,56 +97,142 @@ def build_workbook(
         else:
             ws.sheet_properties.tabColor = unknown_color
 
+        summary_top_row = 1
 
+        # ================ SUMMARY ==================
+        formatted_cell(ws, summary_top_row,1, 'WEEKLY COMMISSION', font = font_bold)
+        formatted_cell(ws, summary_top_row,5, 'WEEK ENDING', font = font_red_bold)
+        formatted_cell(ws, summary_top_row,6, 'PUT DATE HERE', font = font_red_bold)
+
+        # box 1
+        formatted_cell(ws, summary_top_row + 2,1, 'BOOKED JOBS',font = font_bold, border = cell_border['topleft'])
+        formatted_cell(ws, summary_top_row + 2,2, 'todo', font = font_bold, border = cell_border['topright'])
+        formatted_cell(ws, summary_top_row + 3,1, 'SUCCESSFUL', font = font_bold)
+        formatted_cell(ws, summary_top_row + 3,2, 'todo', font = font_bold, border = cell_border['right'])
+        formatted_cell(ws, summary_top_row + 4,1, 'UNSUCCESSFUL', font = font_bold)
+        formatted_cell(ws, summary_top_row + 4,2, 'todo', font = font_bold, border = cell_border['right'])
+        formatted_cell(ws, summary_top_row + 5,1, 'SUCESSFUL (%)', font = font_bold)
+        formatted_cell(ws, summary_top_row + 5,2, 'todo', font = font_bold, border = cell_border['right'])
+        formatted_cell(ws, summary_top_row + 6,2, border = cell_border['right'])
+        formatted_cell(ws, summary_top_row + 7,1, 'AVERAGE SALE', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 7,2, 'todo', font = font_bold, border = cell_border['bottomright'])
+        
+        # box 2
+        formatted_cell(ws, summary_top_row + 2,4, 'WEEKLY TARGET', font = font_bold, border = cell_border['topleft'])
+        formatted_cell(ws, summary_top_row + 2,5, border = cell_border['top'])        
+        formatted_cell(ws, summary_top_row + 2,6, border = cell_border['topright'])        
+        formatted_cell(ws, summary_top_row + 3,4, 'Tier 1', border = cell_border['left'])        
+        formatted_cell(ws, summary_top_row + 3,5, '<$25000')        
+        formatted_cell(ws, summary_top_row + 3,6, '5%', border = cell_border['right'])        
+        formatted_cell(ws, summary_top_row + 4,4, 'Tier 2', border = cell_border['bottomleft'])        
+        formatted_cell(ws, summary_top_row + 4,5, '>=$25000', border = cell_border['bottom'])        
+        formatted_cell(ws, summary_top_row + 4,6, '10%', border = cell_border['bottomright'])    
+
+        # box 3
+        formatted_cell(ws, summary_top_row + 6,5, 'ACTUAL', font = font_bold, border = cell_border['topleft'])
+        formatted_cell(ws, summary_top_row + 6,6, 'POTENTIAL', font = font_bold, border = cell_border['topright'])        
+        formatted_cell(ws, summary_top_row + 7,4, 'NET PROFIT', font = font_bold, border = cell_border['topleft'])        
+        formatted_cell(ws, summary_top_row + 7,5, 'todo', font = font_red, border = cell_border['topleft'])        
+        formatted_cell(ws, summary_top_row + 7,6, 'todo', font = font_red, border = cell_border['topright'])        
+        formatted_cell(ws, summary_top_row + 8,4, 'UNLOCKED', font = font_bold, border = cell_border['left'])        
+        formatted_cell(ws, summary_top_row + 8,5, 'todo', font = font_red, border = cell_border['left'])        
+        formatted_cell(ws, summary_top_row + 8,6, 'todo', font = font_red)        
+        formatted_cell(ws, summary_top_row + 9,4, 'COMMISSION - PAY OUT', font = font_bold, border = cell_border['left'])        
+        formatted_cell(ws, summary_top_row + 9,5, 'todo', font = font_red, border = cell_border['left'])        
+        formatted_cell(ws, summary_top_row + 9,6, 'todo', font = font_red)        
+        formatted_cell(ws, summary_top_row + 10,4, 'EMERGENCY', font = font_bold, border = cell_border['left'])        
+        formatted_cell(ws, summary_top_row + 10,5, 'todo', font = font_red, border = cell_border['left'])        
+        formatted_cell(ws, summary_top_row + 10,6, 'todo', font = font_red)        
+        formatted_cell(ws, summary_top_row + 11,4, 'EMERGENCY - PAY OUT', font = font_bold, border = cell_border['left'])        
+        formatted_cell(ws, summary_top_row + 11,5, 'todo', font = font_red, border = cell_border['left'])        
+        formatted_cell(ws, summary_top_row + 11,6, 'todo', font = font_red)        
+        formatted_cell(ws, summary_top_row + 12,4, 'PREV. WEEK', font = font_bold, border = cell_border['left'])        
+        formatted_cell(ws, summary_top_row + 12,5, 'todo', font = font_red, border = cell_border['left'])        
+        formatted_cell(ws, summary_top_row + 12,6, 'todo', font = font_red)        
+        formatted_cell(ws, summary_top_row + 13,4, 'PREV. WEEK - PAY OUT', font = font_bold, border = cell_border['bottomleft'])        
+        formatted_cell(ws, summary_top_row + 13,5, 'todo', font = font_red, border = cell_border['left'])        
+        formatted_cell(ws, summary_top_row + 13,6, 'todo', font = font_red)        
+        formatted_cell(ws, summary_top_row + 14,4, '5 Star Review', font = font_green_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 14,5, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 15,4, '5 Star Notes', font = font_green_bold, border = cell_border['bottomleft'])        
+        formatted_cell(ws, summary_top_row + 15,5, border = cell_border['left'])       
+        
+        # curr_row += 1
+
+        # ws.cell(curr_row,10, 'PHOTOS').font = font_bold
+        # ws.cell(curr_row,10).border = cell_border['topleft']
+        # ws.cell(curr_row,11).border = cell_border['top']
+        # ws.cell(curr_row,12).border = cell_border['top']
+        # ws.cell(curr_row,13, 'QUOTE').font = font_bold
+        # ws.cell(curr_row,13).border = cell_border['topleft']
+        # ws.cell(curr_row,14).border = cell_border['top']
+        # ws.cell(curr_row,15).border = cell_border['top']
+        # ws.cell(curr_row,16, 'INVOICE').font = font_bold
+        # ws.cell(curr_row,16).border = cell_border['topleft']
+        # ws.cell(curr_row,17).border = cell_border['top']
+        # ws.cell(curr_row,18).border = cell_border['topright']
+        # ws.cell(curr_row,19).border = cell_border['topright']
+
+        # curr_row += 1
+
+        # ws.cell(curr_row,4, 'WEEKLY TARGET').font = font_bold
+        # ws.cell(curr_row,4).border = cell_border['topleft']
+        # ws.cell(curr_row,5).border = cell_border['top']
+        # ws.cell(curr_row,6).border = cell_border['topright']
+        # ws.cell(curr_row,10, 'BEFORE').font = font_bold
+
+        curr_row = 26
         # ================ HEADERS ==================
-        ws.cell(1,1, 'JOB DETAILS').border = cell_border['topleft']
-        ws.cell(1,2).border = cell_border['top']
-        ws.cell(1,3).border = cell_border['top']
-        ws.cell(1,4).border = cell_border['top']
-        ws.cell(1,5, 'JOB AMOUNT').border = cell_border['topleft']
-        ws.cell(1,6).border = cell_border['top']
-        ws.cell(1,7).border = cell_border['top']
-        ws.cell(1,8).border = cell_border['top']
-        ws.cell(1,9).border = cell_border['top']
-        ws.cell(1,11, 'PHOTOS').border = cell_border['topleft']
-        ws.cell(1,12).border = cell_border['top']
-        ws.cell(1,13).border = cell_border['top']
-        ws.cell(1,14, 'QUOTE').border = cell_border['topleft']
-        ws.cell(1,15).border = cell_border['top']
-        ws.cell(1,16).border = cell_border['top']
-        ws.cell(1,17, 'INVOICE').border = cell_border['topleft']
-        ws.cell(1,18).border = cell_border['top']
-        ws.cell(1,19).border = cell_border['top']
-        ws.cell(1,20).border = cell_border['top']
-        ws.cell(1,21, 'NOTES').border = cell_border['topright']
+        ws.cell(curr_row,1, 'JOB DETAILS').border = cell_border['topleft']
+        ws.cell(curr_row,2).border = cell_border['top']
+        ws.cell(curr_row,3).border = cell_border['top']
+        ws.cell(curr_row,4).border = cell_border['top']
+        ws.cell(curr_row,5, 'JOB AMOUNT').border = cell_border['topleft']
+        ws.cell(curr_row,6).border = cell_border['top']
+        ws.cell(curr_row,7).border = cell_border['top']
+        ws.cell(curr_row,8).border = cell_border['top']
+        ws.cell(curr_row,9).border = cell_border['top']
+        ws.cell(curr_row,11, 'PHOTOS').border = cell_border['topleft']
+        ws.cell(curr_row,12).border = cell_border['top']
+        ws.cell(curr_row,13).border = cell_border['top']
+        ws.cell(curr_row,14, 'QUOTE').border = cell_border['topleft']
+        ws.cell(curr_row,15).border = cell_border['top']
+        ws.cell(curr_row,16).border = cell_border['top']
+        ws.cell(curr_row,17, 'INVOICE').border = cell_border['topleft']
+        ws.cell(curr_row,18).border = cell_border['top']
+        ws.cell(curr_row,19).border = cell_border['top']
+        ws.cell(curr_row,20).border = cell_border['top']
+        ws.cell(curr_row,21, 'NOTES').border = cell_border['topright']
 
-        ws.cell(2,1, 'JOB STATUS').border = cell_border['bottomleft']
-        ws.cell(2,2, 'DATE').border = cell_border['bottom']
-        ws.cell(2,3, 'JOB #').border = cell_border['bottom']
-        ws.cell(2,4, 'SUBURB').border = cell_border['bottomright']
-        ws.cell(2,5, 'AMOUNT EXC. GST').border = cell_border['bottom']
-        ws.cell(2,6, 'MATERIALS').border = cell_border['bottom']
-        ws.cell(2,7, 'MERCHANT FEES').border = cell_border['bottom']
-        ws.cell(2,8, 'NET PROFIT').border = cell_border['bottom']
-        ws.cell(2,9, 'PAID').border = cell_border['bottomright']
-        ws.cell(2,10, 'DOC CHECK DONE').border = cell_border['bottomright']
-        ws.cell(2,11, 'BEFORE').border = cell_border['bottom']
-        ws.cell(2,12, 'AFTER').border = cell_border['bottom']
-        ws.cell(2,13, 'RECEIPT').border = cell_border['bottomright']
-        ws.cell(2,14, 'DESCRIPTION').border = cell_border['bottom']
-        ws.cell(2,15, 'SIGNED').border = cell_border['bottom']
-        ws.cell(2,16, 'EMAILED').border = cell_border['bottomright']
-        ws.cell(2,17, 'DESCRIPTION').border = cell_border['bottom']
-        ws.cell(2,18, 'SIGNED').border = cell_border['bottom']
-        ws.cell(2,19, 'EMAILED').border = cell_border['bottomright']
-        ws.cell(2,20, '5 Star Review').border = cell_border['bottom']
-        ws.cell(2,21).border = cell_border['bottomright']
-        ws.cell(2,22, 'EFTPOS').border = cell_border['bottomtop']
-        ws.cell(2,23, 'CASH').border = cell_border['bottomtop']
-        ws.cell(2,24, 'Payment Plan').border = cell_border['bottomtopright']
+        curr_row += 1
+
+        ws.cell(curr_row,1, 'JOB STATUS').border = cell_border['bottomleft']
+        ws.cell(curr_row,2, 'DATE').border = cell_border['bottom']
+        ws.cell(curr_row,3, 'JOB #').border = cell_border['bottom']
+        ws.cell(curr_row,4, 'SUBURB').border = cell_border['bottomright']
+        ws.cell(curr_row,5, 'AMOUNT EXC. GST').border = cell_border['bottom']
+        ws.cell(curr_row,6, 'MATERIALS').border = cell_border['bottom']
+        ws.cell(curr_row,7, 'MERCHANT FEES').border = cell_border['bottom']
+        ws.cell(curr_row,8, 'NET PROFIT').border = cell_border['bottom']
+        ws.cell(curr_row,9, 'PAID').border = cell_border['bottomright']
+        ws.cell(curr_row,10, 'DOC CHECK DONE').border = cell_border['bottomright']
+        ws.cell(curr_row,11, 'BEFORE').border = cell_border['bottom']
+        ws.cell(curr_row,12, 'AFTER').border = cell_border['bottom']
+        ws.cell(curr_row,13, 'RECEIPT').border = cell_border['bottomright']
+        ws.cell(curr_row,14, 'DESCRIPTION').border = cell_border['bottom']
+        ws.cell(curr_row,15, 'SIGNED').border = cell_border['bottom']
+        ws.cell(curr_row,16, 'EMAILED').border = cell_border['bottomright']
+        ws.cell(curr_row,17, 'DESCRIPTION').border = cell_border['bottom']
+        ws.cell(curr_row,18, 'SIGNED').border = cell_border['bottom']
+        ws.cell(curr_row,19, 'EMAILED').border = cell_border['bottomright']
+        ws.cell(curr_row,20, '5 Star Review').border = cell_border['bottom']
+        ws.cell(curr_row,21).border = cell_border['bottomright']
+        ws.cell(curr_row,22, 'EFTPOS').border = cell_border['bottomtop']
+        ws.cell(curr_row,23, 'CASH').border = cell_border['bottomtop']
+        ws.cell(curr_row,24, 'Payment Plan').border = cell_border['bottomtopright']
+        
+        curr_row += 1
         # =========================================
-
-        curr_row = 3
 
         for cat, cat_text in CATEGORY_ORDER.items():
             ws.cell(curr_row,1,cat_text)
