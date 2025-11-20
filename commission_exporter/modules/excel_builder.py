@@ -6,7 +6,7 @@ from openpyxl.styles import Border, Side, PatternFill, Font, Alignment
 from openpyxl.comments import Comment
 from openpyxl.formatting.rule import CellIsRule
 
-def formatted_cell(worksheet, row: int, col: int, val: str | None=None, font: Font | None=None, border: Border | None=None, number_format: str | None=None):
+def formatted_cell(worksheet, row: int, col: int, val: str | None=None, font: Font | None=None, border: Border | None=None, number_format: str | None=None, fill: PatternFill | None=None):
     if val:
         cell = worksheet.cell(row, col, val)
     else:
@@ -17,6 +17,8 @@ def formatted_cell(worksheet, row: int, col: int, val: str | None=None, font: Fo
         cell.border = border
     if number_format:
         cell.number_format = number_format
+    if fill:
+        cell.fill = fill
 
     return cell
 
@@ -47,6 +49,7 @@ def build_workbook(
     double_border = Side(style='double', color='000000')
 
     yellow_fill = PatternFill(patternType='solid', fgColor='FFFF00')
+    blue_fill = PatternFill(patternType='solid', fgColor='3399F2')
 
     font_red = Font(color='FF0000')
     font_red_bold = Font(color='FF0000', bold=True)
@@ -59,14 +62,17 @@ def build_workbook(
     cell_border = {
         'topleft': Border(left=med_border, top=med_border),
         'topright': Border(right=med_border, top=med_border),
+        'topleftright': Border(left=med_border, top=med_border, right=med_border),
         'bottomleft': Border(left=med_border, bottom=med_border),
         'bottomright': Border(right=med_border, bottom=med_border),
         'bottomtop': Border(top=med_border, bottom=med_border),
         'bottomtopright': Border(top=med_border, bottom=med_border, right=med_border),
+        'bottomleftright': Border(left=med_border, bottom=med_border, right=med_border),
         'bottom': Border(bottom=med_border),
         'top': Border(top=med_border),
         'right': Border(right=med_border),
         'left': Border(left=med_border),
+        'leftright': Border(left=med_border, right=med_border),
     }
 
     align_center = Alignment(horizontal='center')
@@ -136,27 +142,199 @@ def build_workbook(
         formatted_cell(ws, summary_top_row + 7,6, 'todo', font = font_red, border = cell_border['topright'])        
         formatted_cell(ws, summary_top_row + 8,4, 'UNLOCKED', font = font_bold, border = cell_border['left'])        
         formatted_cell(ws, summary_top_row + 8,5, 'todo', font = font_red, border = cell_border['left'])        
-        formatted_cell(ws, summary_top_row + 8,6, 'todo', font = font_red)        
+        formatted_cell(ws, summary_top_row + 8,6, 'todo', font = font_red, border = cell_border['right'])        
         formatted_cell(ws, summary_top_row + 9,4, 'COMMISSION - PAY OUT', font = font_bold, border = cell_border['left'])        
         formatted_cell(ws, summary_top_row + 9,5, 'todo', font = font_red, border = cell_border['left'])        
-        formatted_cell(ws, summary_top_row + 9,6, 'todo', font = font_red)        
+        formatted_cell(ws, summary_top_row + 9,6, 'todo', font = font_red, border = cell_border['right'])        
         formatted_cell(ws, summary_top_row + 10,4, 'EMERGENCY', font = font_bold, border = cell_border['left'])        
         formatted_cell(ws, summary_top_row + 10,5, 'todo', font = font_red, border = cell_border['left'])        
-        formatted_cell(ws, summary_top_row + 10,6, 'todo', font = font_red)        
+        formatted_cell(ws, summary_top_row + 10,6, 'todo', font = font_red, border = cell_border['right'])        
         formatted_cell(ws, summary_top_row + 11,4, 'EMERGENCY - PAY OUT', font = font_bold, border = cell_border['left'])        
         formatted_cell(ws, summary_top_row + 11,5, 'todo', font = font_red, border = cell_border['left'])        
-        formatted_cell(ws, summary_top_row + 11,6, 'todo', font = font_red)        
+        formatted_cell(ws, summary_top_row + 11,6, 'todo', font = font_red, border = cell_border['right'])        
         formatted_cell(ws, summary_top_row + 12,4, 'PREV. WEEK', font = font_bold, border = cell_border['left'])        
         formatted_cell(ws, summary_top_row + 12,5, 'todo', font = font_red, border = cell_border['left'])        
-        formatted_cell(ws, summary_top_row + 12,6, 'todo', font = font_red)        
+        formatted_cell(ws, summary_top_row + 12,6, 'todo', font = font_red, border = cell_border['right'])        
         formatted_cell(ws, summary_top_row + 13,4, 'PREV. WEEK - PAY OUT', font = font_bold, border = cell_border['bottomleft'])        
-        formatted_cell(ws, summary_top_row + 13,5, 'todo', font = font_red, border = cell_border['left'])        
-        formatted_cell(ws, summary_top_row + 13,6, 'todo', font = font_red)        
+        formatted_cell(ws, summary_top_row + 13,5, 'todo', font = font_red, border = cell_border['bottomleft'])        
+        formatted_cell(ws, summary_top_row + 13,6, 'todo', font = font_red, border = cell_border['bottomright'])        
         formatted_cell(ws, summary_top_row + 14,4, '5 Star Review', font = font_green_bold, border = cell_border['bottomleft'])
         formatted_cell(ws, summary_top_row + 14,5, border = cell_border['left'])
         formatted_cell(ws, summary_top_row + 15,4, '5 Star Notes', font = font_green_bold, border = cell_border['bottomleft'])        
         formatted_cell(ws, summary_top_row + 15,5, border = cell_border['left'])       
         
+        #box 4
+        formatted_cell(ws, summary_top_row + 1,10, 'PHOTOS', font = font_bold, border = cell_border['topleft'])
+        formatted_cell(ws, summary_top_row + 1,11, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 1,12, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 1,13, 'QUOTE', font = font_bold, border = cell_border['topleft'])
+        formatted_cell(ws, summary_top_row + 1,14, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 1,15, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 1,16, 'INVOICE', font = font_bold, border = cell_border['topleft'])
+        formatted_cell(ws, summary_top_row + 1,17, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 1,18, border = cell_border['topright'])
+        formatted_cell(ws, summary_top_row + 1,19, border = cell_border['topright'])
+        formatted_cell(ws, summary_top_row + 2,10, 'BEFORE', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 2,11, 'AFTER', font = font_bold, border = cell_border['bottom'])
+        formatted_cell(ws, summary_top_row + 2,12, 'RECEIPT', font = font_bold, border = cell_border['bottom'])
+        formatted_cell(ws, summary_top_row + 2,13, 'DESCRIPTION', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 2,14, 'SIGNED', font = font_bold, border = cell_border['bottom'])
+        formatted_cell(ws, summary_top_row + 2,15, 'EMAILED', font = font_bold, border = cell_border['bottom'])
+        formatted_cell(ws, summary_top_row + 2,16, 'DESCRIPTION', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 2,17, 'SIGNED', font = font_bold, border = cell_border['bottom'])
+        formatted_cell(ws, summary_top_row + 2,18, 'EMAILED', font = font_bold, border = cell_border['bottom'])
+        formatted_cell(ws, summary_top_row + 2,19, '5 Star Review', font = font_bold, border = cell_border['bottomleftright'])
+        formatted_cell(ws, summary_top_row + 3,9, 'TAKEN', font = font_bold, border = cell_border['topleft'])
+        formatted_cell(ws, summary_top_row + 3,10, 'todo', font = font_bold, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 3,11, 'todo', font = font_bold, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 3,12, 'todo', font = font_bold, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 3,13, 'todo', font = font_bold, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 3,14, 'todo', font = font_bold, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 3,15, 'todo', font = font_bold, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 3,16, 'todo', font = font_bold, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 3,17, 'todo', font = font_bold, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 3,18, 'todo', font = font_bold, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 3,19, 'todo', font = font_bold, border = cell_border['leftright'])
+        formatted_cell(ws, summary_top_row + 4,9, '%', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 4,10, 'todo', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 4,11, 'todo', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 4,12, 'todo', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 4,13, 'todo', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 4,14, 'todo', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 4,15, 'todo', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 4,16, 'todo', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 4,17, 'todo', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 4,18, 'todo', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 4,19, 'todo', font = font_bold, border = cell_border['bottomleftright'])
+
+        # box 5
+        formatted_cell(ws, summary_top_row + 7,10, 'DAILY NET PROFIT', font = font_bold, border = cell_border['topleft'])
+        formatted_cell(ws, summary_top_row + 7,11, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 7,12, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 7,13, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 7,14, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 7,15, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 7,16, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 7,17, 'WEEKDAY', font = font_red_bold, border = cell_border['topleft'])
+        formatted_cell(ws, summary_top_row + 7,18, 'WEEKEND', font = font_red_bold, border = cell_border['topleftright'])
+        formatted_cell(ws, summary_top_row + 8,10, 'MON', font = font_bold, border = cell_border['topleft'])
+        formatted_cell(ws, summary_top_row + 8,11, 'TUE', font = font_bold, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 8,12, 'WED', font = font_bold, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 8,13, 'THU', font = font_bold, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 8,14, 'FRI', font = font_bold, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 8,15, 'Total', font = font_bold, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 8,16, 'SAT', font = font_green_bold, border = cell_border['topleft'])
+        formatted_cell(ws, summary_top_row + 8,17, 'Awaiting Payment', font = font_red_bold, border = cell_border['topleft'])
+        formatted_cell(ws, summary_top_row + 8,18, 'Awaiting Payment', font = font_red_bold, border = cell_border['topleftright'])
+        formatted_cell(ws, summary_top_row + 9,10, 'todo', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 9,11, 'todo', font = font_bold, border = cell_border['bottom'])
+        formatted_cell(ws, summary_top_row + 9,12, 'todo', font = font_bold, border = cell_border['bottom'])
+        formatted_cell(ws, summary_top_row + 9,13, 'todo', font = font_bold, border = cell_border['bottom'])
+        formatted_cell(ws, summary_top_row + 9,14, 'todo', font = font_bold, border = cell_border['bottom'])
+        formatted_cell(ws, summary_top_row + 9,15, 'todo', font = font_bold, border = cell_border['bottom'])
+        formatted_cell(ws, summary_top_row + 9,16, 'todo', font = font_green_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 9,17, 'todo', font = font_red_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 9,18, 'todo', font = font_red_bold, border = cell_border['bottomleftright'])
+
+        formatted_cell(ws, summary_top_row + 10,9, 'Successful')
+        formatted_cell(ws, summary_top_row + 11,9, 'Unsuccessful')
+        formatted_cell(ws, summary_top_row + 12,9, 'Success rate')
+        formatted_cell(ws, summary_top_row + 13,9, 'Avg sale')
+
+        formatted_cell(ws, summary_top_row + 10,10, 'todo')
+        formatted_cell(ws, summary_top_row + 11,10, 'todo')
+        formatted_cell(ws, summary_top_row + 12,10, 'todo')
+        formatted_cell(ws, summary_top_row + 13,10, 'todo')
+
+        formatted_cell(ws, summary_top_row + 10,11, 'todo')
+        formatted_cell(ws, summary_top_row + 11,11, 'todo')
+        formatted_cell(ws, summary_top_row + 12,11, 'todo')
+        formatted_cell(ws, summary_top_row + 13,11, 'todo')
+        
+        formatted_cell(ws, summary_top_row + 10,12, 'todo')
+        formatted_cell(ws, summary_top_row + 11,12, 'todo')
+        formatted_cell(ws, summary_top_row + 12,12, 'todo')
+        formatted_cell(ws, summary_top_row + 13,12, 'todo')
+        
+        formatted_cell(ws, summary_top_row + 10,13, 'todo')
+        formatted_cell(ws, summary_top_row + 11,13, 'todo')
+        formatted_cell(ws, summary_top_row + 12,13, 'todo')
+        formatted_cell(ws, summary_top_row + 13,13, 'todo')
+        
+        formatted_cell(ws, summary_top_row + 10,14, 'todo')
+        formatted_cell(ws, summary_top_row + 11,14, 'todo')
+        formatted_cell(ws, summary_top_row + 12,14, 'todo')
+        formatted_cell(ws, summary_top_row + 13,14, 'todo')
+        
+        formatted_cell(ws, summary_top_row + 10,15, 'todo')
+        formatted_cell(ws, summary_top_row + 11,15, 'todo')
+        formatted_cell(ws, summary_top_row + 12,15, 'todo')
+        formatted_cell(ws, summary_top_row + 13,15, 'todo')
+
+        # box 6 - management summary
+        formatted_cell(ws, summary_top_row + 15,10, 'Management Summary - SALES ONLY - COLUMN F', font = font_bold, border = cell_border['topleft'], fill=blue_fill)
+        formatted_cell(ws, summary_top_row + 15,11, border = cell_border['top'], fill=blue_fill)
+        formatted_cell(ws, summary_top_row + 15,12, border = cell_border['top'], fill=blue_fill)
+        formatted_cell(ws, summary_top_row + 15,13, border = cell_border['top'], fill=blue_fill)
+        formatted_cell(ws, summary_top_row + 15,14, border = cell_border['top'], fill=blue_fill)
+        formatted_cell(ws, summary_top_row + 15,15, border = cell_border['top'], fill=blue_fill)
+        formatted_cell(ws, summary_top_row + 15,16, border = cell_border['top'], fill=blue_fill)
+        formatted_cell(ws, summary_top_row + 15,17, 'WEEKDAY', font = font_red_bold, border = cell_border['topleft'], fill=blue_fill)
+        formatted_cell(ws, summary_top_row + 15,18, 'WEEKEND', font = font_red_bold, border = cell_border['topleftright'], fill=blue_fill)
+        formatted_cell(ws, summary_top_row + 16,10, 'MON', font = font_bold, border = cell_border['topleft'])
+        formatted_cell(ws, summary_top_row + 16,11, 'TUE', font = font_bold, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 16,12, 'WED', font = font_bold, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 16,13, 'THU', font = font_bold, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 16,14, 'FRI', font = font_bold, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 16,15, 'Total', font = font_bold, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 16,16, 'SAT', font = font_green_bold, border = cell_border['topleft'])
+        formatted_cell(ws, summary_top_row + 16,17, 'Awaiting Payment', font = font_red_bold, border = cell_border['topleft'])
+        formatted_cell(ws, summary_top_row + 16,18, 'Awaiting Payment', font = font_red_bold, border = cell_border['topleftright'])
+        formatted_cell(ws, summary_top_row + 17,10, 'todo', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 17,11, 'todo', font = font_bold, border = cell_border['bottom'])
+        formatted_cell(ws, summary_top_row + 17,12, 'todo', font = font_bold, border = cell_border['bottom'])
+        formatted_cell(ws, summary_top_row + 17,13, 'todo', font = font_bold, border = cell_border['bottom'])
+        formatted_cell(ws, summary_top_row + 17,14, 'todo', font = font_bold, border = cell_border['bottom'])
+        formatted_cell(ws, summary_top_row + 17,15, 'todo', font = font_bold, border = cell_border['bottom'])
+        formatted_cell(ws, summary_top_row + 17,16, 'todo', font = font_green_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 17,17, 'todo', font = font_red_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 17,18, 'todo', font = font_red_bold, border = cell_border['bottomleftright'])
+
+        formatted_cell(ws, summary_top_row + 18,9, 'Successful')
+        formatted_cell(ws, summary_top_row + 19,9, 'Unsuccessful')
+        formatted_cell(ws, summary_top_row + 20,9, 'Success rate')
+        formatted_cell(ws, summary_top_row + 21,9, 'Avg sale')
+
+        formatted_cell(ws, summary_top_row + 18,10, 'todo')
+        formatted_cell(ws, summary_top_row + 19,10, 'todo')
+        formatted_cell(ws, summary_top_row + 20,10, 'todo')
+        formatted_cell(ws, summary_top_row + 21,10, 'todo')
+
+        formatted_cell(ws, summary_top_row + 18,11, 'todo')
+        formatted_cell(ws, summary_top_row + 19,11, 'todo')
+        formatted_cell(ws, summary_top_row + 20,11, 'todo')
+        formatted_cell(ws, summary_top_row + 21,11, 'todo')
+        
+        formatted_cell(ws, summary_top_row + 18,12, 'todo')
+        formatted_cell(ws, summary_top_row + 19,12, 'todo')
+        formatted_cell(ws, summary_top_row + 20,12, 'todo')
+        formatted_cell(ws, summary_top_row + 21,12, 'todo')
+        
+        formatted_cell(ws, summary_top_row + 18,13, 'todo')
+        formatted_cell(ws, summary_top_row + 19,13, 'todo')
+        formatted_cell(ws, summary_top_row + 20,13, 'todo')
+        formatted_cell(ws, summary_top_row + 21,13, 'todo')
+        
+        formatted_cell(ws, summary_top_row + 18,14, 'todo')
+        formatted_cell(ws, summary_top_row + 19,14, 'todo')
+        formatted_cell(ws, summary_top_row + 20,14, 'todo')
+        formatted_cell(ws, summary_top_row + 21,14, 'todo')
+        
+        formatted_cell(ws, summary_top_row + 18,15, 'todo')
+        formatted_cell(ws, summary_top_row + 19,15, 'todo')
+        formatted_cell(ws, summary_top_row + 20,15, 'todo')
+        formatted_cell(ws, summary_top_row + 21,15, 'todo')
+
         # curr_row += 1
 
         # ws.cell(curr_row,10, 'PHOTOS').font = font_bold
@@ -192,6 +370,7 @@ def build_workbook(
         ws.cell(curr_row,7).border = cell_border['top']
         ws.cell(curr_row,8).border = cell_border['top']
         ws.cell(curr_row,9).border = cell_border['top']
+        ws.cell(curr_row,10).border = cell_border['topleft']
         ws.cell(curr_row,11, 'PHOTOS').border = cell_border['topleft']
         ws.cell(curr_row,12).border = cell_border['top']
         ws.cell(curr_row,13).border = cell_border['top']
