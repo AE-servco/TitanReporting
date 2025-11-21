@@ -9,6 +9,8 @@ import pandas as pd
 import base64
 from streamlit_pdf_viewer import pdf_viewer
 
+import modules.fetching as fetch
+
 def authenticate_app(config_file):
     config = gs.load_yaml_from_gcs(config_file)
 
@@ -68,13 +70,13 @@ def job_nav_buttons(idx):
         if st.button("Previous Job"):
             if st.session_state.current_index > 0:
                 st.session_state.current_index -= 1
-                helpers.schedule_prefetches(client)
+                fetch.schedule_prefetches(client)
                 st.rerun()
     with col_next:
         if st.button("Next Job"):
             if st.session_state.current_index < len(st.session_state.jobs) - 1:
                 st.session_state.current_index += 1
-                helpers.schedule_prefetches(client)
+                fetch.schedule_prefetches(client)
                 st.rerun()
     return job, job_id, job_num
 
@@ -150,7 +152,7 @@ def doc_check_form(job_num, job, attachments, doc_check_criteria, exdata_key='do
         st.subheader(f"Job {job_num} Doc Check")
         checks = {}
 
-        initial_checks = job.get("tmp_doccheck_bits", helpers.get_job_external_data(job, exdata_key)) # get tmp bits from prev submission if they exist, otherwise fetch from job's external data.
+        initial_checks = job.get("tmp_doccheck_bits", fetch.get_job_external_data(job, exdata_key)) # get tmp bits from prev submission if they exist, otherwise fetch from job's external data.
         if not initial_checks.get("qs", False):
             initial_checks['qs'] = helpers.pre_fill_quote_signed_check(attachments.get("pdfs", []))
         if not initial_checks.get("is", False):
