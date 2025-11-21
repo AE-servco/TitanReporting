@@ -14,6 +14,7 @@ from servicetitan_api_client import ServiceTitanClient
 import modules.google_store as gs
 import modules.helpers as helpers
 import modules.templates as templates
+import modules.fetching as fetch
 
 ###############################################################################
 # Configuration and helpers
@@ -90,7 +91,7 @@ def main() -> None:
             if attachments is None:
                 # If not already prefetched, download synchronously all attachments
                 with st.spinner("Downloading attachments..."):
-                    attachments = helpers.download_attachments_for_job(job_id, client)
+                    attachments = fetch.download_attachments_for_job(job_id, client)
                 st.session_state.prefetched[job_id] = attachments
 
             # Display attachments in tabs: one for images and one for other docs
