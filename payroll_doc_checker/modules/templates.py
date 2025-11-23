@@ -114,12 +114,13 @@ def show_images(imgs):
         step=1,
         width=200
         )
+    
     client = st.session_state.clients.get(st.session_state.current_tenant)
-    # cols = st.columns(num_columns)
+
     with st.container(horizontal=True, height=1000):
-        for idx_img, (filename, file_date, file_by, data) in enumerate(imgs):
-        # with cols[idx_img % 3]:
-            if data:
+        for filename, file_date, file_by, signed_url in imgs:
+            if signed_url:
+                data = gs.fetch_from_signed_url(signed_url)
                 st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(file_by)} at {client.format_local(file_date, fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
             else:
                 st.write(filename)
@@ -130,11 +131,12 @@ def show_pdfs(pdfs):
     filtered_pdfs = pdfs
     if search_query:
         query_lower = search_query.lower()
-        filtered_pdfs = [(fname, file_date, file_by, data) for fname, file_date, file_by, data in pdfs if query_lower in fname.lower()]
+        filtered_pdfs = [(fname, file_date, file_by, signed_url) for fname, file_date, file_by, signed_url in pdfs if query_lower in fname.lower()]
     if filtered_pdfs:
-        for fname, file_date, file_by, data in filtered_pdfs:
+        for fname, file_date, file_by, signed_url in filtered_pdfs:
             with st.expander(fname):
-                if data:
+                if signed_url:
+                    data = gs.fetch_from_signed_url(signed_url)
                     st.download_button(
                         label=f"Download",
                         data=data,

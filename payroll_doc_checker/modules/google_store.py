@@ -1,6 +1,10 @@
 import json
 import yaml
 from google.cloud import storage
+from typing import Optional
+import requests
+from datetime import timedelta
+
 
 BUCKET_NAME = "service_titan_reporter_data"
 
@@ -47,3 +51,52 @@ def save_yaml_to_gcs(data, blobname):
     bucket = _get_bucket()
     blob = bucket.blob(blobname)
     blob.upload_from_string(yaml_text, content_type="text/yaml")
+
+def upload_bytes_to_gcs_signed(
+    data: bytes,
+    bucket_name: str,
+    blob_name: str,
+    content_type: Optional[str] = None,
+    expires_in_seconds: int = 3600,
+) -> str:
+    """
+    Upload raw bytes to Google Cloud Storage and return a signed URL.
+
+    Args:
+        data: Raw bytes to upload.
+        bucket_name: Name of the GCS bucket.
+        blob_name: Path/name of the file inside the bucket.
+        content_type: Optional MIME type (e.g., "image/jpeg").
+        expires_in_seconds: How long the signed URL should remain valid (default 1 hour).
+
+    Returns:
+        A signed URL for downloading the uploaded object.
+    """
+
+    client = storage.Client()
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+
+    # Upload bytes
+    blob.upload_from_string(
+        data,
+        content_type=content_type
+    )
+
+    # Create signed URL (GET)
+    url = blob.generate_signed_url(
+        version="v4",
+        expiration=timedelta(seconds=expires_in_seconds),
+        method="GET",
+        response_disposition=f'inline; filename="{blob_name}"'
+    )
+
+    return url
+
+def fetch_from_signed_url(url: str) -> bytes:
+    """
+    Download bytes from a GCS signed URL.
+    """
+    response = requests.get(url)
+    response.raise_for_status()
+    return response.content

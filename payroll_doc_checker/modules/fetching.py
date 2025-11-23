@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor, Future, as_completed
 from servicetitan_api_client import ServiceTitanClient
 
 import modules.formatting as format
+import modules.google_store as gs
 import modules.helpers as helpers
 
 def fetch_jobs(
@@ -87,7 +88,7 @@ def fetch_job_attachments(job_id: str, _client: ServiceTitanClient) -> List[Dict
 
 
 # @st.cache_data(show_spinner=False)
-def fetch_image_bytes(attachment_id: int, _client: ServiceTitanClient) -> bytes:
+def fetch_attachment_bytes(attachment_id: int, _client: ServiceTitanClient) -> bytes:
     """Download an attachment and return its raw bytes.
 
     The ``attachment_id`` is passed to the URL builder to form
@@ -96,6 +97,15 @@ def fetch_image_bytes(attachment_id: int, _client: ServiceTitanClient) -> bytes:
     """
     url = _client.build_url("forms", "jobs/attachment", resource_id=attachment_id)
     return _client.get(url)
+
+def download_attachment_to_gcs(attachment_id: int, _client: ServiceTitanClient, gcs_bucket: str, gcs_blob: str) -> str:
+    """Downloads an attachment to gcs and return a signed url to access
+    """
+    data = fetch_attachment_bytes(attachment_id, _client)
+    url = gs.upload_bytes_to_gcs_signed(data, gcs_bucket, gcs_blob)
+    # print("signed_url:")
+    # print(url)
+    return url
 
 def download_attachments_for_job(job_id: str, client: ServiceTitanClient) -> Dict[str, List[Tuple[str, Any]]]:
     """Download all attachments for a job and group them by type.
@@ -108,6 +118,9 @@ def download_attachments_for_job(job_id: str, client: ServiceTitanClient) -> Dic
     is the raw bytes of the attachment.  If no attachments exist for a
     category, the list will be empty.
     """
+
+    GCS_BUCKET = 'doc-check-attachments'
+
     attachments = fetch_job_attachments(job_id, client)
     grouped_meta = helpers.group_attachments_by_type(attachments)
     result: Dict[str, List[Tuple[str, Any]]] = {key: [] for key in grouped_meta}
@@ -121,17 +134,22 @@ def download_attachments_for_job(job_id: str, client: ServiceTitanClient) -> Dic
         return result
     max_workers = min(8, len(tasks)) or 1
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        # futures = [pool.submit(download_attachment_to_gcs, att_id, client, GCS_BUCKET, f'{job_id}/{filename}')]
+        # for future in as_completed(futures):
+        #     print(future.result())
+
+
         future_map: Dict[Future[bytes], Tuple[str, str]] = {}
         for category, att_id, filename, file_date, file_by in tasks:
-            fut = pool.submit(fetch_image_bytes, att_id, client)
+            fut = pool.submit(download_attachment_to_gcs, att_id, client, GCS_BUCKET, f'{job_id}/{filename}')
             future_map[fut] = (category, filename, file_date, file_by)
         for fut in as_completed(future_map):
             category, filename, file_date, file_by = future_map[fut]
             try:
-                data = fut.result()
+                signed_url = fut.result()
             except Exception:
-                data = None
-            result[category].append((filename, client.from_utc_string(file_date), file_by, data))
+                signed_url = None
+            result[category].append((filename, client.from_utc_string(file_date), file_by, signed_url))
     return result
 
 def get_job_external_data(job, key="docchecks_testing"):
