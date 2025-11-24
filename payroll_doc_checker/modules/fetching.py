@@ -147,7 +147,8 @@ def download_attachments_for_job(job_id: str, client: ServiceTitanClient) -> Dic
             category, filename, file_date, file_by = future_map[fut]
             try:
                 signed_url = fut.result()
-            except Exception:
+            except Exception as e:
+                print(f"EXCEPTION: {e}")
                 signed_url = None
             result[category].append((filename, client.from_utc_string(file_date), file_by, signed_url))
     return result
