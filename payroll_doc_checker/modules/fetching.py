@@ -134,11 +134,6 @@ def download_attachments_for_job(job_id: str, client: ServiceTitanClient) -> Dic
         return result
     max_workers = min(8, len(tasks)) or 1
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        # futures = [pool.submit(download_attachment_to_gcs, att_id, client, GCS_BUCKET, f'{job_id}/{filename}')]
-        # for future in as_completed(futures):
-        #     print(future.result())
-
-
         future_map: Dict[Future[bytes], Tuple[str, str]] = {}
         for category, att_id, filename, file_date, file_by in tasks:
             fut = pool.submit(download_attachment_to_gcs, att_id, client, GCS_BUCKET, f'{job_id}/{filename}')
