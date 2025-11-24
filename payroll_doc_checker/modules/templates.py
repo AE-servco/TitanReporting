@@ -84,8 +84,33 @@ def show_job_info(job):
     client = st.session_state.clients.get(st.session_state.current_tenant)
     # st.write(job)
     job_amt = job['total']
-    # st.write(job)
+    inv_data = job.get("invoice_data", {})
+    inv_desc = inv_data.get("summary", "Not available.")
+    inv_subtotal = inv_data.get("subtotal", "Not available.")
+    inv_bal = inv_data.get("balance", "Not available.")
+    inv_amt_paid = inv_data.get("amt_paid", "Not available.")
+
+    payment_data = job.get("payment_data", [])
+
+    payment_colors = {
+        'Credit Card': 'blue',
+        'AMEX': 'blue',
+        'EFT/Bank Transfer': 'yellow',
+        'Cash': 'green',
+    }
+    
     st.write(f"Job total: ${job_amt}")
+    st.write(f"Invoice summary:")
+    for item in inv_desc.split("|"):
+        st.write(f'- {item}')
+    st.write(f"Invoice subtotal: ${inv_subtotal}")
+    st.write(f"Invoice balance: ${inv_bal}")
+    st.write(f"Amount paid: ${inv_amt_paid}")
+    # payments_str = ', '.join([st.badge(f"{p['payment_type']} {p['payment_amt']}", color="blue") for p in payment_data])
+    st.write(f"Payments made:")
+    for p in payment_data:
+        st.badge(f"{p['payment_type']} {p['payment_amt']}", color=payment_colors.get(p['payment_type'], 'grey'))
+    
     table_df = pd.DataFrame({
         "First Appointment": [
             job['first_appt_num'], 

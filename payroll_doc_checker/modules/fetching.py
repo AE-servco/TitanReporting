@@ -190,8 +190,43 @@ def schedule_prefetches(client: ServiceTitanClient) -> None:
         future = executor.submit(download_attachments_for_job, job_id, client)
         st.session_state.prefetch_futures[job_id] = future
 
+# @st.cache_data(show_spinner=False)
+def fetch_invoices(
+    ids: List,
+    _client: ServiceTitanClient,
+) -> List[Dict[str, Any]]:
+    """
+    Retrieve all invoices given a list of ids
+    """
+    if type(ids[0]) != str:
+        ids = [str(id) for id in ids]
+    base_path = _client.build_url('accounting', 'invoices')
 
+    invoices = _client.get_all_id_filter(base_path, ids=ids)
+    return invoices
 
+# @st.cache_data(show_spinner=False)
+def fetch_payments(
+    invoice_ids: List,
+    _client: ServiceTitanClient,
+) -> List[Dict[str, Any]]:
+    """
+    Retrieve all invoices given a list of ids
+    """
+    if type(invoice_ids[0]) != str:
+        invoice_ids = [str(id) for id in invoice_ids]
+    base_path = _client.build_url('accounting', 'payments')
+
+    params = {
+        'appliedToInvoiceIds': ','.join(invoice_ids)
+    }
+
+    payments = _client.get_all(base_path, params=params)
+    return payments
+
+def fetch_tag_types(client: ServiceTitanClient):
+    url = client.build_url('settings', 'tag-types')
+    return client.get_all(url)
 
 
 

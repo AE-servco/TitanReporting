@@ -14,6 +14,8 @@ import modules.fetching as fetch
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"}
 
+def flatten_list(nested_list):
+    return [item for sublist in nested_list for item in sublist]
 
 def get_doc_check_criteria():
     checks = {
@@ -197,6 +199,18 @@ def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filte
             jobs = fetch.fetch_jobs(start_date, end_date, client, status_filters=job_status_filter)
             if filter_unsucessful:
                 jobs = filter_out_unsuccessful_jobs(jobs, client)
+
+        # TODO: Add invoice & payment logic
+        invoice_ids = format.get_invoice_ids(jobs)
+        invoices = fetch.fetch_invoices(invoice_ids, client)
+        payments = fetch.fetch_payments(invoice_ids, client)
+
+        invoices = {invoice['id']: format.format_invoice(invoice) for invoice in invoices}
+        payments = format.format_payments(payments)
+        # payments = flatten_list([format.format_invoice(payment) for payment in payments])
+
+        jobs = format.combine_job_data(jobs, invoices, payments)
+
         st.session_state.jobs = jobs
         st.session_state.current_index = 0
         st.session_state.prefetched = {}

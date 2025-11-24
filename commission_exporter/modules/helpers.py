@@ -33,41 +33,6 @@ def get_client(tenant) -> ServiceTitanClient:
             return client
     return _create_client(tenant)
 
-# def get_sales_and_installer_codes(roles_reponse):
-#     role_codes = {
-#         's': [],
-#         'i': []
-#     }
-#     for role in roles_reponse:
-#         if role['name'] == 'Technician - Sales':
-#             role_codes['s'].append(role['id'])
-#         if role['name'] == 'Technician - Installer':
-#             role_codes['i'].append(role['id'])
-#     return role_codes
-
-# def format_employee_list(employee_response, role_codes=None):
-#     # input can be either technician response or employee response
-
-#     def test_role(emp_roles, test_roles):
-#         return bool(set(emp_roles) & set(test_roles))
-
-#     formatted = {}
-#     sales = set()
-#     for employee in employee_response:
-#         if role_codes:
-#             test_s = test_role(employee['roleIds'], role_codes['s'])
-#             test_i = test_role(employee['roleIds'], role_codes['i'])
-#             formatted[employee['id']] = {'name': employee['name'], 'sales': test_s, 'installer': test_i}
-#             formatted[employee['userId']] = {'name': employee['name'], 'sales': test_s, 'installer': test_i}
-#             if test_s:
-#                 sales.add(employee['id'])
-#                 sales.add(employee['userId'])
-#         else:   
-#             formatted[employee['id']] = {'name': employee['name'], 'sales': False}
-#             formatted[employee['userId']] = {'name': employee['name'], 'sales': False}
-#     return formatted, sales
-
-
 def get_all_employee_ids(client: ServiceTitanClient):
     # roles_url = client.build_url("settings", "user-roles")
     # sales_codes = get_sales_codes(client.get_all(roles_url))
@@ -85,12 +50,9 @@ def get_sales_codes(roles_reponse):
             sales_codes.add(role['id'])
     return sales_codes
 
-
 def filter_out_unsuccessful_jobs(jobs, client: ServiceTitanClient):
     unsuccessful_tags = [tag.get("id") for tag in fetching.fetch_tag_types(client) if "Unsuccessful" in tag.get("name")]
     return [job for job in jobs if unsuccessful_tags[0] not in job.get("tagTypeIds")]
-
-
 
 def categorise_job(job):
     status = job['status']
