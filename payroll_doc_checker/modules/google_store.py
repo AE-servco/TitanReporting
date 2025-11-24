@@ -4,7 +4,7 @@ from google.cloud import storage
 from typing import Optional
 import requests
 from datetime import timedelta
-
+import google.auth
 
 BUCKET_NAME = "service_titan_reporter_data"
 
@@ -82,16 +82,21 @@ def upload_bytes_to_gcs_signed(
         data,
         content_type=content_type
     )
-
+    credentials, project_id = google.auth.default()
+    credentials.refresh(google.auth.transport.requests.Request())
+    print(credentials)
     # Create signed URL (GET)
-    url = blob.generate_signed_url(
-        version="v4",
-        expiration=timedelta(seconds=expires_in_seconds),
-        method="GET",
-        response_disposition=f'inline; filename="{blob_name}"'
-    )
-
-    return url
+    if "service_account_email" in credentials:
+        url = blob.generate_signed_url(
+            version="v4",
+            expiration=timedelta(seconds=expires_in_seconds),
+            method="GET",
+            response_disposition=f'inline; filename="{blob_name}"',
+            service_account_email=credentials.service_account_email,
+            access_token=credentials.token,
+        )
+        return url
+    return None
 
 def fetch_from_signed_url(url: str) -> bytes:
     """
