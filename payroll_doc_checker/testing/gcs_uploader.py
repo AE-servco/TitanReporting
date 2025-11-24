@@ -3,6 +3,9 @@ from datetime import timedelta
 from google.cloud import storage
 from servicetitan_api_client import ServiceTitanClient
 from google.cloud import secretmanager
+import google.auth
+
+from google.auth.transport import requests
 
 def get_secret(secret_id, project_id="servco1", version_id="latest"):
     client = secretmanager.SecretManagerServiceClient()
@@ -116,4 +119,8 @@ if __name__ == "__main__":
     # )
     # data = client.get(url)
     # print(upload_bytes_to_gcs_signed(data=data, bucket_name='doc-check-attachments', blob_name='test_attachment'))
-    delete_all_in_bucket('doc-check-attachments')
+    # delete_all_in_bucket('doc-check-attachments')
+    credentials, project_id = google.auth.default()
+    # r = requests.Request()
+    # credentials.refresh(r)
+    print(credentials.service_account_email)
