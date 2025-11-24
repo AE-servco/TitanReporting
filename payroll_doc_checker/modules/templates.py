@@ -118,6 +118,7 @@ def show_images(imgs):
     client = st.session_state.clients.get(st.session_state.current_tenant)
 
     with st.container(horizontal=True, height=1000):
+        st.write(imgs)
         for filename, file_date, file_by, signed_url in imgs:
             if signed_url:
                 data = gs.fetch_from_signed_url(signed_url)
