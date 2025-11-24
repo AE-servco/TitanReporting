@@ -6,8 +6,6 @@ import json
 from google.cloud import secretmanager
 
 import streamlit as st
-import streamlit_authenticator as stauth
-from concurrent.futures import ThreadPoolExecutor, Future, as_completed
 
 from servicetitan_api_client import ServiceTitanClient
 import modules.google_store as gs
@@ -15,6 +13,7 @@ import modules.formatting as format
 import modules.fetching as fetch
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"}
+
 
 def get_doc_check_criteria():
     checks = {

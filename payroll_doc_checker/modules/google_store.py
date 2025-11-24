@@ -5,10 +5,15 @@ from typing import Optional
 import requests
 from datetime import timedelta
 import google.auth
+import os
 
-# from google.auth.transport import requests
+from google.auth.transport import requests as grequests
 
 BUCKET_NAME = "service_titan_reporter_data"
+
+def is_running_in_cloud_run():
+    """Checks if the application is running in Google Cloud Run."""
+    return bool(os.environ.get('K_SERVICE'))
 
 def _get_bucket():
     client = storage.Client()
@@ -85,8 +90,9 @@ def upload_bytes_to_gcs_signed(
         content_type=content_type
     )
     credentials, project_id = google.auth.default()
-    r = requests.Request()
-    credentials.refresh(r)
+    if is_running_in_cloud_run():
+        r = grequests.Request()
+        credentials.refresh(r)
     # print(credentials)
     # Create signed URL (GET)
     if hasattr(credentials, "service_account_email"):
