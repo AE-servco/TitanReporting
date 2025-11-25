@@ -4,7 +4,7 @@ def get_doc_check_criteria():
         'pa': 'After Photo',
         'pr': 'Receipt Photo',
         'qd': 'Quote Description',
-        'qs': 'Quote Description',
+        'qs': 'Quote Signed',
         'qe': 'Quote Emailed',
         'id': 'Invoice Description',
         'is': 'Invoice Signed',

@@ -107,7 +107,8 @@ def build_workbook(
 
     font_red = Font(color='FF0000')
     font_red_bold = Font(color='FF0000', bold=True)
-    font_green_bold = Font(color='00FF00', bold=True)
+    font_green_bold = Font(color='1F9C40', bold=True)
+    font_green = Font(color='1F9C40')
     font_bold = Font(bold=True)
 
     cell_border_full = Border(top=thin_border, bottom=thin_border, right=thin_border, left=thin_border)
@@ -537,7 +538,7 @@ def build_workbook(
                     ws.cell(curr_row, 12, job['After Photo'])
                     ws.cell(curr_row, 13, job['Receipt Photo'])
                     ws.cell(curr_row, 14, job['Quote Description'])
-                    ws.cell(curr_row, 15, job['Quote Description'])
+                    ws.cell(curr_row, 15, job['Quote Signed'])
                     ws.cell(curr_row, 16, job['Quote Emailed'])
                     ws.cell(curr_row, 17, job['Invoice Description'])
                     ws.cell(curr_row, 18, job['Invoice Signed'])
