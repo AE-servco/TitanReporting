@@ -3,6 +3,8 @@ from __future__ import annotations
 import datetime as _dt
 from typing import Dict, List, Set, Tuple, Optional, Any, Iterable
 import json
+from functools import reduce
+import pandas as pd
 
 import streamlit as st
 import streamlit_authenticator as stauth
@@ -14,7 +16,6 @@ import modules.google_store as gs
 import modules.data_formatting as format
 import modules.data_fetching as fetching
 import modules.lookup_tables as lookup
-
 
 def flatten_list(nested_list):
     return [item for sublist in nested_list for item in sublist]
@@ -92,3 +93,6 @@ def categorise_job(job):
             return 'wkend_wo'
             # return 'wkend_scheduled'
         return 'wkend_uncategorised'
+
+def merge_dfs(dfs: list, on='job_id', how='left'):
+    return reduce(lambda left, right: pd.merge(left, right, on=on, how=how), dfs)

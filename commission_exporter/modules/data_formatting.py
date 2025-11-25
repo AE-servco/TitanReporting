@@ -31,13 +31,14 @@ def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='d
         else:
             job_appt_techs = job['appt_techs']
         if len(job_appt_techs) == 1:
-            formatted['sold_by'] = list(job_appt_techs)[0]
+            formatted['sold_by'] = str(list(job_appt_techs)[0])
         elif len(job_appt_techs) == 0:
             formatted['sold_by'] = 'Manual Check'
         else:
             # just add to manual check list for now, might separate to different check list in future.
             formatted['sold_by'] = 'Manual Check'
 
+    formatted['job_id'] = job['id']
     formatted['created_str'] = client.st_date_to_local(job['createdOn'], fmt="%d/%m/%Y")
     formatted['created_dt'] = client.from_utc(job['createdOn'])
     formatted['completed_str'] = client.st_date_to_local(job['completedOn'], fmt="%m/%d/%Y") if job['completedOn'] is not None else "No data"
@@ -69,7 +70,7 @@ def get_invoice_ids(job_response):
 def format_invoice(invoice):
     formatted = {}
     formatted['suburb'] = invoice['customerAddress']['city']
-    formatted['subtotal'] = float(invoice['subTotal'])
+    formatted['inv_subtotal'] = float(invoice['subTotal'])
     formatted['balance'] = float(invoice['balance'])
     formatted['amt_paid'] = round(float(invoice['total']) - float(invoice['balance']),2)
     formatted['invoiceId'] = invoice['id']
@@ -103,23 +104,21 @@ def format_appt(appt): # TODO: finish figuring out what "start time" counts.
     formatted['appt_end'] = appt['end']
     return formatted
 
-# def get_sales_and_installer_codes(roles_reponse):
-#     role_codes = {
-#         's': [],
-#         'i': []
-#     }
-#     for role in roles_reponse:
-#         if role['name'] == 'Technician - Sales':
-#             role_codes['s'].append(role['id'])
-#         if role['name'] == 'Technician - Installer':
-#             role_codes['i'].append(role['id'])
-#     return role_codes
+def format_estimate(estimate, status='Open'): # TODO: finish figuring out what "start time" counts.
+    formatted = {}
+    try:
+        if estimate['status']['name'] != status:
+            return None
+    except KeyError:
+        return None
+    formatted['job_id'] = estimate['jobId']
+    formatted['est_subtotal'] = estimate['subtotal']
+    return formatted
+
 
 def format_employee_list(employee_response):
     # input can be either technician response or employee response
 
-    # def test_role(emp_roles, test_roles):
-    #     return bool(set(emp_roles) & set(test_roles))
 
     formatted = {}
     for employee in employee_response:
@@ -131,27 +130,6 @@ def format_employee_list(employee_response):
             formatted[employee['id']] = {'name': employee['name'], 'team': 'O'}
             formatted[employee['userId']] = {'name': employee['name'], 'team': 'O'}
     return formatted
-
-# def format_employee_list(employee_response, sales_codes=None):
-#     # input can be either technician response or employee response
-
-#     def test_sales(emp_roles, sales_roles):
-#         return bool(set(emp_roles) & set(sales_roles))
-
-#     formatted = {}
-#     sales = set()
-#     for employee in employee_response:
-#         if sales_codes:
-#             test = test_sales(employee['roleIds'], sales_codes)
-#             formatted[employee['id']] = {'name': employee['name'], 'sales': test}
-#             formatted[employee['userId']] = {'name': employee['name'], 'sales': test}
-#             if test:
-#                 sales.add(employee['id'])
-#                 sales.add(employee['userId'])
-#         else:   
-#             formatted[employee['id']] = {'name': employee['name'], 'sales': False}
-#             formatted[employee['userId']] = {'name': employee['name'], 'sales': False}
-#     return formatted, sales
 
 def group_jobs_by_tech(job_records, employee_map):
     jobs_by_tech: dict[str, list[dict]] = {}

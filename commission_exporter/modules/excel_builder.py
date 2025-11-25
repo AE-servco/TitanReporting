@@ -76,14 +76,17 @@ def build_workbook(
         'wkend_wo',
     ]
 
-    cats_count_for_potential = [
+    cats_count_for_potential_wk = [
         'wk_complete_paid',
-        'wkend_complete_paid',
         'wk_complete_unpaid',
-        'wkend_complete_unpaid',
         'wk_wo',
-        'wkend_wo',
         'wk_unsucessful',
+    ]
+
+    cats_count_for_potential_wkend = [
+        'wkend_complete_paid',
+        'wkend_complete_unpaid',
+        'wkend_wo',
         'wkend_unsucessful',
     ]
 
@@ -191,32 +194,31 @@ def build_workbook(
         formatted_cell(ws, summary_top_row + 6,7, 'Exc. SUPER', font = font_green_bold)        
         formatted_cell(ws, summary_top_row + 7,4, 'NET PROFIT', font = font_bold, border = cell_border['topleft'])        
         formatted_cell(ws, summary_top_row + 7,5, '=O10', font = font_red, border = cell_border['topleft'])        
-        formatted_cell(ws, summary_top_row + 7,6, 'todo', font = font_red, border = cell_border['topright']) # total of all net profits - will depend on row numbers from below work - might need to do this one after thats done
         formatted_cell(ws, summary_top_row + 8,4, 'UNLOCKED', font = font_bold, border = cell_border['left'])
         formatted_cell(ws, summary_top_row + 8,5, '=IF(E8>=25000,10%,5%)', font = font_red, border = cell_border['left'])
-        formatted_cell(ws, summary_top_row + 8,6, 'todo', font = font_red, border = cell_border['right']) # Dont think there is anything to go here
         formatted_cell(ws, summary_top_row + 9,4, 'COMMISSION - PAY OUT', font = font_bold, border = cell_border['left'])
         formatted_cell(ws, summary_top_row + 9,5, '=E8*E9', font = font_red, border = cell_border['left'])
-        formatted_cell(ws, summary_top_row + 9,6, 'todo', font = font_red, border = cell_border['right']) # Dont think there is anything to go here
         formatted_cell(ws, summary_top_row + 9,7, '=E10/1.12', font = font_green_bold)
         formatted_cell(ws, summary_top_row + 10,4, 'EMERGENCY', font = font_bold, border = cell_border['left'])
         formatted_cell(ws, summary_top_row + 10,5, '=P10', font = font_red, border = cell_border['left'])        
-        formatted_cell(ws, summary_top_row + 10,6, 'todo', font = font_red, border = cell_border['right']) # Dont think there is anything to go here
         formatted_cell(ws, summary_top_row + 11,4, 'EMERGENCY - PAY OUT', font = font_bold, border = cell_border['left'])        
         formatted_cell(ws, summary_top_row + 11,5, '=E11*0.25', font = font_red, border = cell_border['left'])        
-        formatted_cell(ws, summary_top_row + 11,6, 'todo', font = font_red, border = cell_border['right']) # Dont think there is anything to go here        
         formatted_cell(ws, summary_top_row + 11,7, '=E12/1.12', font = font_green_bold)
         formatted_cell(ws, summary_top_row + 12,4, 'PREV. WEEK', font = font_bold, border = cell_border['left'])        
-        formatted_cell(ws, summary_top_row + 12,5, 'todo', font = font_red, border = cell_border['left']) # Dont think there is anything to go here 
-        formatted_cell(ws, summary_top_row + 12,6, 'todo', font = font_red, border = cell_border['right']) # Dont think there is anything to go here        
+        formatted_cell(ws, summary_top_row + 12,5, 0, font = font_red, border = cell_border['left'])
         formatted_cell(ws, summary_top_row + 13,4, 'PREV. WEEK - PAY OUT', font = font_bold, border = cell_border['bottomleft'])        
         formatted_cell(ws, summary_top_row + 13,5, '=E13*0.05', font = font_red, border = cell_border['bottomleft'])        
-        formatted_cell(ws, summary_top_row + 13,6, 'todo', font = font_red, border = cell_border['bottomright']) # Dont think there is anything to go here        
         formatted_cell(ws, summary_top_row + 13,7, '=E14/1.12', font = font_green_bold)
         formatted_cell(ws, summary_top_row + 14,4, '5 Star Review', font = font_green_bold, border = cell_border['bottomleft'])
         formatted_cell(ws, summary_top_row + 14,5, '=E16*50', border = cell_border['left'])
         formatted_cell(ws, summary_top_row + 15,4, '5 Star Notes', font = font_green_bold, border = cell_border['bottomleft'])        
         formatted_cell(ws, summary_top_row + 15,5, '=S4', border = cell_border['left'])
+
+        formatted_cell(ws, summary_top_row + 8,6, '==IF(F8>=25000,10%,5%)', font=font_red, border = cell_border['right'])
+        formatted_cell(ws, summary_top_row + 9,6, '=F8*F9', font = font_red, border = cell_border['right'])
+        formatted_cell(ws, summary_top_row + 11,6, '=F11*0.25', font = font_red, border = cell_border['right'])
+        formatted_cell(ws, summary_top_row + 12,6, 0, font = font_red, border = cell_border['right'])
+        formatted_cell(ws, summary_top_row + 13,6, '==F13*0.05', font = font_red, border = cell_border['bottomright'])
         
         #box 4
         formatted_cell(ws, summary_top_row + 1,10, 'PHOTOS', font = font_bold, border = cell_border['topleft'])
@@ -519,10 +521,12 @@ def build_workbook(
                     ws.cell(curr_row, 2, job['created_str'])
                     ws.cell(curr_row, 3, job['num'])
                     ws.cell(curr_row, 4, job['suburb'])
-                    ws.cell(curr_row, 5, job['subtotal']).number_format = '$ 00.00'
                     if not job['unsuccessful']:
-                        ws.cell(curr_row, 6, job['subtotal']*0.2).number_format = '$ 00.00'
+                        ws.cell(curr_row, 5, job['inv_subtotal']).number_format = '$ 00.00'
+                        ws.cell(curr_row, 6, job['inv_subtotal']*0.2).number_format = '$ 00.00'
                         ws.cell(curr_row, 6).comment = Comment(job['summary'], "automation")
+                    else:
+                        ws.cell(curr_row, 5, job['open_est_subtotal']).number_format = '$ 00.00'
                     # 7
                     ws.cell(curr_row, 8, f"={get_column_letter(5)}{curr_row}-{get_column_letter(6)}{curr_row}-{get_column_letter(7)}{curr_row}").number_format = '$ 00.00'
                     ws.cell(curr_row, 9, job['payment_types'])
@@ -721,6 +725,16 @@ def build_workbook(
         formatted_cell(ws, summary_top_row + 17,17, wk_sales_awaiting_formula, font = font_red_bold, border = cell_border['bottomleft'])
         wkend_sales_awaiting_formula = '=' + ' + '.join([f'SUM(E{cat_row_info[cat][0]}:E{cat_row_info[cat][1]})'for cat in cats_count_awaiting_pay_wkend])
         formatted_cell(ws, summary_top_row + 17,18, wkend_sales_awaiting_formula, font = font_red_bold, border = cell_border['bottomleftright'])
+        
+        # potential
+
+        wk_profit_potential_formula = '=' + ' + '.join([f'SUM(H{cat_row_info[cat][0]}:H{cat_row_info[cat][1]})'for cat in cats_count_for_potential_wk])
+        formatted_cell(ws, summary_top_row + 7,6, wk_profit_potential_formula, font = font_red, border = cell_border['topright'])
+        wkend_profit_potential_formula = '=' + ' + '.join([f'SUM(H{cat_row_info[cat][0]}:H{cat_row_info[cat][1]})'for cat in cats_count_for_potential_wkend])
+        formatted_cell(ws, summary_top_row + 10,6, wkend_profit_potential_formula, font = font_red, border = cell_border['right'])
+        
+
+
 
         for row in ws[f'V{27}:X{curr_row-3}']:
             for cell in row:

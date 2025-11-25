@@ -49,8 +49,10 @@ if ss["authentication_status"]:
                 jobs = fetching.fetch_jobs(start_date, end_date, ss.client)
 
             with st.spinner("Fetching appointments..."):
-                # TODO: add logic to fetch more appts if job appt num != num output for that job here
                 appt_assmnts = fetching.fetch_appt_assmnts(start_date, end_date, ss.client)
+
+            with st.spinner("Fetching estimates..."):
+                estimates = fetching.fetch_estimates(start_date, end_date, ss.client)
 
             with st.spinner("Fetching invoices..."):
                 invoice_ids = format.get_invoice_ids(jobs)
@@ -70,18 +72,34 @@ if ss["authentication_status"]:
                 jobs = [job for job in jobs_w_nones if job is not None]
                 invoices = [format.format_invoice(invoice) for invoice in invoices]
                 payments = helpers.flatten_list([format.format_payment(payment) for payment in payments])
+                open_estimates = [e for e in [format.format_estimate(est, 'Open') for est in estimates] if e is not None]
+                sold_estimates = [e for e in [format.format_estimate(est, 'Sold') for est in estimates] if e is not None]
 
                 jobs_df = pd.DataFrame(jobs)
                 invoices_df = pd.DataFrame(invoices)
                 payments_df = pd.DataFrame(payments)
                 # payments_grouped = payments_df.groupby('invoiceId', as_index=False).agg(','.join)
                 payments_grouped = payments_df.groupby('invoiceId', as_index=False).agg(lambda x: ', '.join(sorted(list(set(x)))))
+                open_estimates_df = pd.DataFrame(open_estimates)
+                sold_estimates_df = pd.DataFrame(sold_estimates)
+                open_estimates_grouped = open_estimates_df.groupby('job_id', as_index=False).agg({'est_subtotal': 'sum'})
+                sold_estimates_grouped = sold_estimates_df.groupby('job_id', as_index=False).agg({'est_subtotal': 'sum'})
 
+                # st.dataframe(open_estimates_df)
+                # st.dataframe(sold_estimates_df)
+                # st.dataframe(open_estimates_grouped)
+                # st.dataframe(sold_estimates_grouped)
                 # st.dataframe(payments_grouped)
 
             with st.spinner("Merging data..."):
-                merged = pd.merge(pd.merge(jobs_df, invoices_df, on='invoiceId', how='left'), payments_grouped, on='invoiceId', how='left')
+                merged = helpers.merge_dfs([jobs_df, invoices_df, payments_grouped], on='invoiceId', how='left')
+                merged = helpers.merge_dfs([merged, open_estimates_grouped], on='job_id')
+                merged = merged.rename(columns={'est_subtotal': 'open_est_subtotal'})
+                merged = helpers.merge_dfs([merged, sold_estimates_grouped], on='job_id')
+                merged = merged.rename(columns={'est_subtotal': 'sold_est_subtotal'})
+                # merged = pd.merge(pd.merge(jobs_df, invoices_df, on='invoiceId', how='left'), payments_grouped, on='invoiceId', how='left')
                 job_records = merged.to_dict(orient='records')
+            # st.write(job_records)
             # st.dataframe(merged)
             
             with st.spinner("Separating by technician..."):

@@ -148,3 +148,39 @@ def fetch_appts(
             }
     appts = _client.get_all(base_path, params=params)
     return appts
+
+# @st.cache_data(show_spinner=False)
+def fetch_estimates(
+    start_date: _dt.date,
+    end_date: _dt.date,
+    _client: ServiceTitanClient,
+    job_id: str | None = None
+) -> List[Dict[str, Any]]:
+    """
+    Retrieve all estimates created between `start_date` and `end_date`,
+    converting the local date boundaries into UTC timestamps.
+    """
+
+    base_path = _client.build_url('sales', 'estimates')
+
+    created_after = _client.start_of_day_utc_string(start_date)
+    created_before = _client.end_of_day_utc_string(end_date)
+    # If job_id specified, only return that job
+    if job_id:
+        params = {
+            "jobId": job_id,
+        }
+        try:
+            resp = _client.get(base_path, params=params)
+        except Exception:
+            return []
+        if not isinstance(resp, dict):
+            return []
+        page_data: Iterable[Dict[str, Any]] = resp.get("data") or []
+        return page_data
+    params = {
+                "createdOnOrAfter": created_after,
+                "createdBefore": created_before,
+            }
+    ests = _client.get_all(base_path, params=params)
+    return ests
