@@ -35,7 +35,22 @@ TENANTS = [
 
 def main() -> None:
     st.set_page_config(page_title="ServiceTitan Job Browser", layout="wide")
-    st.title("Doc Checks Payroll")
+    st.markdown(
+        """
+        <style>
+            div[data-testid="stColumn"] {
+                height: 30% !important;
+            }
+            .stMainBlockContainer {
+                padding-top: 2rem;
+                padding-bottom: 0rem;
+            }
+        </style>
+        """,
+            unsafe_allow_html=True,
+        )
+
+    st.sidebar.title("Doc Checks Payroll")
 
     templates.authenticate_app('st_auth_config_plumber_commissions.yaml')
 
@@ -62,8 +77,8 @@ def main() -> None:
                 st.session_state.prefetch_futures: Dict[str, Future] = {}
             if "app_guid" not in st.session_state:
                 st.session_state.app_guid = helpers.get_secret('ST_servco_integrations_guid')
-            if "prefill_txt" not in st.session_state:
-                st.session_state.prefill_txt: str = ""
+            # if "prefill_txt" not in st.session_state:
+            #     st.session_state.prefill_txt: str = ""
 
         templates.sidebar_filters()
 
@@ -77,45 +92,59 @@ def main() -> None:
         if st.session_state.jobs:
             client = st.session_state.clients.get(st.session_state.current_tenant)
             idx = st.session_state.current_index
-            job, job_id, job_num = templates.job_nav_buttons(idx)
+            # job, job_id, job_num = templates.job_nav_buttons(idx)
+            job = st.session_state.jobs[idx]
+            job_id = str(job.get("id"))
+            job_num = str(job.get("jobNumber"))
             idx = st.session_state.current_index
 
-            # Display job details and images
-            st.write(f"**Viewing job {job_num} ({idx + 1} of {len(st.session_state.jobs)})**")
-            st.link_button("Go to job on ServiceTitan", f"https://{st.session_state.current_tenant}.eh.go.servicetitan.com/#/Job/Index/{job_id}")
-            prefill_holder = st.text("")
+            with st.container(horizontal_alignment="center", gap=None):
+                with st.container(horizontal=True, horizontal_alignment="center"):
+                    templates.nav_button('prev')
+                    st.link_button(f"**Job {job_num}**", f"https://{st.session_state.current_tenant}.eh.go.servicetitan.com/#/Job/Index/{job_id}", type='tertiary')
+                    templates.nav_button('next')
+                st.text(f"({idx + 1} of {len(st.session_state.jobs)})")
 
-            templates.show_job_info(job)
+            job_info, attachments = st.columns([1,4])
 
-            attachments = st.session_state.prefetched.get(job_id)
-            if attachments is None:
-                # If not already prefetched, download synchronously all attachments
-                with st.spinner("Downloading attachments..."):
-                    attachments = fetch.download_attachments_for_job(job_id, client)
-                st.session_state.prefetched[job_id] = attachments
+            with job_info:
+                # prefill_holder = st.text("")
+                templates.show_job_info(job)
 
-            # Display attachments in tabs: one for images and one for other docs
-            tab_images, tab_docs = st.tabs(["Images", "Other Documents"])
+            with attachments:
+                attachments = st.session_state.prefetched.get(job_id)
+                if attachments is None:
+                    # If not already prefetched, download synchronously all attachments
+                    with st.spinner("Downloading attachments..."):
+                        attachments = fetch.download_attachments_for_job(job_id, client)
+                    st.session_state.prefetched[job_id] = attachments
 
-            # Show images
-            with tab_images:
-                imgs = attachments.get("imgs", [])
-                imgs.sort(key=lambda img: img[1])
-                if imgs:
-                    templates.show_images(imgs)
-                else:
-                    st.info("No image attachments for this job.")
+                # Display attachments in tabs: one for images and one for other docs
+                tab_images, tab_docs = st.tabs(["Images", "Other Documents"])
 
-            # Show other documents (e.g., PDFs)
-            with tab_docs:
-                pdfs = attachments.get("pdfs", [])
-                templates.show_pdfs(pdfs)
-            
+                # Show images
+                with tab_images:
+                    imgs = attachments.get("imgs", [])
+                    imgs.sort(key=lambda img: img[1])
+                    if imgs:
+                        templates.show_images(imgs,900)
+                    else:
+                        st.info("No image attachments for this job.")
+
+                # Show other documents (e.g., PDFs)
+                with tab_docs:
+                    pdfs = attachments.get("pdfs", [])
+                    templates.show_pdfs(pdfs, 900)
+
+
 
             # Sidebar form for the current job
             with st.sidebar:
                 templates.doc_check_form(job_num, job, attachments, doc_check_criteria, exdata_key='docchecks_testing')
-                prefill_holder.text(st.session_state.prefill_txt)
+                # prefill_holder.text(st.session_state.prefill_txt)
+
+            
+
 
         else:
             st.info("Choose a date range and click 'Fetch Jobs' to begin.")

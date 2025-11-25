@@ -218,4 +218,4 @@ def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filte
         # Kick off prefetch for the first three jobs
         fetch.schedule_prefetches(client)
         # Trigger an immediate rerun to process any completed futures
-        # st.rerun()
+        st.rerun()

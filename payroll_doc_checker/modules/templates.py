@@ -65,20 +65,56 @@ def job_nav_buttons(idx):
     job_num = str(job.get("jobNumber"))
 
     # Navigation buttons
-    col_prev, col_next = st.columns([1, 1], width=250)
-    with col_prev:
-        if st.button("Previous Job"):
+    # col_prev, col_next = st.columns([1, 1], width=250)
+    # with col_prev:
+    with st.container(horizontal=True, width=400):
+        if st.button("Previous Job", key='prev_button'):
             if st.session_state.current_index > 0:
                 st.session_state.current_index -= 1
                 fetch.schedule_prefetches(client)
                 st.rerun()
-    with col_next:
-        if st.button("Next Job"):
+        st.write(f"**Job {job_num}**")
+        # with col_next:
+        if st.button("Next Job", key='next_button'):
             if st.session_state.current_index < len(st.session_state.jobs) - 1:
                 st.session_state.current_index += 1
                 fetch.schedule_prefetches(client)
                 st.rerun()
-    return job, job_id, job_num
+    return
+
+def nav_button(dir):
+    client = st.session_state.clients.get(st.session_state.current_tenant)
+    if dir=='next':
+        if st.button("**>**", key='next_button', type='tertiary'):
+            if st.session_state.current_index < len(st.session_state.jobs) - 1:
+                st.session_state.current_index += 1
+            fetch.schedule_prefetches(client)
+            st.rerun()
+    elif dir=='prev':
+        if st.button("**<**", key='prev_button', type='tertiary'):
+            if st.session_state.current_index > 0:
+                st.session_state.current_index -= 1
+            fetch.schedule_prefetches(client)
+            st.rerun()
+    else:
+        st.button("Does nothing", key='button_that_does_nothing')
+
+
+# def prev_job_button(idx):
+#     client = st.session_state.clients.get(st.session_state.current_tenant)
+#     if st.button("Previous Job", key='prev_button'):
+#         if st.session_state.current_index > 0:
+#             st.session_state.current_index -= 1
+#             fetch.schedule_prefetches(client)
+#             st.rerun()
+
+# def next_job_buttion(idx):
+#     client = st.session_state.clients.get(st.session_state.current_tenant)
+#     if st.button("Next Job", key='next_button'):
+#         if st.session_state.current_index < len(st.session_state.jobs) - 1:
+#             st.session_state.current_index += 1
+#             fetch.schedule_prefetches(client)
+#             st.rerun()
 
 def show_job_info(job):
     client = st.session_state.clients.get(st.session_state.current_tenant)
@@ -90,6 +126,11 @@ def show_job_info(job):
     inv_bal = inv_data.get("balance", "Not available.")
     inv_amt_paid = inv_data.get("amt_paid", "Not available.")
 
+    # invoice_desc = {
+    #     "Invoice items": inv_desc.split("|")
+    # }
+    # st.table(invoice_desc, border="horizontal")
+
     payment_data = job.get("payment_data", [])
 
     payment_colors = {
@@ -99,38 +140,52 @@ def show_job_info(job):
         'Cash': 'green',
     }
     
-    st.write(f"Job total: ${job_amt}")
-    st.write(f"Invoice summary:")
+    st.write(f"**Invoice summary**")
     for item in inv_desc.split("|"):
-        st.write(f'- {item}')
-    st.write(f"Invoice subtotal: ${inv_subtotal}")
-    st.write(f"Invoice balance: ${inv_bal}")
-    st.write(f"Amount paid: ${inv_amt_paid}")
+        st.write(item)
+    st.write(f"**Invoice subtotal**")
+    st.write(f"${inv_subtotal:.2f}")
+    st.write(f"**Invoice balance**")
+    st.write(f"${inv_bal:.2f}")
+    st.write(f"**Amount paid**")
+    st.write(f"${inv_amt_paid:.2f}")
+    st.write(f"**Job total**")
+    st.write(f"${job_amt:.2f}")
     # payments_str = ', '.join([st.badge(f"{p['payment_type']} {p['payment_amt']}", color="blue") for p in payment_data])
-    st.write(f"Payments made:")
+    st.write(f"**Payments made**")
     for p in payment_data:
-        st.badge(f"{p['payment_type']} {p['payment_amt']}", color=payment_colors.get(p['payment_type'], 'grey'))
+        st.badge(f"{p['payment_type']} ${p['payment_amt']}", color=payment_colors.get(p['payment_type'], 'grey'))
     
-    table_df = pd.DataFrame({
-        "First Appointment": [
-            job['first_appt_num'], 
-            client.format_local(client.from_utc_string(job['first_appt_start']), fmt="%H:%M, %d/%m/%Y"), 
-            client.format_local(client.from_utc_string(job['first_appt_end']), fmt="%H:%M, %d/%m/%Y"), 
-            client.format_local(client.from_utc_string(job['first_appt_arrival_start']), fmt="%H:%M, %d/%m/%Y"), 
-            client.format_local(client.from_utc_string(job['first_appt_arrival_end']), fmt="%H:%M, %d/%m/%Y")],
-        "Last Appointment": [
-            job['last_appt_num'], 
-            client.format_local(client.from_utc_string(job['last_appt_start']), fmt="%H:%M, %d/%m/%Y"), 
-            client.format_local(client.from_utc_string(job['last_appt_end']), fmt="%H:%M, %d/%m/%Y"), 
-            client.format_local(client.from_utc_string(job['last_appt_arrival_start']), fmt="%H:%M, %d/%m/%Y"),
-            client.format_local(client.from_utc_string(job['last_appt_arrival_end']), fmt="%H:%M, %d/%m/%Y")
-        ]
-    }, index=['Appointment #', 'Recorded Start time', 'Recorded End time', 'Arrival window start', 'Arrival window end'])
-    st.table(table_df)
+    if job['first_appt_num'] != job['last_appt_num']:
+        st.write("**First Appointment**")
+        st.write(f"{job['first_appt_num']}") 
+        st.write('Started at ' + client.format_local(client.from_utc_string(job['first_appt_start']), fmt="%H:%M, %d/%m/%Y")) 
+        st.write('Ended at ' + client.format_local(client.from_utc_string(job['first_appt_end']), fmt="%H:%M, %d/%m/%Y"))
+    st.write("**Last Appointment**")
+    st.write(f"{job['last_appt_num']}") 
+    st.write('Started at ' + client.format_local(client.from_utc_string(job['last_appt_start']), fmt="%H:%M, %d/%m/%Y")) 
+    st.write('Ended at ' + client.format_local(client.from_utc_string(job['last_appt_end']), fmt="%H:%M, %d/%m/%Y"))
+
+    # table_df = pd.DataFrame({
+    #     "First Appointment": [
+    #         job['first_appt_num'], 
+    #         client.format_local(client.from_utc_string(job['first_appt_start']), fmt="%H:%M, %d/%m/%Y"), 
+    #         client.format_local(client.from_utc_string(job['first_appt_end']), fmt="%H:%M, %d/%m/%Y"), 
+    #         client.format_local(client.from_utc_string(job['first_appt_arrival_start']), fmt="%H:%M, %d/%m/%Y"), 
+    #         client.format_local(client.from_utc_string(job['first_appt_arrival_end']), fmt="%H:%M, %d/%m/%Y")],
+    #     "Last Appointment": [
+    #         job['last_appt_num'], 
+    #         client.format_local(client.from_utc_string(job['last_appt_start']), fmt="%H:%M, %d/%m/%Y"), 
+    #         client.format_local(client.from_utc_string(job['last_appt_end']), fmt="%H:%M, %d/%m/%Y"), 
+    #         client.format_local(client.from_utc_string(job['last_appt_arrival_start']), fmt="%H:%M, %d/%m/%Y"),
+    #         client.format_local(client.from_utc_string(job['last_appt_arrival_end']), fmt="%H:%M, %d/%m/%Y")
+    #     ]
+    # }, index=['Appointment #', 'Recorded Start time', 'Recorded End time', 'Arrival window start', 'Arrival window end'])
+    # st.table(table_df)
     # st.write(job)
 
 @st.fragment
-def show_images(imgs):
+def show_images(imgs, container_height=1000):
     img_size = st.slider(
         "Image Size:",
         min_value=1,
@@ -142,7 +197,7 @@ def show_images(imgs):
     
     client = st.session_state.clients.get(st.session_state.current_tenant)
 
-    with st.container(horizontal=True, height=1000):
+    with st.container(horizontal=True, height=container_height, border=False):
         for filename, file_date, file_by, signed_url in imgs:
             if signed_url:
                 data = gs.fetch_from_signed_url(signed_url)
@@ -150,7 +205,7 @@ def show_images(imgs):
             else:
                 st.write(filename)
 
-def show_pdfs(pdfs):
+def show_pdfs(pdfs, container_height=1000):
     # Provide a search box to filter document names
     search_query = st.text_input("Search document names", key=f"search_pdfs")
     filtered_pdfs = pdfs
@@ -168,7 +223,7 @@ def show_pdfs(pdfs):
                         file_name=fname,
                         mime="application/octet-stream"
                     )
-                    with st.container(height=1000):
+                    with st.container(height=container_height):
                         pdf_viewer(data, key=fname)
     else:
         st.info("No documents match your search.")
