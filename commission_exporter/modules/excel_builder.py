@@ -24,6 +24,7 @@ def formatted_cell(worksheet, row: int, col: int, val: str | None=None, font: Fo
 
 def build_workbook(
     jobs_by_tech: dict[str, list[dict]],
+    end_date: dt.date
 ) -> bytes:
     
     CATEGORY_ORDER = {
@@ -39,7 +40,57 @@ def build_workbook(
         'wk_uncategorised': 'WEEK UNCATEGORISED',
         'wkend_uncategorised': 'WEEKEND UNCATEGORISED',
     }
+    dates = {
+        'monday': end_date - dt.timedelta(days=6),
+        'tuesday': end_date - dt.timedelta(days=5),
+        'wednesday': end_date - dt.timedelta(days=4),
+        'thursday': end_date - dt.timedelta(days=3),
+        'friday': end_date - dt.timedelta(days=2),
+        'saturday': end_date - dt.timedelta(days=1),
+    }
+    
+    date_strs = {day: date.strftime("%d/%m/%Y") for day, date in dates.items()}
+    # monday_str = monday.strftime("%d/%m/%Y")
+    # tuesday_str = tuesday.strftime("%d/%m/%Y")
+    # wednesday_str = wednesday.strftime("%d/%m/%Y")
+    # thursday_str = thursday.strftime("%d/%m/%Y")
+    # friday_str = friday.strftime("%d/%m/%Y")
+    # saturday_str = saturday.strftime("%d/%m/%Y")
 
+    cats_count_for_total = [
+        'wk_complete_paid',
+        'wkend_complete_paid',
+        'wk_complete_unpaid',
+        'wkend_complete_unpaid',
+        'wk_wo',
+        'wkend_wo',
+    ]
+
+    cats_count_awaiting_pay_wk = [
+        'wk_complete_unpaid',
+        'wk_wo',
+    ]
+
+    cats_count_awaiting_pay_wkend = [
+        'wkend_complete_unpaid',
+        'wkend_wo',
+    ]
+
+    cats_count_for_potential = [
+        'wk_complete_paid',
+        'wkend_complete_paid',
+        'wk_complete_unpaid',
+        'wkend_complete_unpaid',
+        'wk_wo',
+        'wkend_wo',
+        'wk_unsucessful',
+        'wkend_unsucessful',
+    ]
+
+    cats_count_for_unsuccessful = [
+        'wk_unsucessful',
+        'wkend_unsucessful',
+    ]
 
     # =========================== STYLING ===========================
 
@@ -189,26 +240,7 @@ def build_workbook(
         formatted_cell(ws, summary_top_row + 2,18, 'EMAILED', font = font_bold, border = cell_border['bottom'])
         formatted_cell(ws, summary_top_row + 2,19, '5 Star Review', font = font_bold, border = cell_border['bottomleftright'])
         formatted_cell(ws, summary_top_row + 3,9, 'TAKEN', font = font_bold, border = cell_border['topleft'])
-        formatted_cell(ws, summary_top_row + 3,10, '=J46', font = font_bold, border = cell_border['left'])
-        formatted_cell(ws, summary_top_row + 3,11, '=K46', font = font_bold, border = cell_border['left'])
-        formatted_cell(ws, summary_top_row + 3,12, '=L46', font = font_bold, border = cell_border['left'])
-        formatted_cell(ws, summary_top_row + 3,13, '=M46', font = font_bold, border = cell_border['left'])
-        formatted_cell(ws, summary_top_row + 3,14, '=N46', font = font_bold, border = cell_border['left'])
-        formatted_cell(ws, summary_top_row + 3,15, '=O46', font = font_bold, border = cell_border['left'])
-        formatted_cell(ws, summary_top_row + 3,16, '=P46', font = font_bold, border = cell_border['left'])
-        formatted_cell(ws, summary_top_row + 3,17, '=Q46', font = font_bold, border = cell_border['left'])
-        formatted_cell(ws, summary_top_row + 3,18, '=R46', font = font_bold, border = cell_border['left'])
-        formatted_cell(ws, summary_top_row + 3,19, 'todo', font = font_bold, border = cell_border['leftright']) # total 5 star reviews
         formatted_cell(ws, summary_top_row + 4,9, '%', font = font_bold, border = cell_border['bottomleft'])
-        formatted_cell(ws, summary_top_row + 4,10, '=J46/J45', font = font_bold, border = cell_border['bottomleft'])
-        formatted_cell(ws, summary_top_row + 4,11, '=K46/K45', font = font_bold, border = cell_border['bottomleft'])
-        formatted_cell(ws, summary_top_row + 4,12, '=L46/L45', font = font_bold, border = cell_border['bottomleft'])
-        formatted_cell(ws, summary_top_row + 4,13, '=M46/M45', font = font_bold, border = cell_border['bottomleft'])
-        formatted_cell(ws, summary_top_row + 4,14, '=N46/N45', font = font_bold, border = cell_border['bottomleft'])
-        formatted_cell(ws, summary_top_row + 4,15, '=O46/O45', font = font_bold, border = cell_border['bottomleft'])
-        formatted_cell(ws, summary_top_row + 4,16, '=P46/P45', font = font_bold, border = cell_border['bottomleft'])
-        formatted_cell(ws, summary_top_row + 4,17, '=Q46/Q45', font = font_bold, border = cell_border['bottomleft'])
-        formatted_cell(ws, summary_top_row + 4,18, '=R46/R45', font = font_bold, border = cell_border['bottomleft'])
         formatted_cell(ws, summary_top_row + 4,19, border = cell_border['bottomleftright'])
 
         # box 5
@@ -230,43 +262,27 @@ def build_workbook(
         formatted_cell(ws, summary_top_row + 8,16, 'SAT', font = font_green_bold, border = cell_border['topleft'])
         formatted_cell(ws, summary_top_row + 8,17, 'Awaiting Payment', font = font_red_bold, border = cell_border['topleft'])
         formatted_cell(ws, summary_top_row + 8,18, 'Awaiting Payment', font = font_red_bold, border = cell_border['topleftright'])
-        formatted_cell(ws, summary_top_row + 9,10, 'todo', font = font_bold, border = cell_border['bottomleft']) # These all rely on daily totals
-        formatted_cell(ws, summary_top_row + 9,11, 'todo', font = font_bold, border = cell_border['bottom']) # These all rely on daily totals
-        formatted_cell(ws, summary_top_row + 9,12, 'todo', font = font_bold, border = cell_border['bottom']) # These all rely on daily totals
-        formatted_cell(ws, summary_top_row + 9,13, 'todo', font = font_bold, border = cell_border['bottom']) # These all rely on daily totals
-        formatted_cell(ws, summary_top_row + 9,14, 'todo', font = font_bold, border = cell_border['bottom']) # These all rely on daily totals
-        formatted_cell(ws, summary_top_row + 9,15, '=SUM(J10:N10)', font = font_bold, border = cell_border['bottom']) # These all rely on daily totals - this one is total
-        formatted_cell(ws, summary_top_row + 9,16, 'todo', font = font_green_bold, border = cell_border['bottomleft']) # These all rely on daily totals
-        formatted_cell(ws, summary_top_row + 9,17, 'todo', font = font_red_bold, border = cell_border['bottomleft']) # These all rely on daily totals
-        formatted_cell(ws, summary_top_row + 9,18, 'todo', font = font_red_bold, border = cell_border['bottomleftright']) # These all rely on daily totals
+        ##
+        formatted_cell(ws, summary_top_row + 9,15, '=SUM(J10:N10)', font = font_bold, border = cell_border['bottom'])
+        ##
 
         formatted_cell(ws, summary_top_row + 10,9, 'Successful')
         formatted_cell(ws, summary_top_row + 11,9, 'Unsuccessful')
         formatted_cell(ws, summary_top_row + 12,9, 'Success rate')
         formatted_cell(ws, summary_top_row + 13,9, 'Avg sale')
 
-        formatted_cell(ws, summary_top_row + 10,10, 'todo') # Actual count of monday jobs
-        formatted_cell(ws, summary_top_row + 11,10, 'todo')
         formatted_cell(ws, summary_top_row + 12,10, '=J11/(J11+J12)')
         formatted_cell(ws, summary_top_row + 13,10, '=J10/J11')
 
-        formatted_cell(ws, summary_top_row + 10,11, 'todo') # Actual count of tuesday jobs
-        formatted_cell(ws, summary_top_row + 11,11, 'todo')
         formatted_cell(ws, summary_top_row + 12,11, '=K11/(K11+K12)')
         formatted_cell(ws, summary_top_row + 13,11, '=K10/K11')
         
-        formatted_cell(ws, summary_top_row + 10,12, 'todo') # Actual count of wednesday jobs
-        formatted_cell(ws, summary_top_row + 11,12, 'todo')
         formatted_cell(ws, summary_top_row + 12,12, '=L11/(L11+L12)')
         formatted_cell(ws, summary_top_row + 13,12, '=L10/L11')
         
-        formatted_cell(ws, summary_top_row + 10,13, 'todo') # Actual count of thursday jobs
-        formatted_cell(ws, summary_top_row + 11,13, 'todo')
         formatted_cell(ws, summary_top_row + 12,13, '=M11/(M11+M12)')
         formatted_cell(ws, summary_top_row + 13,13, '=M10/M11')
         
-        formatted_cell(ws, summary_top_row + 10,14, 'todo') # Actual count of friday jobs
-        formatted_cell(ws, summary_top_row + 11,14, 'todo')
         formatted_cell(ws, summary_top_row + 12,14, '=N11/(N11+N12)')
         formatted_cell(ws, summary_top_row + 13,14, '=N10/N11')
         
@@ -275,8 +291,6 @@ def build_workbook(
         formatted_cell(ws, summary_top_row + 12,15, '=O11/(O11+O12)')
         formatted_cell(ws, summary_top_row + 13,15, '=O10/O11')
         
-        formatted_cell(ws, summary_top_row + 10,16, 'todo') # Actual count of saturday jobs
-        formatted_cell(ws, summary_top_row + 11,16, 'todo')
         formatted_cell(ws, summary_top_row + 12,16, '=P11/(P11+P12)')
         formatted_cell(ws, summary_top_row + 13,16, '=P10/P11')
 
@@ -299,15 +313,9 @@ def build_workbook(
         formatted_cell(ws, summary_top_row + 16,16, 'SAT', font = font_green_bold, border = cell_border['topleft'])
         formatted_cell(ws, summary_top_row + 16,17, 'Awaiting Payment', font = font_red_bold, border = cell_border['topleft'])
         formatted_cell(ws, summary_top_row + 16,18, 'Awaiting Payment', font = font_red_bold, border = cell_border['topleftright'])
-        formatted_cell(ws, summary_top_row + 17,10, 'todo', font = font_bold, border = cell_border['bottomleft']) # These all rely on daily totals
-        formatted_cell(ws, summary_top_row + 17,11, 'todo', font = font_bold, border = cell_border['bottom'])#
-        formatted_cell(ws, summary_top_row + 17,12, 'todo', font = font_bold, border = cell_border['bottom'])#
-        formatted_cell(ws, summary_top_row + 17,13, 'todo', font = font_bold, border = cell_border['bottom'])#
-        formatted_cell(ws, summary_top_row + 17,14, 'todo', font = font_bold, border = cell_border['bottom'])#
-        formatted_cell(ws, summary_top_row + 17,15, 'todo', font = font_bold, border = cell_border['bottom'])#
-        formatted_cell(ws, summary_top_row + 17,16, 'todo', font = font_green_bold, border = cell_border['bottomleft'])#
-        formatted_cell(ws, summary_top_row + 17,17, 'todo', font = font_red_bold, border = cell_border['bottomleft'])#
-        formatted_cell(ws, summary_top_row + 17,18, 'todo', font = font_red_bold, border = cell_border['bottomleftright'])#
+        ##
+        formatted_cell(ws, summary_top_row + 17,15, '=SUM(J18:N18)', font = font_bold, border = cell_border['bottom'])#
+        ##
 
         formatted_cell(ws, summary_top_row + 18,9, 'Successful')
         formatted_cell(ws, summary_top_row + 19,9, 'Unsuccessful')
@@ -427,6 +435,65 @@ def build_workbook(
         curr_row += 1
         # =========================================
 
+        
+        # Summary input variables 
+        # =========================================
+
+        job_counts_per_day = {
+            '0': 0,
+            '1': 0,
+            '2': 0,
+            '3': 0,
+            '4': 0,
+            '5': 0,
+            '6': 0,
+            '7': 0,
+        }
+
+        sales_per_day = {
+            '0': 0,
+            '1': 0,
+            '2': 0,
+            '3': 0,
+            '4': 0,
+            '5': 0,
+            '6': 0,
+            '7': 0,
+        }
+
+        profit_per_day = {
+            '0': 0,
+            '1': 0,
+            '2': 0,
+            '3': 0,
+            '4': 0,
+            '5': 0,
+            '6': 0,
+            '7': 0,
+        }
+        monday_jobs = 0
+        tuesday_jobs = 0
+        wednesday_jobs = 0
+        thursday_jobs = 0
+        friday_jobs = 0
+        saturday_jobs = 0
+        
+        monday_sales = 0
+        tuesday_sales = 0
+        wednesday_sales = 0
+        thursday_sales = 0
+        friday_sales = 0
+        saturday_sales = 0
+        
+        monday_profit = 0
+        tuesday_profit = 0
+        wednesday_profit = 0
+        thursday_profit = 0
+        friday_profit = 0
+        saturday_profit = 0
+
+        cat_row_info = {}
+
         for cat, cat_text in CATEGORY_ORDER.items():
             ws.cell(curr_row,1,cat_text)
             curr_row += 1
@@ -446,6 +513,8 @@ def build_workbook(
                     curr_row += 1
                 job_count = 1
                 for job in jobs:
+                    # if cat in cats_count_for_total:
+
                     ws.cell(curr_row, 1, job_count)
                     ws.cell(curr_row, 2, job['created_str'])
                     ws.cell(curr_row, 3, job['num'])
@@ -471,7 +540,7 @@ def build_workbook(
                     ws.cell(curr_row, 19, job['Invoice Emailed'])
                     ws.cell(curr_row, 20, job['5 Star Review'])
 
-                    
+                        # SUMIF(date_col, "date", profit/sales col)
                     
                     payments = job.get('payment_amt')
 
@@ -515,6 +584,13 @@ def build_workbook(
                     curr_row += 1
                     job_count += 1
             
+
+            # add 5 rows for any extras
+            curr_row += 5
+
+            # Fill in info 
+            cat_row_info[cat] = (cat_row_start, curr_row-1)
+
             # Doc check formatting 0s to red
             dc_start_col_letter = get_column_letter(10)
             dc_end_col_letter = get_column_letter(20)
@@ -542,11 +618,114 @@ def build_workbook(
             ws.cell(curr_row, materials_col).border = border_double_bottom
             ws.cell(curr_row, merchantf_col).border = border_double_bottom
             ws.cell(curr_row, profit_col).border = border_double_bottom
-            curr_row +=2
+
+            formatted_cell(ws, curr_row, 11, f"=COUNT(K{cat_row_start}:K{curr_row-1})")
+            formatted_cell(ws, curr_row, 12, f"=COUNT(L{cat_row_start}:L{curr_row-1})")
+            formatted_cell(ws, curr_row, 13, f"=COUNT(M{cat_row_start}:M{curr_row-1})")
+            formatted_cell(ws, curr_row, 14, f"=COUNT(N{cat_row_start}:N{curr_row-1})")
+            formatted_cell(ws, curr_row, 15, f"=COUNT(O{cat_row_start}:O{curr_row-1})")
+            formatted_cell(ws, curr_row, 16, f"=COUNT(P{cat_row_start}:P{curr_row-1})")
+            formatted_cell(ws, curr_row, 17, f"=COUNT(Q{cat_row_start}:Q{curr_row-1})")
+            formatted_cell(ws, curr_row, 18, f"=COUNT(R{cat_row_start}:R{curr_row-1})")
+            formatted_cell(ws, curr_row, 19, f"=COUNT(S{cat_row_start}:S{curr_row-1})")
+            formatted_cell(ws, curr_row, 20, f"=COUNT(T{cat_row_start}:T{curr_row-1})")
+
+            formatted_cell(ws, curr_row+1, 11, f"=SUM(K{cat_row_start}:K{curr_row-1})")
+            formatted_cell(ws, curr_row+1, 12, f"=SUM(L{cat_row_start}:L{curr_row-1})")
+            formatted_cell(ws, curr_row+1, 13, f"=SUM(M{cat_row_start}:M{curr_row-1})")
+            formatted_cell(ws, curr_row+1, 14, f"=SUM(N{cat_row_start}:N{curr_row-1})")
+            formatted_cell(ws, curr_row+1, 15, f"=SUM(O{cat_row_start}:O{curr_row-1})")
+            formatted_cell(ws, curr_row+1, 16, f"=SUM(P{cat_row_start}:P{curr_row-1})")
+            formatted_cell(ws, curr_row+1, 17, f"=SUM(Q{cat_row_start}:Q{curr_row-1})")
+            formatted_cell(ws, curr_row+1, 18, f"=SUM(R{cat_row_start}:R{curr_row-1})")
+            formatted_cell(ws, curr_row+1, 19, f"=SUM(S{cat_row_start}:S{curr_row-1})")
+            formatted_cell(ws, curr_row+1, 20, f"=SUM(T{cat_row_start}:T{curr_row-1})")
+
+            curr_row +=3
         
-        for row in ws[f'V{3}:X{curr_row-3}']:
+        # =SUMIF(B{cat_start}:B{cat_end}, date_str, E{cat_start}:E{cat_end}) -- sales
+        # =SUMIF(B{cat_start}:B{cat_end}, date_str, H{cat_start}:H{cat_end}) -- profit
+# monday_str
+
+        days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+        profit_formulas = {day: '=' + ' + '.join([f'SUMIF(B{cat_row_info[cat][0]}:B{cat_row_info[cat][1]}, "{date_strs[day]}", H{cat_row_info[cat][0]}:H{cat_row_info[cat][1]})'for cat in cats_count_for_total]) for day in days}
+
+        formatted_cell(ws, summary_top_row + 9,10, profit_formulas['monday'], font = font_bold, border = cell_border['bottomleft']) # These all rely on daily totals
+        formatted_cell(ws, summary_top_row + 9,11, profit_formulas['tuesday'], font = font_bold, border = cell_border['bottom']) # These all rely on daily totals
+        formatted_cell(ws, summary_top_row + 9,12, profit_formulas['wednesday'], font = font_bold, border = cell_border['bottom']) # These all rely on daily totals
+        formatted_cell(ws, summary_top_row + 9,13, profit_formulas['thursday'], font = font_bold, border = cell_border['bottom']) # These all rely on daily totals
+        formatted_cell(ws, summary_top_row + 9,14, profit_formulas['friday'], font = font_bold, border = cell_border['bottom']) # These all rely on daily totals
+        formatted_cell(ws, summary_top_row + 9,16, profit_formulas['saturday'], font = font_green_bold, border = cell_border['bottomleft']) # These all rely on daily totals
+
+        sales_formulas = {day: '=' + ' + '.join([f'SUMIF(B{cat_row_info[cat][0]}:B{cat_row_info[cat][1]}, "{date_strs[day]}", E{cat_row_info[cat][0]}:E{cat_row_info[cat][1]})'for cat in cats_count_for_total]) for day in days}
+
+        formatted_cell(ws, summary_top_row + 17,10, sales_formulas['monday'], font = font_bold, border = cell_border['bottomleft']) # These all rely on daily totals
+        formatted_cell(ws, summary_top_row + 17,11, sales_formulas['tuesday'], font = font_bold, border = cell_border['bottom'])#
+        formatted_cell(ws, summary_top_row + 17,12, sales_formulas['wednesday'], font = font_bold, border = cell_border['bottom'])#
+        formatted_cell(ws, summary_top_row + 17,13, sales_formulas['thursday'], font = font_bold, border = cell_border['bottom'])#
+        formatted_cell(ws, summary_top_row + 17,14, sales_formulas['friday'], font = font_bold, border = cell_border['bottom'])#
+        formatted_cell(ws, summary_top_row + 17,16, sales_formulas['saturday'], font = font_green_bold, border = cell_border['bottomleft']) # These all rely on daily totals
+
+        count_success_formulas = {day: '=' + ' + '.join([f'COUNTIF(B{cat_row_info[cat][0]}:B{cat_row_info[cat][1]}, "{date_strs[day]}")'for cat in cats_count_for_total]) for day in days}
+
+        formatted_cell(ws, summary_top_row + 10,10, count_success_formulas['monday']) # Actual count of monday jobs
+        formatted_cell(ws, summary_top_row + 10,11, count_success_formulas['tuesday']) # Actual count of tuesday jobs
+        formatted_cell(ws, summary_top_row + 10,12, count_success_formulas['wednesday']) # Actual count of wednesday jobs
+        formatted_cell(ws, summary_top_row + 10,13, count_success_formulas['thursday']) # Actual count of thursday jobs
+        formatted_cell(ws, summary_top_row + 10,14, count_success_formulas['friday']) # Actual count of friday jobs
+        formatted_cell(ws, summary_top_row + 10,16, count_success_formulas['saturday']) # Actual count of saturday jobs
+
+        count_unsuccess_formulas = {day: '=' + ' + '.join([f'COUNTIF(B{cat_row_info[cat][0]}:B{cat_row_info[cat][1]}, "{date_strs[day]}")'for cat in cats_count_for_unsuccessful]) for day in days}
+        # Unsuccessful counts
+        formatted_cell(ws, summary_top_row + 11,10, count_unsuccess_formulas['monday'])
+        formatted_cell(ws, summary_top_row + 11,11, count_unsuccess_formulas['tuesday'])
+        formatted_cell(ws, summary_top_row + 11,12, count_unsuccess_formulas['wednesday'])
+        formatted_cell(ws, summary_top_row + 11,13, count_unsuccess_formulas['thursday'])
+        formatted_cell(ws, summary_top_row + 11,14, count_unsuccess_formulas['friday'])
+        formatted_cell(ws, summary_top_row + 11,16, count_unsuccess_formulas['saturday'])
+
+        end_of_comp_paid = cat_row_info['wk_complete_paid'][1]
+        formatted_cell(ws, summary_top_row + 3,10, f'=K{end_of_comp_paid+2}', font = font_bold, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 3,11, f'=L{end_of_comp_paid+2}', font = font_bold, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 3,12, f'=M{end_of_comp_paid+2}', font = font_bold, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 3,13, f'=N{end_of_comp_paid+2}', font = font_bold, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 3,14, f'=O{end_of_comp_paid+2}', font = font_bold, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 3,15, f'=P{end_of_comp_paid+2}', font = font_bold, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 3,16, f'=Q{end_of_comp_paid+2}', font = font_bold, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 3,17, f'=R{end_of_comp_paid+2}', font = font_bold, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 3,18, f'=S{end_of_comp_paid+2}', font = font_bold, border = cell_border['left'])
+        
+        
+        review_count_formula = '=' + ' + '.join([f'SUM(T{cat_row_info[cat][0]}:T{cat_row_info[cat][1]})'for cat in cats_count_for_total])
+        formatted_cell(ws, summary_top_row + 3,19, review_count_formula, font = font_bold, border = cell_border['leftright']) # total 5 star reviews
+
+        formatted_cell(ws, summary_top_row + 4,10, f'=K{end_of_comp_paid+2}/K{end_of_comp_paid+1}', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 4,11, f'=L{end_of_comp_paid+2}/L{end_of_comp_paid+1}', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 4,12, f'=M{end_of_comp_paid+2}/M{end_of_comp_paid+1}', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 4,13, f'=N{end_of_comp_paid+2}/N{end_of_comp_paid+1}', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 4,14, f'=O{end_of_comp_paid+2}/O{end_of_comp_paid+1}', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 4,15, f'=P{end_of_comp_paid+2}/P{end_of_comp_paid+1}', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 4,16, f'=Q{end_of_comp_paid+2}/Q{end_of_comp_paid+1}', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 4,17, f'=R{end_of_comp_paid+2}/R{end_of_comp_paid+1}', font = font_bold, border = cell_border['bottomleft'])
+        formatted_cell(ws, summary_top_row + 4,18, f'=S{end_of_comp_paid+2}/S{end_of_comp_paid+1}', font = font_bold, border = cell_border['bottomleft'])
+
+        
+
+        wk_profit_awaiting_formula = '=' + ' + '.join([f'SUM(H{cat_row_info[cat][0]}:H{cat_row_info[cat][1]})'for cat in cats_count_awaiting_pay_wk])
+        formatted_cell(ws, summary_top_row + 9,17, wk_profit_awaiting_formula, font = font_red_bold, border = cell_border['bottomleft'])
+        wkend_profit_awaiting_formula = '=' + ' + '.join([f'SUM(H{cat_row_info[cat][0]}:H{cat_row_info[cat][1]})'for cat in cats_count_awaiting_pay_wkend])
+        formatted_cell(ws, summary_top_row + 9,18, wkend_profit_awaiting_formula, font = font_red_bold, border = cell_border['bottomleftright'])
+
+        #mngment 
+        wk_sales_awaiting_formula = '=' + ' + '.join([f'SUM(E{cat_row_info[cat][0]}:E{cat_row_info[cat][1]})'for cat in cats_count_awaiting_pay_wk])
+        formatted_cell(ws, summary_top_row + 17,17, wk_sales_awaiting_formula, font = font_red_bold, border = cell_border['bottomleft'])
+        wkend_sales_awaiting_formula = '=' + ' + '.join([f'SUM(E{cat_row_info[cat][0]}:E{cat_row_info[cat][1]})'for cat in cats_count_awaiting_pay_wkend])
+        formatted_cell(ws, summary_top_row + 17,18, wkend_sales_awaiting_formula, font = font_red_bold, border = cell_border['bottomleftright'])
+
+        for row in ws[f'V{27}:X{curr_row-3}']:
             for cell in row:
                 cell.border = cell_border_full
+
 
     bio = BytesIO()
     wb.save(bio)

@@ -30,8 +30,9 @@ if ss["authentication_status"]:
     last_sunday = last_monday + dt.timedelta(days=6)
 
     with st.form("date_select"):
-        start_date = st.date_input("Start date", value=last_monday)
-        end_date = st.date_input("End date", value=last_sunday)
+        # start_date = st.date_input("Start date", value=last_monday)
+        end_date = st.date_input("Week ending", value=last_sunday)
+        start_date = end_date - dt.timedelta(days=6)
 
         submitted = st.form_submit_button("Fetch and build workbook")
         
@@ -90,6 +91,7 @@ if ss["authentication_status"]:
             with st.spinner("Building spreadsheet..."):
                 excel_bytes = build_workbook(
                     jobs_by_tech=jobs_by_tech,
+                    end_date=end_date
                 )
         
         templates.show_download_button(excel_bytes, f"commissions_{start_date}_{end_date}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
