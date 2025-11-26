@@ -76,8 +76,16 @@ def format_invoice(invoice):
     formatted['invoiceId'] = invoice['id']
     if invoice['items']:
         formatted['summary'] = '\n'.join([i['description'].split('<')[0] for i in invoice['items']])
+        formatted['inv_items_skuids'] = ', '.join([str(i['skuId']) for i in invoice['items']])
+        formatted['inv_items_skuNames'] = ', '.join([i['skuName'] for i in invoice['items']])
+        formatted['inv_items_displayName'] = ', '.join([i['displayName'] for i in invoice['items']])
+        formatted['inv_items_ids'] = ', '.join([str(i['id']) for i in invoice['items']])
     else:
         formatted['summary'] = 'no invoice items'
+        formatted['inv_items_skuids'] = ""
+        formatted['inv_items_skuNames'] = ""
+        formatted['inv_items_displayName'] = ""
+        formatted['inv_items_ids'] = ""
     return formatted
 
 def format_payment(payment, client: ServiceTitanClient):

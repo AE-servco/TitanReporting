@@ -85,11 +85,11 @@ if ss["authentication_status"]:
                 open_estimates_grouped = open_estimates_df.groupby('job_id', as_index=False).agg({'est_subtotal': 'sum'})
                 sold_estimates_grouped = sold_estimates_df.groupby('job_id', as_index=False).agg({'est_subtotal': 'sum'})
 
+                st.dataframe(invoices_df)
                 # st.dataframe(open_estimates_df)
                 # st.dataframe(sold_estimates_df)
                 # st.dataframe(open_estimates_grouped)
                 # st.dataframe(sold_estimates_grouped)
-                # st.dataframe(payments_grouped)
 
             with st.spinner("Merging data..."):
                 merged = helpers.merge_dfs([jobs_df, invoices_df, payments_grouped], on='invoiceId', how='left')
