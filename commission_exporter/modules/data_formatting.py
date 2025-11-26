@@ -80,12 +80,16 @@ def format_invoice(invoice):
         formatted['summary'] = 'no invoice items'
     return formatted
 
-def format_payment(payment):
+def format_payment(payment, client: ServiceTitanClient):
     output = []
     for invoice in payment['appliedTo']:
         formatted = {}
         formatted['invoiceId'] = invoice['appliedTo']
         formatted['payment_types'] = payment['type']
+        try:    
+            formatted['payment_dates'] = client.st_date_to_local(invoice['appliedOn'])[:10] # cut off at just date
+        except KeyError:
+            formatted['payment_dates'] = 'no applied date'
         formatted['payment_amt'] = payment['type'][:2] + invoice.get('appliedAmount', '0')
         output.append(formatted)
     return output

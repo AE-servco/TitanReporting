@@ -6,8 +6,8 @@ from openpyxl.styles import Border, Side, PatternFill, Font, Alignment
 from openpyxl.comments import Comment
 from openpyxl.formatting.rule import CellIsRule
 
-def formatted_cell(worksheet, row: int, col: int, val: str | None=None, font: Font | None=None, border: Border | None=None, number_format: str | None=None, fill: PatternFill | None=None):
-    if val:
+def formatted_cell(worksheet, row: int, col: int, val = None, font: Font | None=None, border: Border | None=None, number_format: str | None=None, fill: PatternFill | None=None):
+    if val or val == 0:
         cell = worksheet.cell(row, col, val)
     else:
         cell = worksheet.cell(row, col)
@@ -163,7 +163,7 @@ def build_workbook(
         # ================ SUMMARY ==================
         formatted_cell(ws, summary_top_row,1, 'WEEKLY COMMISSION', font = font_bold)
         formatted_cell(ws, summary_top_row,5, 'WEEK ENDING', font = font_red_bold)
-        formatted_cell(ws, summary_top_row,6, 'PUT DATE HERE', font = font_red_bold)
+        formatted_cell(ws, summary_top_row,6, end_date.strftime("%d/%m/%Y"), font = font_red_bold)
 
         # box 1
         formatted_cell(ws, summary_top_row + 2,1, 'BOOKED JOBS',font = font_bold, border = cell_border['topleft'])
@@ -194,7 +194,7 @@ def build_workbook(
         formatted_cell(ws, summary_top_row + 6,6, 'POTENTIAL', font = font_bold, border = cell_border['topright'])        
         formatted_cell(ws, summary_top_row + 6,7, 'Exc. SUPER', font = font_green_bold)        
         formatted_cell(ws, summary_top_row + 7,4, 'NET PROFIT', font = font_bold, border = cell_border['topleft'])        
-        formatted_cell(ws, summary_top_row + 7,5, '=O10', border = cell_border['topleft'])        
+        formatted_cell(ws, summary_top_row + 7,5, '=O10-Q10', border = cell_border['topleft'])        
         formatted_cell(ws, summary_top_row + 8,4, 'UNLOCKED', font = font_bold, border = cell_border['left'])
         formatted_cell(ws, summary_top_row + 8,5, '=IF(E8>=25000,10%,5%)', border = cell_border['left'])
         formatted_cell(ws, summary_top_row + 9,4, 'COMMISSION - PAY OUT', font = font_bold, border = cell_border['left'])
@@ -498,7 +498,10 @@ def build_workbook(
         cat_row_info = {}
 
         for cat, cat_text in CATEGORY_ORDER.items():
-            ws.cell(curr_row,1,cat_text)
+            cat_font = None
+            if cat in ['wk_complete_unpaid', 'wk_wo']:
+                cat_font = font_green
+            formatted_cell(ws, curr_row,1,cat_text, font=cat_font)
             curr_row += 1
             cat_row_start = curr_row
 
@@ -515,38 +518,35 @@ def build_workbook(
                 if not jobs:
                     curr_row += 1
                 job_count = 1
-                cat_font = None
-                if cat in ['wk_complete_unpaid', 'wk_wo']:
-                    cat_font = font_green
                 for job in jobs:
                     # if cat in cats_count_for_total:
 
-                    ws.cell(curr_row, 1, job_count)
-                    ws.cell(curr_row, 2, job['created_str'])
-                    ws.cell(curr_row, 3, job['num'])
-                    ws.cell(curr_row, 4, job['suburb'])
+                    formatted_cell(ws, curr_row, 1, job_count, font=cat_font)
+                    formatted_cell(ws, curr_row, 2, job['created_str'], font=cat_font)
+                    formatted_cell(ws, curr_row, 3, int(job['num']), font=cat_font)
+                    formatted_cell(ws, curr_row, 4, job['suburb'], font=cat_font)
                     if not job['unsuccessful']:
-                        ws.cell(curr_row, 5, job['inv_subtotal']).number_format = '$ 00.00'
-                        ws.cell(curr_row, 6, job['inv_subtotal']*0.2).number_format = '$ 00.00'
-                        ws.cell(curr_row, 6).comment = Comment(job['summary'], "automation")
+                        formatted_cell(ws, curr_row, 5, job['inv_subtotal'], font=cat_font).number_format = '$ 00.00'
+                        formatted_cell(ws, curr_row, 6, job['inv_subtotal']*0.2, font=cat_font).number_format = '$ 00.00'
+                        formatted_cell(ws, curr_row, 6, font=cat_font).comment = Comment(job['summary'], "automation")
                     else:
-                        ws.cell(curr_row, 5, job['open_est_subtotal']).number_format = '$ 00.00'
+                        formatted_cell(ws, curr_row, 5, job['open_est_subtotal'], font=cat_font).number_format = '$ 00.00'
                     # 7
-                    ws.cell(curr_row, 8, f"={get_column_letter(5)}{curr_row}-{get_column_letter(6)}{curr_row}-{get_column_letter(7)}{curr_row}").number_format = '$ 00.00'
-                    ws.cell(curr_row, 9, job['payment_types'])
+                    formatted_cell(ws, curr_row, 8, f"={get_column_letter(5)}{curr_row}-{get_column_letter(6)}{curr_row}-{get_column_letter(7)}{curr_row}", font=cat_font).number_format = '$ 00.00'
+                    formatted_cell(ws, curr_row, 9, job['payment_types'], font=cat_font)
                     # 10 TODO: all doc checks complete
                     doc_check_complete_col = f'=IF(OR({", ".join([f"{get_column_letter(i)}{curr_row}=0" for i in range(11,20)])}), "N","Y")'
-                    ws.cell(curr_row, 10, doc_check_complete_col).alignment = align_center
-                    ws.cell(curr_row, 11, job['Before Photo'])
-                    ws.cell(curr_row, 12, job['After Photo'])
-                    ws.cell(curr_row, 13, job['Receipt Photo'])
-                    ws.cell(curr_row, 14, job['Quote Description'])
-                    ws.cell(curr_row, 15, job['Quote Signed'])
-                    ws.cell(curr_row, 16, job['Quote Emailed'])
-                    ws.cell(curr_row, 17, job['Invoice Description'])
-                    ws.cell(curr_row, 18, job['Invoice Signed'])
-                    ws.cell(curr_row, 19, job['Invoice Emailed'])
-                    ws.cell(curr_row, 20, job['5 Star Review'])
+                    formatted_cell(ws, curr_row, 10, doc_check_complete_col, font=cat_font).alignment = align_center
+                    formatted_cell(ws, curr_row, 11, job['Before Photo'], font=cat_font)
+                    formatted_cell(ws, curr_row, 12, job['After Photo'], font=cat_font)
+                    formatted_cell(ws, curr_row, 13, job['Receipt Photo'], font=cat_font)
+                    formatted_cell(ws, curr_row, 14, job['Quote Description'], font=cat_font)
+                    formatted_cell(ws, curr_row, 15, job['Quote Signed'], font=cat_font)
+                    formatted_cell(ws, curr_row, 16, job['Quote Emailed'], font=cat_font)
+                    formatted_cell(ws, curr_row, 17, job['Invoice Description'], font=cat_font)
+                    formatted_cell(ws, curr_row, 18, job['Invoice Signed'], font=cat_font)
+                    formatted_cell(ws, curr_row, 19, job['Invoice Emailed'], font=cat_font)
+                    formatted_cell(ws, curr_row, 20, job['5 Star Review'], font=cat_font)
 
                         # SUMIF(date_col, "date", profit/sales col)
                     
@@ -586,9 +586,9 @@ def build_workbook(
                             except:
                                 continue
                         if p_types['EF'] or p_types['Cr']:
-                            ws.cell(curr_row, 22, f"={'+'.join(p_types['EF'] + p_types['Cr'])}")
+                            formatted_cell(ws, curr_row, 22, f"={'+'.join(p_types['EF'] + p_types['Cr'])}", font=cat_font)
                         if p_types['Ca']:
-                            ws.cell(curr_row, 23, f"={'+'.join(p_types['Ca'])}")
+                            formatted_cell(ws, curr_row, 23, f"={'+'.join(p_types['Ca'])}", font=cat_font)
                     curr_row += 1
                     job_count += 1
             

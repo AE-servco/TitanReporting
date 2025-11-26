@@ -55,44 +55,42 @@ def filter_out_unsuccessful_jobs(jobs, client: ServiceTitanClient):
     unsuccessful_tags = [tag.get("id") for tag in fetching.fetch_tag_types(client) if "Unsuccessful" in tag.get("name")]
     return [job for job in jobs if unsuccessful_tags[0] not in job.get("tagTypeIds")]
 
+def check_payment_dates(job, end_date):
+    if job.get("payment_dates"):
+        if type(job.get("payment_dates")) != str:
+            return True
+        for date in job.get("payment_dates").split(', '):
+            if _dt.datetime.strptime(date, "%Y-%m-%d").date() > end_date:
+                return False
+    return True
+
 def categorise_job(job):
-    status = job['status']
-    day = job['created_dt'].weekday()
-    balance = float(job['balance'])
-    if day <5: # weekdays
+
+    def _categorise(job, prefix):
+        status = job['status']
+        balance = float(job['balance'])
+        payments_in_time = job['payments_in_time']
         if job['unsuccessful']:
-            return 'wk_unsucessful'
-        if status == 'Completed' and balance == 0:
-            return 'wk_complete_paid'
-        if status == 'Completed' and balance != 0:
-            return 'wk_complete_unpaid'
+            return prefix + '_unsucessful'
+        if status == 'Completed' and balance == 0 and payments_in_time:
+            return prefix + '_complete_paid'
+        if status == 'Completed' and (balance != 0 or not payments_in_time):
+            return prefix + '_complete_unpaid'
         if status == 'Hold':
-            return 'wk_wo'
+            return prefix + '_wo'
             # return 'wk_hold'
         if status == 'InProgress':
-            return 'wk_wo'
+            return prefix + '_wo'
             # return 'wk_progress'
         if status == 'Scheduled':
-            return 'wk_wo'
+            return prefix + '_wo'
             # return 'wk_scheduled'
-        return 'wk_uncategorised'
-    if day >=5: # weekdays
-        if job['unsuccessful']:
-            return 'wkend_unsucessful'
-        if status == 'Completed' and balance == 0:
-            return 'wkend_complete_paid'
-        if status == 'Completed' and balance != 0:
-            return 'wkend_complete_unpaid'
-        if status == 'Hold':
-            return 'wkend_wo'
-            # return 'wkend_hold'
-        if status == 'InProgress':
-            return 'wkend_wo'
-            # return 'wkend_progress'
-        if status == 'Scheduled':
-            return 'wkend_wo'
-            # return 'wkend_scheduled'
-        return 'wkend_uncategorised'
+        return prefix + '_uncategorised'
+    day = job['created_dt'].weekday()
+    if day <5: # weekdays
+        return _categorise(job, 'wk')
+    if day >=5: # weekends
+        return _categorise(job, 'wkend')
 
 def merge_dfs(dfs: list, on='job_id', how='left'):
     return reduce(lambda left, right: pd.merge(left, right, on=on, how=how), dfs)

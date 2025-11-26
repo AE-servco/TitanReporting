@@ -71,7 +71,7 @@ if ss["authentication_status"]:
                 jobs_w_nones = [format.format_job(job, ss.client, tenant_tags, exdata_key='docchecks_testing') for job in jobs]
                 jobs = [job for job in jobs_w_nones if job is not None]
                 invoices = [format.format_invoice(invoice) for invoice in invoices]
-                payments = helpers.flatten_list([format.format_payment(payment) for payment in payments])
+                payments = helpers.flatten_list([format.format_payment(payment, ss.client) for payment in payments])
                 open_estimates = [e for e in [format.format_estimate(est, 'Open') for est in estimates] if e is not None]
                 sold_estimates = [e for e in [format.format_estimate(est, 'Sold') for est in estimates] if e is not None]
 
@@ -99,7 +99,9 @@ if ss["authentication_status"]:
                 merged = merged.rename(columns={'est_subtotal': 'sold_est_subtotal'})
                 # merged = pd.merge(pd.merge(jobs_df, invoices_df, on='invoiceId', how='left'), payments_grouped, on='invoiceId', how='left')
                 job_records = merged.to_dict(orient='records')
-            # st.write(job_records)
+                for job in job_records:
+                    job['payments_in_time'] = helpers.check_payment_dates(job, end_date)
+            st.write(job_records)
             # st.dataframe(merged)
             
             with st.spinner("Separating by technician..."):
