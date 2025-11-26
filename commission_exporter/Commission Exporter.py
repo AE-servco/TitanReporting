@@ -101,7 +101,7 @@ if ss["authentication_status"]:
                 job_records = merged.to_dict(orient='records')
                 for job in job_records:
                     job['payments_in_time'] = helpers.check_payment_dates(job, end_date)
-            st.write(job_records)
+            # st.write(job_records)
             # st.dataframe(merged)
             
             with st.spinner("Separating by technician..."):
