@@ -194,21 +194,21 @@ def build_workbook(
         formatted_cell(ws, summary_top_row + 6,6, 'POTENTIAL', font = font_bold, border = cell_border['topright'])        
         formatted_cell(ws, summary_top_row + 6,7, 'Exc. SUPER', font = font_green_bold)        
         formatted_cell(ws, summary_top_row + 7,4, 'NET PROFIT', font = font_bold, border = cell_border['topleft'])        
-        formatted_cell(ws, summary_top_row + 7,5, '=O10', font = font_red, border = cell_border['topleft'])        
+        formatted_cell(ws, summary_top_row + 7,5, '=O10', border = cell_border['topleft'])        
         formatted_cell(ws, summary_top_row + 8,4, 'UNLOCKED', font = font_bold, border = cell_border['left'])
-        formatted_cell(ws, summary_top_row + 8,5, '=IF(E8>=25000,10%,5%)', font = font_red, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 8,5, '=IF(E8>=25000,10%,5%)', border = cell_border['left'])
         formatted_cell(ws, summary_top_row + 9,4, 'COMMISSION - PAY OUT', font = font_bold, border = cell_border['left'])
-        formatted_cell(ws, summary_top_row + 9,5, '=E8*E9', font = font_red, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 9,5, '=E8*E9', border = cell_border['left'])
         formatted_cell(ws, summary_top_row + 9,7, '=E10/1.12', font = font_green_bold)
         formatted_cell(ws, summary_top_row + 10,4, 'EMERGENCY', font = font_bold, border = cell_border['left'])
-        formatted_cell(ws, summary_top_row + 10,5, '=P10', font = font_red, border = cell_border['left'])        
+        formatted_cell(ws, summary_top_row + 10,5, '=P10', border = cell_border['left'])        
         formatted_cell(ws, summary_top_row + 11,4, 'EMERGENCY - PAY OUT', font = font_bold, border = cell_border['left'])        
-        formatted_cell(ws, summary_top_row + 11,5, '=E11*0.25', font = font_red, border = cell_border['left'])        
+        formatted_cell(ws, summary_top_row + 11,5, '=E11*0.25', border = cell_border['left'])        
         formatted_cell(ws, summary_top_row + 11,7, '=E12/1.12', font = font_green_bold)
         formatted_cell(ws, summary_top_row + 12,4, 'PREV. WEEK', font = font_bold, border = cell_border['left'])        
-        formatted_cell(ws, summary_top_row + 12,5, 0, font = font_red, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 12,5, 0, border = cell_border['left'])
         formatted_cell(ws, summary_top_row + 13,4, 'PREV. WEEK - PAY OUT', font = font_bold, border = cell_border['bottomleft'])        
-        formatted_cell(ws, summary_top_row + 13,5, '=E13*0.05', font = font_red, border = cell_border['bottomleft'])        
+        formatted_cell(ws, summary_top_row + 13,5, '=E13*0.05', border = cell_border['bottomleft'])        
         formatted_cell(ws, summary_top_row + 13,7, '=E14/1.12', font = font_green_bold)
         formatted_cell(ws, summary_top_row + 14,4, '5 Star Review', font = font_green_bold, border = cell_border['bottomleft'])
         formatted_cell(ws, summary_top_row + 14,5, '=E16*50', border = cell_border['left'])
@@ -217,7 +217,7 @@ def build_workbook(
 
         formatted_cell(ws, summary_top_row + 8,6, '==IF(F8>=25000,10%,5%)', font=font_red, border = cell_border['right'])
         formatted_cell(ws, summary_top_row + 9,6, '=F8*F9', font = font_red, border = cell_border['right'])
-        formatted_cell(ws, summary_top_row + 11,6, '=F11*0.25', font = font_red, border = cell_border['right'])
+        formatted_cell(ws, summary_top_row + 11,6, border = cell_border['right'])
         formatted_cell(ws, summary_top_row + 12,6, 0, font = font_red, border = cell_border['right'])
         formatted_cell(ws, summary_top_row + 13,6, '==F13*0.05', font = font_red, border = cell_border['bottomright'])
         
@@ -515,6 +515,9 @@ def build_workbook(
                 if not jobs:
                     curr_row += 1
                 job_count = 1
+                cat_font = None
+                if cat in ['wk_complete_unpaid', 'wk_wo']:
+                    cat_font = font_green
                 for job in jobs:
                     # if cat in cats_count_for_total:
 
@@ -624,29 +627,30 @@ def build_workbook(
             ws.cell(curr_row, merchantf_col).border = border_double_bottom
             ws.cell(curr_row, profit_col).border = border_double_bottom
 
-            formatted_cell(ws, curr_row, 11, f"=COUNT(K{cat_row_start}:K{curr_row-1})")
-            formatted_cell(ws, curr_row, 12, f"=COUNT(L{cat_row_start}:L{curr_row-1})")
-            formatted_cell(ws, curr_row, 13, f"=COUNT(M{cat_row_start}:M{curr_row-1})")
-            formatted_cell(ws, curr_row, 14, f"=COUNT(N{cat_row_start}:N{curr_row-1})")
-            formatted_cell(ws, curr_row, 15, f"=COUNT(O{cat_row_start}:O{curr_row-1})")
-            formatted_cell(ws, curr_row, 16, f"=COUNT(P{cat_row_start}:P{curr_row-1})")
-            formatted_cell(ws, curr_row, 17, f"=COUNT(Q{cat_row_start}:Q{curr_row-1})")
-            formatted_cell(ws, curr_row, 18, f"=COUNT(R{cat_row_start}:R{curr_row-1})")
-            formatted_cell(ws, curr_row, 19, f"=COUNT(S{cat_row_start}:S{curr_row-1})")
-            formatted_cell(ws, curr_row, 20, f"=COUNT(T{cat_row_start}:T{curr_row-1})")
+            if cat == 'wk_complete_paid':
+                formatted_cell(ws, curr_row, 11, f"=COUNT(K{cat_row_start}:K{curr_row-1})")
+                formatted_cell(ws, curr_row, 12, f"=COUNT(L{cat_row_start}:L{curr_row-1})")
+                formatted_cell(ws, curr_row, 13, f"=COUNT(M{cat_row_start}:M{curr_row-1})")
+                formatted_cell(ws, curr_row, 14, f"=COUNT(N{cat_row_start}:N{curr_row-1})")
+                formatted_cell(ws, curr_row, 15, f"=COUNT(O{cat_row_start}:O{curr_row-1})")
+                formatted_cell(ws, curr_row, 16, f"=COUNT(P{cat_row_start}:P{curr_row-1})")
+                formatted_cell(ws, curr_row, 17, f"=COUNT(Q{cat_row_start}:Q{curr_row-1})")
+                formatted_cell(ws, curr_row, 18, f"=COUNT(R{cat_row_start}:R{curr_row-1})")
+                formatted_cell(ws, curr_row, 19, f"=COUNT(S{cat_row_start}:S{curr_row-1})")
+                formatted_cell(ws, curr_row, 20, f"=COUNT(T{cat_row_start}:T{curr_row-1})")
 
-            formatted_cell(ws, curr_row+1, 11, f"=SUM(K{cat_row_start}:K{curr_row-1})")
-            formatted_cell(ws, curr_row+1, 12, f"=SUM(L{cat_row_start}:L{curr_row-1})")
-            formatted_cell(ws, curr_row+1, 13, f"=SUM(M{cat_row_start}:M{curr_row-1})")
-            formatted_cell(ws, curr_row+1, 14, f"=SUM(N{cat_row_start}:N{curr_row-1})")
-            formatted_cell(ws, curr_row+1, 15, f"=SUM(O{cat_row_start}:O{curr_row-1})")
-            formatted_cell(ws, curr_row+1, 16, f"=SUM(P{cat_row_start}:P{curr_row-1})")
-            formatted_cell(ws, curr_row+1, 17, f"=SUM(Q{cat_row_start}:Q{curr_row-1})")
-            formatted_cell(ws, curr_row+1, 18, f"=SUM(R{cat_row_start}:R{curr_row-1})")
-            formatted_cell(ws, curr_row+1, 19, f"=SUM(S{cat_row_start}:S{curr_row-1})")
-            formatted_cell(ws, curr_row+1, 20, f"=SUM(T{cat_row_start}:T{curr_row-1})")
-
-            curr_row +=3
+                formatted_cell(ws, curr_row+1, 11, f"=SUM(K{cat_row_start}:K{curr_row-1})")
+                formatted_cell(ws, curr_row+1, 12, f"=SUM(L{cat_row_start}:L{curr_row-1})")
+                formatted_cell(ws, curr_row+1, 13, f"=SUM(M{cat_row_start}:M{curr_row-1})")
+                formatted_cell(ws, curr_row+1, 14, f"=SUM(N{cat_row_start}:N{curr_row-1})")
+                formatted_cell(ws, curr_row+1, 15, f"=SUM(O{cat_row_start}:O{curr_row-1})")
+                formatted_cell(ws, curr_row+1, 16, f"=SUM(P{cat_row_start}:P{curr_row-1})")
+                formatted_cell(ws, curr_row+1, 17, f"=SUM(Q{cat_row_start}:Q{curr_row-1})")
+                formatted_cell(ws, curr_row+1, 18, f"=SUM(R{cat_row_start}:R{curr_row-1})")
+                formatted_cell(ws, curr_row+1, 19, f"=SUM(S{cat_row_start}:S{curr_row-1})")
+                formatted_cell(ws, curr_row+1, 20, f"=SUM(T{cat_row_start}:T{curr_row-1})")
+                curr_row += 1
+            curr_row += 2
         
         # =SUMIF(B{cat_start}:B{cat_end}, date_str, E{cat_start}:E{cat_end}) -- sales
         # =SUMIF(B{cat_start}:B{cat_end}, date_str, H{cat_start}:H{cat_end}) -- profit
@@ -731,8 +735,8 @@ def build_workbook(
 
         wk_profit_potential_formula = '=' + ' + '.join([f'SUM(H{cat_row_info[cat][0]}:H{cat_row_info[cat][1]})'for cat in cats_count_for_potential_wk])
         formatted_cell(ws, summary_top_row + 7,6, wk_profit_potential_formula, font = font_red, border = cell_border['topright'])
-        wkend_profit_potential_formula = '=' + ' + '.join([f'SUM(H{cat_row_info[cat][0]}:H{cat_row_info[cat][1]})'for cat in cats_count_for_potential_wkend])
-        formatted_cell(ws, summary_top_row + 10,6, wkend_profit_potential_formula, font = font_red, border = cell_border['right'])
+        # wkend_profit_potential_formula = '=' + ' + '.join([f'SUM(H{cat_row_info[cat][0]}:H{cat_row_info[cat][1]})'for cat in cats_count_for_potential_wkend])
+        formatted_cell(ws, summary_top_row + 10,6, border = cell_border['right'])
         
 
 
