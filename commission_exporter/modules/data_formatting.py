@@ -70,22 +70,33 @@ def get_invoice_ids(job_response):
 def format_invoice(invoice):
     formatted = {}
     formatted['suburb'] = invoice['customerAddress']['city']
-    formatted['inv_subtotal'] = float(invoice['subTotal'])
+    formatted['inv_subtotal_orig'] = float(invoice['subTotal'])
+    formatted['inv_subtotal'] = formatted['inv_subtotal_orig'] 
     formatted['balance'] = float(invoice['balance'])
     formatted['amt_paid'] = round(float(invoice['total']) - float(invoice['balance']),2)
     formatted['invoiceId'] = invoice['id']
     if invoice['items']:
         formatted['summary'] = '\n'.join([i['description'].split('<')[0] for i in invoice['items']])
-        formatted['inv_items_skuids'] = ', '.join([str(i['skuId']) for i in invoice['items']])
-        formatted['inv_items_skuNames'] = ', '.join([i['skuName'] for i in invoice['items']])
-        formatted['inv_items_displayName'] = ', '.join([i['displayName'] for i in invoice['items']])
-        formatted['inv_items_ids'] = ', '.join([str(i['id']) for i in invoice['items']])
+        for i in invoice['items']:
+            if "cof" in i['skuName'].lower():
+                formatted['inv_subtotal'] -= float(i['price'])
+
+        # formatted['inv_items_skuids'] = ', '.join([str(i['skuId']) for i in invoice['items']])
+        # formatted['inv_items_skuNames'] = ', '.join([i['skuName'] for i in invoice['items']])
+        # formatted['inv_items_displayName'] = ', '.join([i['displayName'] for i in invoice['items']])
+        # formatted['inv_items_ids'] = ', '.join([str(i['id']) for i in invoice['items']])
+        # formatted['inv_items_cost'] = ', '.join([str(i['cost']) for i in invoice['items']])
+        # formatted['inv_items_price'] = ', '.join([str(i['price']) for i in invoice['items']])
+        # formatted['inv_items_total'] = ', '.join([str(i['total']) for i in invoice['items']])
     else:
         formatted['summary'] = 'no invoice items'
-        formatted['inv_items_skuids'] = ""
-        formatted['inv_items_skuNames'] = ""
-        formatted['inv_items_displayName'] = ""
-        formatted['inv_items_ids'] = ""
+        # formatted['inv_items_skuids'] = ""
+        # formatted['inv_items_skuNames'] = ""
+        # formatted['inv_items_displayName'] = ""
+        # formatted['inv_items_ids'] = ""
+        # formatted['inv_items_cost'] = ""
+        # formatted['inv_items_price'] = ""
+        # formatted['inv_items_total'] = ""
     return formatted
 
 def format_payment(payment, client: ServiceTitanClient):
