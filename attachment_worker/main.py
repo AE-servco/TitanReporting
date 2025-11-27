@@ -30,6 +30,7 @@ logger = logging.getLogger("worker")
 
 class ProcessJobRequest(BaseModel):
     job_id: int
+    tenant: str
     force_refresh: bool = False
 
 
@@ -107,10 +108,13 @@ async def process_job_endpoint(req: ProcessJobRequest, request: Request):
     Cloud Tasks will POST here with JSON payload matching ProcessJobRequest.
     """
     # (Optional) verify request headers/auth here to ensure it came from Cloud Tasks
-
+    print(f'request caught for {req.job_id}')
     try:
-        result = process_job_attachments(req.job_id, req.force_refresh)
+        result = process_job_attachments(req.job_id, req.force_refresh, req.tenant)
         return result
     except Exception as e:
         # Cloud Tasks will treat non-2xx as failure and retry based on config
         raise HTTPException(status_code=500, detail=f"Processing failed: {e}")
+
+if __name__ == '__main__':
+    print(process_job_attachments(143554308, True, 'bravogolf'))

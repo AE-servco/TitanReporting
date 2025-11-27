@@ -69,10 +69,10 @@ def main() -> None:
                 st.session_state.current_tenant: str = ""
             if "current_index" not in st.session_state:
                 st.session_state.current_index: int = 0
-            if "prefetched" not in st.session_state:
-                # Cache of prefetched attachments keyed by job ID.  Each entry
-                # contains a dictionary with ``imgs`` and ``pdfs`` lists.
-                st.session_state.prefetched: Dict[str, Dict[str, List[Tuple[str, Any]]]] = {}
+            # if "prefetched" not in st.session_state:
+            #     # Cache of prefetched attachments keyed by job ID.  Each entry
+            #     # contains a dictionary with ``imgs`` and ``pdfs`` lists.
+            #     st.session_state.prefetched: Dict[str, Dict[str, List[Tuple[str, Any]]]] = {}
             if "prefetch_futures" not in st.session_state:
                 st.session_state.prefetch_futures: Dict[str, Future] = {}
             if "app_guid" not in st.session_state:
@@ -86,7 +86,7 @@ def main() -> None:
             st.markdown("---")
 
         # Process completed prefetch futures and update prefetched cache
-        helpers.process_completed_prefetches()
+        # helpers.process_completed_prefetches()
 
         # Display the current job if available
         if st.session_state.jobs:
@@ -112,35 +112,56 @@ def main() -> None:
                 templates.show_job_info(job)
 
             with attachments:
-                attachments = st.session_state.prefetched.get(job_id)
-                if attachments is None:
+                job_attachment_status, error_msg = fetch.get_job_status(job_id, st.session_state.clients['supabase'], st.session_state.current_tenant)
+                print(job_attachment_status)
+                if job_attachment_status == 2:
+                    attachments_response = fetch.get_attachments_supabase(job_id, st.session_state.clients['supabase'], st.session_state.current_tenant)
+                    # print(attachments_response)
+                    imgs = [att for att in attachments_response if att['type'] == 'img']
+                    pdfs = [att for att in attachments_response if att['type'] == 'pdf']
+                    # vids = [att for att in attachments_response if att['type'] == 'vid']
+                    # other = [att for att in attachments_response if att['type'] == 'oth']
+                    # job_id,type,url,file_date,file_by
+                elif job_attachment_status == 1:
+                    with st.spinner("Downloading attachments..."):
+                        st.write('status = 1')
+                        time.sleep(2)
+                        st.rerun()
+                elif job_attachment_status == -1:
+                    st.write(error_msg)
+                    st.write("Please reload the page. If you keep seeing this error, please inform Albie (send screenshot of error message if possible).")
+                    imgs = None
+                    pdfs = None
+                else:
                     # If not already prefetched, download synchronously all attachments
                     with st.spinner("Downloading attachments..."):
-                        attachments = fetch.download_attachments_for_job(job_id, client)
-                    st.session_state.prefetched[job_id] = attachments
+                        st.write('status = else')
+                        fetch.request_job_download(job_id, st.session_state.current_tenant, 'http://0.0.0.0:8000')
+                        time.sleep(1)
+                        st.rerun()
 
                 # Display attachments in tabs: one for images and one for other docs
                 tab_images, tab_docs = st.tabs(["Images", "Other Documents"])
 
                 # Show images
                 with tab_images:
-                    imgs = attachments.get("imgs", [])
-                    imgs.sort(key=lambda img: img[1])
                     if imgs:
+                        imgs.sort(key=lambda img: img['file_date'])
                         templates.show_images(imgs,900)
                     else:
                         st.info("No image attachments for this job.")
 
                 # Show other documents (e.g., PDFs)
                 with tab_docs:
-                    pdfs = attachments.get("pdfs", [])
-                    templates.show_pdfs(pdfs, 900)
-
+                    if pdfs:
+                        templates.show_pdfs(pdfs, 900)
+                    else:
+                        st.info("No PDFs for this job.")
 
 
             # Sidebar form for the current job
             with st.sidebar:
-                templates.doc_check_form(job_num, job, attachments, doc_check_criteria, exdata_key='docchecks_testing')
+                templates.doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks_testing')
                 # prefill_holder.text(st.session_state.prefill_txt)
 
             

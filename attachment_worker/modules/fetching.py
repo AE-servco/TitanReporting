@@ -92,15 +92,17 @@ def download_attachments_for_job(job_id: str, client: ServiceTitanClient, sb_cli
             print(f"uploading {att_id}...")
             response = (
                 sb_client.table("gcs_attachments")
-                .insert({
+                .upsert({
                     "job_id": job_id, 
                     "type": helpers.get_attachment_type(file_name), 
                     "url": signed_url, 
                     "tenant": client.tenant,
                     "file_date": file_date, 
+                    "file_name": file_name, 
                     "file_by": file_by, 
                     "attachment_id": att_id
-                })
+                },
+                on_conflict='attachment_id')
                 .execute()
             # handle response ??
             ) 
@@ -131,7 +133,6 @@ def download_attachments_for_job(job_id: str, client: ServiceTitanClient, sb_cli
     #             signed_url = None
     #         result[category].append((filename, client.from_utc_string(file_date), file_by, signed_url))
     # return result
-
 
 if __name__ == '__main__':
     print(download_attachments_for_job(143554308, get_st_client('bravogolf'), get_supabase()))
