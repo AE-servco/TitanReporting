@@ -122,7 +122,7 @@ def main() -> None:
                 job_attachment_status, error_msg, last_update_time = fetch.get_job_status(job_id, st.session_state.clients['supabase'], st.session_state.current_tenant)
                 try:
                     last_update_time = datetime.fromisoformat(last_update_time).replace(tzinfo=ZoneInfo("Australia/Sydney"))
-                    update_time_diff = datetime.now(ZoneInfo("Australia/Sydney")) - last_update_time
+                    update_time_diff = datetime.now() - last_update_time
                 except TypeError:
                     update_time_diff = timedelta(seconds=0)
 
