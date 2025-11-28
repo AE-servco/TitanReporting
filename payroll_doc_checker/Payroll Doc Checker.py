@@ -126,8 +126,9 @@ def main() -> None:
                 except TypeError:
                     update_time_diff = timedelta(seconds=0)
 
+                print(update_time_diff)
                 # if job_attachment_status == 2 and update_time_diff < timedelta(seconds=30):
-                if job_attachment_status == 2 and update_time_diff < timedelta(seconds=(SIGNED_URL_TTL-100)):
+                if job_attachment_status == 2:# and update_time_diff < timedelta(seconds=(SIGNED_URL_TTL-100)):
                     attachments_response = fetch.get_attachments_supabase(job_id, st.session_state.clients['supabase'], st.session_state.current_tenant)
 
                     imgs = [att for att in attachments_response if att['type'] == 'img']
