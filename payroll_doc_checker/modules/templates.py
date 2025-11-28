@@ -155,8 +155,17 @@ def show_images(imgs, container_height=1000):
     with st.container(horizontal=True, height=container_height, border=False):
         for img in imgs:
             if img.get('url'):
-                data = gs.fetch_from_signed_url(img.get('url'))
-                st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
+                try:
+                    data = gs.fetch_from_signed_url(img.get('url'))
+                    st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
+                except KeyError as e:
+                    st.write(f"Key error: {e}")
+                    st.write("trying again..")
+                    try:
+                        data = gs.fetch_from_signed_url(img.get('url'))
+                        st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
+                    except KeyError as e2:
+                        st.write(f"Key errored again: {e}")
             else:
                 st.write("Missing image URL")
 

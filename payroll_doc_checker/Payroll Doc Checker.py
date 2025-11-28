@@ -124,9 +124,10 @@ def main() -> None:
                     last_update_time = datetime.fromisoformat(last_update_time).replace(tzinfo=ZoneInfo("Australia/Sydney"))
                     update_time_diff = datetime.now() - last_update_time
                 except TypeError:
+                    # This is broken, always TypeError
                     update_time_diff = timedelta(seconds=0)
 
-                print(update_time_diff)
+                # st.write(update_time_diff)
                 # if job_attachment_status == 2 and update_time_diff < timedelta(seconds=30):
                 if job_attachment_status == 2:# and update_time_diff < timedelta(seconds=(SIGNED_URL_TTL-100)):
                     attachments_response = fetch.get_attachments_supabase(job_id, st.session_state.clients['supabase'], st.session_state.current_tenant)
