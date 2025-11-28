@@ -69,7 +69,7 @@ def nav_button(dir):
         if st.button("**<**", key='prev_button', type='tertiary'):
             if st.session_state.current_index > 0:
                 st.session_state.current_index -= 1
-            # fetch.schedule_prefetches(client)
+            fetch.schedule_prefetches(client)
             st.rerun()
     else:
         st.button("Does nothing", key='button_that_does_nothing')

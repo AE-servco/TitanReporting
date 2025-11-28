@@ -88,8 +88,9 @@ def main() -> None:
             if "app_guid" not in st.session_state:
                 st.session_state.app_guid = helpers.get_secret('ST_servco_integrations_guid')
             if "jobs_queued" not in st.session_state:
-                st.session_state.jobs_queued: set = set()
+                st.session_state.jobs_queued: Dict = {}
 
+        # st.write(st.session_state.jobs_queued)
         templates.sidebar_filters()
 
         with st.sidebar:
@@ -141,7 +142,7 @@ def main() -> None:
                     # other = [att for att in attachments_response if att['type'] == 'oth']
 
                 elif job_attachment_status == 1:
-                    with st.spinner("Downloading attachments. Refrehsing in 2 seconds..."):
+                    with st.spinner("Downloading attachments. Refreshing in 2 seconds..."):
                         # st.write('status = 1')
                         time.sleep(2)
                         st.rerun()

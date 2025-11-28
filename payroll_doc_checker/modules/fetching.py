@@ -7,6 +7,7 @@ import requests
 import time
 import asyncio
 
+
 import streamlit as st
 from concurrent.futures import ThreadPoolExecutor, Future, as_completed
 
@@ -173,14 +174,15 @@ def get_tag_types(client: ServiceTitanClient):
 def request_job_download(job_id, tenant, base_url=ATTACHMENT_DOWNLOADER_URL, force_refresh=False):
     # print(f'requested job download for {job_id}...')
 
-    if job_id in st.session_state.jobs_queued:
-        # print("already queued this session")
-        return
+    if job_id in st.session_state.jobs_queued.keys():
+        if _dt.datetime.now() - st.session_state.jobs_queued[job_id] < _dt.timedelta(hours=1):
+            # print("already queued this session")
+            return
 
     url = base_url + '/tasks/process-job'
     tasks.create_task(url, job_id, tenant, force_refresh)
 
-    st.session_state.jobs_queued.add(job_id)
+    st.session_state.jobs_queued[job_id] = _dt.datetime.now()
     # print(f'finished job download for {job_id}')
     return 
 
