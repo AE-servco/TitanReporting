@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from servicetitan_api_client import ServiceTitanClient
 from typing import Dict, List, Set, Tuple, Optional, Any, Iterable
-import streamlit as st
 from concurrent.futures import ThreadPoolExecutor, Future, as_completed
 from supabase import create_client, Client
 
@@ -95,6 +96,7 @@ def download_attachments_for_job(job_id: str, client: ServiceTitanClient, sb_cli
                 .upsert({
                     "job_id": job_id, 
                     "type": helpers.get_attachment_type(file_name), 
+                    "gcs_uploaded": datetime.now().isoformat(), 
                     "url": signed_url, 
                     "tenant": client.tenant,
                     "file_date": file_date, 

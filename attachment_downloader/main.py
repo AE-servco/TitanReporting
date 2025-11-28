@@ -74,7 +74,7 @@ def process_job_attachments(job_id: int, force_refresh: bool, tenant: str) -> Pr
         )
 
     try:
-        set_job_status_processing(job_id, sb_client, datetime.now(ZoneInfo("Australia/Sydney")), tenant)
+        set_job_status_processing(job_id, sb_client, datetime.now(), tenant)
 
         # Download attachments to GCS, insert urls and other data to supabase DBs
         count_of_urls = fetch.download_attachments_for_job(job_id, st_client, sb_client)
@@ -83,7 +83,7 @@ def process_job_attachments(job_id: int, force_refresh: bool, tenant: str) -> Pr
         # urls = get_signed_image_urls_for_job(job_id, raw_attachments)
 
         # 3. Mark as processed in status store
-        set_job_status_processed(job_id, count_of_urls, sb_client, datetime.now(ZoneInfo("Australia/Sydney")), tenant)
+        set_job_status_processed(job_id, count_of_urls, sb_client, datetime.now(), tenant)
 
         return ProcessJobResponse(
             status="processed",
@@ -93,8 +93,8 @@ def process_job_attachments(job_id: int, force_refresh: bool, tenant: str) -> Pr
 
     except Exception as e:
         logger.exception(f"Error processing job {job_id}: {e}")
-        set_job_status_error(job_id, str(e), sb_client, datetime.now(ZoneInfo("Australia/Sydney")), tenant)
-
+        set_job_status_error(job_id, str(e), sb_client, datetime.now(), tenant)
+# ZoneInfo("Australia/Sydney")
         raise
 
 

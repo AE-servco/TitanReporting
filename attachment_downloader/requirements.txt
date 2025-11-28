@@ -1,0 +1,15 @@
+datetime
+numpy
+pyyaml
+git+https://github.com/AE-servco/ServiceTitanClient
+google-cloud-storage
+google-cloud-secret-manager
+oauth2client
+google-auth
+fastapi
+pydantic
+supabase
+uvicorn
+gunicorn
+aiohttp 
+asyncio

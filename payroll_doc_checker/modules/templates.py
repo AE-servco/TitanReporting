@@ -3,7 +3,8 @@ import streamlit_authenticator as stauth
 
 import modules.google_store as gs
 import modules.helpers as helpers
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime, timezone
+from zoneinfo import ZoneInfo
 import json
 import pandas as pd
 import base64
@@ -151,13 +152,11 @@ def show_images(imgs, container_height=1000):
         )
     
     client = st.session_state.clients.get(st.session_state.current_tenant)
-
     with st.container(horizontal=True, height=container_height, border=False):
         for img in imgs:
             if img.get('url'):
                 data = gs.fetch_from_signed_url(img.get('url'))
-                st.image(data, width=img_size * 100)
-                # st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(img.get('file_by'))} at {client.format_local(client.st_date_to_local(img.get('file_date')+':00'), fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
+                st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get('file_by')))} at {client.st_date_to_local(img.get('file_date'), fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
             else:
                 st.write("Missing image URL")
 

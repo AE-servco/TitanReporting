@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import datetime, date, timedelta
 from typing import Dict, List, Set, Tuple, Optional, Any, Iterable
 import json
 from google.cloud import secretmanager
 import time
+from zoneinfo import ZoneInfo
 
 import streamlit as st
 import streamlit_authenticator as stauth
@@ -15,10 +16,16 @@ import modules.google_store as gs
 import modules.helpers as helpers
 import modules.templates as templates
 import modules.fetching as fetch
+import modules.tasks as tasks
 
 ###############################################################################
 # Configuration and helpers
 ###############################################################################
+
+ATTACHMENT_DOWNLOADER_URL = 'https://attachment-downloader-901775793617.australia-southeast1.run.app/'
+# ATTACHMENT_DOWNLOADER_URL = 'http://0.0.0.0:8000'
+
+SIGNED_URL_TTL = 900
 
 TENANTS = [
     "foxtrotwhiskey", 
@@ -112,19 +119,25 @@ def main() -> None:
                 templates.show_job_info(job)
 
             with attachments:
-                job_attachment_status, error_msg = fetch.get_job_status(job_id, st.session_state.clients['supabase'], st.session_state.current_tenant)
-                print(job_attachment_status)
-                if job_attachment_status == 2:
+                job_attachment_status, error_msg, last_update_time = fetch.get_job_status(job_id, st.session_state.clients['supabase'], st.session_state.current_tenant)
+                try:
+                    last_update_time = datetime.fromisoformat(last_update_time).replace(tzinfo=ZoneInfo("Australia/Sydney"))
+                    update_time_diff = datetime.now(ZoneInfo("Australia/Sydney")) - last_update_time
+                except TypeError:
+                    update_time_diff = timedelta(seconds=0)
+
+                # if job_attachment_status == 2 and update_time_diff < timedelta(seconds=30):
+                if job_attachment_status == 2 and update_time_diff < timedelta(seconds=(SIGNED_URL_TTL-100)):
                     attachments_response = fetch.get_attachments_supabase(job_id, st.session_state.clients['supabase'], st.session_state.current_tenant)
-                    # print(attachments_response)
+
                     imgs = [att for att in attachments_response if att['type'] == 'img']
                     pdfs = [att for att in attachments_response if att['type'] == 'pdf']
                     # vids = [att for att in attachments_response if att['type'] == 'vid']
                     # other = [att for att in attachments_response if att['type'] == 'oth']
-                    # job_id,type,url,file_date,file_by
+
                 elif job_attachment_status == 1:
                     with st.spinner("Downloading attachments..."):
-                        st.write('status = 1')
+                        # st.write('status = 1')
                         time.sleep(2)
                         st.rerun()
                 elif job_attachment_status == -1:
@@ -135,8 +148,8 @@ def main() -> None:
                 else:
                     # If not already prefetched, download synchronously all attachments
                     with st.spinner("Downloading attachments..."):
-                        st.write('status = else')
-                        fetch.request_job_download(job_id, st.session_state.current_tenant, 'http://0.0.0.0:8000')
+                        # st.write('status = else')
+                        fetch.request_job_download(job_id, st.session_state.current_tenant, ATTACHMENT_DOWNLOADER_URL, force_refresh=True)
                         time.sleep(1)
                         st.rerun()
 
@@ -146,8 +159,9 @@ def main() -> None:
                 # Show images
                 with tab_images:
                     if imgs:
-                        imgs.sort(key=lambda img: img['file_date'])
-                        templates.show_images(imgs,900)
+                        with st.spinner("Loading images..."):
+                            imgs.sort(key=lambda img: img['file_date'])
+                            templates.show_images(imgs,900)
                     else:
                         st.info("No image attachments for this job.")
 
