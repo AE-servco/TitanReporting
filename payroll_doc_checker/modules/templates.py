@@ -156,7 +156,7 @@ def show_images(imgs, container_height=1000):
         for img in imgs:
             if img.get('url'):
                 data = gs.fetch_from_signed_url(img.get('url'))
-                st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get('file_by')))} at {client.st_date_to_local(img.get('file_date'), fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
+                st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
             else:
                 st.write("Missing image URL")
 
