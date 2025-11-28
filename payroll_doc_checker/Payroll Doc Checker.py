@@ -41,6 +41,8 @@ TENANTS = [
 ###############################################################################
 
 def main() -> None:
+
+
     st.set_page_config(page_title="ServiceTitan Job Browser", layout="wide")
     st.markdown(
         """
@@ -61,6 +63,7 @@ def main() -> None:
 
     templates.authenticate_app('st_auth_config_plumber_commissions.yaml')
 
+    
     if st.session_state["authentication_status"]:
         with st.spinner("Initialising..."):
             doc_check_criteria = helpers.get_doc_check_criteria()
@@ -84,9 +87,10 @@ def main() -> None:
             #     st.session_state.prefetch_futures: Dict[str, Future] = {}
             if "app_guid" not in st.session_state:
                 st.session_state.app_guid = helpers.get_secret('ST_servco_integrations_guid')
-            # if "prefill_txt" not in st.session_state:
-            #     st.session_state.prefill_txt: str = ""
+            if "jobs_queued" not in st.session_state:
+                st.session_state.jobs_queued: set = set()
 
+        st.write(st.session_state.jobs_queued)
         templates.sidebar_filters()
 
         with st.sidebar:

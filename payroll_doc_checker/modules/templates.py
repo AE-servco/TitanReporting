@@ -9,6 +9,8 @@ import json
 import pandas as pd
 import base64
 from streamlit_pdf_viewer import pdf_viewer
+import base64
+
 
 import modules.fetching as fetch
 
@@ -151,13 +153,26 @@ def show_images(imgs, container_height=1000):
         width=200
         )
     
+    def image_bytes_to_base64(image_bytes: bytes) -> str:
+        return base64.b64encode(image_bytes).decode("utf-8")
+    
+    def display_base64_image(b64_str: str, width=300):
+        st.markdown(
+            f"""
+            <img src="data:image/png;base64,{b64_str}" style="width: {width}px;"/>
+            """,
+            unsafe_allow_html=True
+        )
+
     client = st.session_state.clients.get(st.session_state.current_tenant)
     with st.container(horizontal=True, height=container_height, border=False):
         for img in imgs:
             if img.get('url'):
                 try:
                     data = gs.fetch_from_signed_url(img.get('url'))
-                    st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
+                    # st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
+                    data_b64 = image_bytes_to_base64(data)
+                    display_base64_image(data_b64, width=img_size * 100)
                 except:
                     st.write(f"ERROR")
                     st.write("trying again..")

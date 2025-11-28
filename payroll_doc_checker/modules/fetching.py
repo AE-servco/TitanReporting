@@ -171,22 +171,17 @@ def get_tag_types(client: ServiceTitanClient):
     return client.get_all(url)
 
 def request_job_download(job_id, tenant, base_url=ATTACHMENT_DOWNLOADER_URL, force_refresh=False):
-    print(f'requested job download for {job_id}...')
+    # print(f'requested job download for {job_id}...')
+
+    if job_id in st.session_state.jobs_queued:
+        # print("already queued this session")
+        return
+
     url = base_url + '/tasks/process-job'
     tasks.create_task(url, job_id, tenant, force_refresh)
-    # payload = {
-    #     "job_id": job_id,
-    #     "tenant": tenant,
-    #     "force_refresh": force_refresh
-    # }
 
-    # headers = {
-    #     "accept": "application/json",
-    #     "Content-Type": "application/json"
-    # }
-
-    # response = requests.post(url, json=payload, headers=headers)
-    print(f'finished job download for {job_id}')
+    st.session_state.jobs_queued.add(job_id)
+    # print(f'finished job download for {job_id}')
     return 
 
 def schedule_prefetches(client: ServiceTitanClient, downloader_url=ATTACHMENT_DOWNLOADER_URL) -> None:
@@ -204,9 +199,9 @@ def schedule_prefetches(client: ServiceTitanClient, downloader_url=ATTACHMENT_DO
     end = min(current+5, len(jobs))
     for i in range(current, end):
         job_id = str(jobs[i].get("id"))
-        executor = ThreadPoolExecutor(max_workers=5)
-        future = executor.submit(request_job_download, job_id, st.session_state.current_tenant, downloader_url)
-
+        # executor = ThreadPoolExecutor(max_workers=5)
+        # future = executor.submit(request_job_download, job_id, st.session_state.current_tenant, downloader_url)
+        request_job_download(job_id, st.session_state.current_tenant, downloader_url)
     return
         # Skip if already prefetched or scheduled
         # if job_id in st.session_state.prefetched or job_id in st.session_state.prefetch_futures:
