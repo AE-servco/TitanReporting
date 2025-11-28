@@ -162,6 +162,17 @@ def main() -> None:
                 # Display attachments in tabs: one for images and one for other docs
                 tab_images, tab_docs = st.tabs(["Images", "Other Documents"])
 
+                # Show other documents (e.g., PDFs)
+                with tab_docs:
+                    if pdfs:
+                        templates.show_pdfs(pdfs, 900)
+                    else:
+                        st.info("No PDFs for this job.")
+
+                # Sidebar form for the current job
+                with st.sidebar:
+                    templates.doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks_testing')
+
                 # Show images
                 with tab_images:
                     if imgs:
@@ -170,19 +181,6 @@ def main() -> None:
                             templates.show_images(imgs,900)
                     else:
                         st.info("No image attachments for this job.")
-
-                # Show other documents (e.g., PDFs)
-                with tab_docs:
-                    if pdfs:
-                        templates.show_pdfs(pdfs, 900)
-                    else:
-                        st.info("No PDFs for this job.")
-
-
-            # Sidebar form for the current job
-            with st.sidebar:
-                templates.doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks_testing')
-                # prefill_holder.text(st.session_state.prefill_txt)
 
             
 

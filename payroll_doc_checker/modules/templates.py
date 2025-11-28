@@ -78,6 +78,7 @@ def show_job_info(job):
     client = st.session_state.clients.get(st.session_state.current_tenant)
     # st.write(job)
     job_amt = job['total']
+    job_status = job.get("status", "Not available.")
     inv_data = job.get("invoice_data", {})
     inv_desc = inv_data.get("summary", "Not available.")
     inv_subtotal = inv_data.get("subtotal", "Not available.")
@@ -98,6 +99,8 @@ def show_job_info(job):
         'Cash': 'green',
     }
     
+    st.write(f"**Job Status**")
+    st.write(job_status)
     st.write(f"**Invoice summary**")
     for item in inv_desc.split("|"):
         st.write(item)
@@ -153,7 +156,7 @@ def show_images(imgs, container_height=1000):
         width=200
         )
     st.session_state.prev_img_size = img_size
-    
+
     def image_bytes_to_base64(image_bytes: bytes) -> str:
         return base64.b64encode(image_bytes).decode("utf-8")
     
