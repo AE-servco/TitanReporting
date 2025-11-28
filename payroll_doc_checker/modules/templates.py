@@ -148,10 +148,11 @@ def show_images(imgs, container_height=1000):
         "Image Size:",
         min_value=1,
         max_value=10,
-        value=3,
+        value=st.session_state.prev_img_size,
         step=1,
         width=200
         )
+    st.session_state.prev_img_size = img_size
     
     def image_bytes_to_base64(image_bytes: bytes) -> str:
         return base64.b64encode(image_bytes).decode("utf-8")
