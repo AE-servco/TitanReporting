@@ -141,7 +141,7 @@ def main() -> None:
                     # other = [att for att in attachments_response if att['type'] == 'oth']
 
                 elif job_attachment_status == 1:
-                    with st.spinner("Downloading attachments..."):
+                    with st.spinner("Downloading attachments. Refrehsing in 2 seconds..."):
                         # st.write('status = 1')
                         time.sleep(2)
                         st.rerun()
@@ -152,10 +152,10 @@ def main() -> None:
                     pdfs = None
                 else:
                     # If not already prefetched, download synchronously all attachments
-                    with st.spinner("Downloading attachments..."):
+                    with st.spinner("Downloading attachments. Refreshing in 5 seconds..."):
                         # st.write('status = else')
                         fetch.request_job_download(job_id, st.session_state.current_tenant, ATTACHMENT_DOWNLOADER_URL, force_refresh=True)
-                        time.sleep(1)
+                        time.sleep(5)
                         st.rerun()
 
                 # Display attachments in tabs: one for images and one for other docs
