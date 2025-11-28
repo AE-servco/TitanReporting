@@ -80,8 +80,8 @@ def main() -> None:
             #     # Cache of prefetched attachments keyed by job ID.  Each entry
             #     # contains a dictionary with ``imgs`` and ``pdfs`` lists.
             #     st.session_state.prefetched: Dict[str, Dict[str, List[Tuple[str, Any]]]] = {}
-            if "prefetch_futures" not in st.session_state:
-                st.session_state.prefetch_futures: Dict[str, Future] = {}
+            # if "prefetch_futures" not in st.session_state:
+            #     st.session_state.prefetch_futures: Dict[str, Future] = {}
             if "app_guid" not in st.session_state:
                 st.session_state.app_guid = helpers.get_secret('ST_servco_integrations_guid')
             # if "prefill_txt" not in st.session_state:
@@ -97,7 +97,7 @@ def main() -> None:
 
         # Display the current job if available
         if st.session_state.jobs:
-            client = st.session_state.clients.get(st.session_state.current_tenant)
+            # client = st.session_state.clients.get(st.session_state.current_tenant)
             idx = st.session_state.current_index
             # job, job_id, job_num = templates.job_nav_buttons(idx)
             job = st.session_state.jobs[idx]

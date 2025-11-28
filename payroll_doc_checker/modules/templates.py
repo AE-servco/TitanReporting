@@ -158,14 +158,14 @@ def show_images(imgs, container_height=1000):
                 try:
                     data = gs.fetch_from_signed_url(img.get('url'))
                     st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
-                except KeyError as e:
-                    st.write(f"Key error: {e}")
+                except:
+                    st.write(f"ERROR")
                     st.write("trying again..")
                     try:
                         data = gs.fetch_from_signed_url(img.get('url'))
                         st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
-                    except KeyError as e2:
-                        st.write(f"Key errored again: {e}")
+                    except:
+                        st.write(f"ERROR AGAIN")
             else:
                 st.write("Missing image URL")
 
