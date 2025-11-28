@@ -156,10 +156,11 @@ def show_images(imgs, container_height=1000):
     def image_bytes_to_base64(image_bytes: bytes) -> str:
         return base64.b64encode(image_bytes).decode("utf-8")
     
-    def display_base64_image(b64_str: str, width=300):
+    def display_base64_image(b64_str: str, caption, width=300):
         st.markdown(
             f"""
             <img src="data:image/png;base64,{b64_str}" style="width: {width}px;"/>
+            <p>{caption}</p>
             """,
             unsafe_allow_html=True
         )
@@ -172,7 +173,8 @@ def show_images(imgs, container_height=1000):
                     data = gs.fetch_from_signed_url(img.get('url'))
                     # st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
                     data_b64 = image_bytes_to_base64(data)
-                    display_base64_image(data_b64, width=img_size * 100)
+                    caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}'
+                    display_base64_image(data_b64, caption, width=img_size * 100)
                 except:
                     st.write(f"ERROR")
                     st.write("trying again..")

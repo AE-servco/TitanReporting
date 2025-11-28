@@ -90,7 +90,6 @@ def main() -> None:
             if "jobs_queued" not in st.session_state:
                 st.session_state.jobs_queued: set = set()
 
-        st.write(st.session_state.jobs_queued)
         templates.sidebar_filters()
 
         with st.sidebar:
