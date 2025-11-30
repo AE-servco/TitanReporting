@@ -64,7 +64,7 @@ def upload_bytes_to_gcs_signed(
     bucket_name: str,
     blob_name: str,
     content_type: Optional[str] = None,
-    expires_in_seconds: int = 3600,
+    expires_in_seconds: int = 10800,
 ) -> str:
     """
     Upload raw bytes to Google Cloud Storage and return a signed URL.
