@@ -210,7 +210,10 @@ def show_pdfs(pdfs, container_height=1000):
                     mime="application/octet-stream"
                 )
                 with st.container(height=container_height):
-                    pdf_viewer(data, key=fname)
+                    pdf_viewer(data, 
+                               key=fname,
+                               zoom_level=1.25,
+                               width="100%")
 
 def doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks_testing'):
     with st.form(key=f"doccheck_{job_num}"):
