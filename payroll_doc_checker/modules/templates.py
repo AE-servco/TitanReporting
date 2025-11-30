@@ -3,11 +3,14 @@ import streamlit_authenticator as stauth
 
 import modules.google_store as gs
 import modules.helpers as helpers
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime, timezone
+from zoneinfo import ZoneInfo
 import json
 import pandas as pd
 import base64
 from streamlit_pdf_viewer import pdf_viewer
+import base64
+
 
 import modules.fetching as fetch
 
@@ -54,34 +57,6 @@ def sidebar_filters():
     if fetch_jobs_button:
         helpers.fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsucessful, custom_job_id)
 
-def job_nav_buttons(idx):
-    client = st.session_state.clients.get(st.session_state.current_tenant)
-    if idx < 0:
-        idx = 0
-    if idx >= len(st.session_state.jobs):
-        idx = len(st.session_state.jobs) - 1
-    job = st.session_state.jobs[idx]
-    job_id = str(job.get("id"))
-    job_num = str(job.get("jobNumber"))
-
-    # Navigation buttons
-    # col_prev, col_next = st.columns([1, 1], width=250)
-    # with col_prev:
-    with st.container(horizontal=True, width=400):
-        if st.button("Previous Job", key='prev_button'):
-            if st.session_state.current_index > 0:
-                st.session_state.current_index -= 1
-                fetch.schedule_prefetches(client)
-                st.rerun()
-        st.write(f"**Job {job_num}**")
-        # with col_next:
-        if st.button("Next Job", key='next_button'):
-            if st.session_state.current_index < len(st.session_state.jobs) - 1:
-                st.session_state.current_index += 1
-                fetch.schedule_prefetches(client)
-                st.rerun()
-    return
-
 def nav_button(dir):
     client = st.session_state.clients.get(st.session_state.current_tenant)
     if dir=='next':
@@ -99,27 +74,11 @@ def nav_button(dir):
     else:
         st.button("Does nothing", key='button_that_does_nothing')
 
-
-# def prev_job_button(idx):
-#     client = st.session_state.clients.get(st.session_state.current_tenant)
-#     if st.button("Previous Job", key='prev_button'):
-#         if st.session_state.current_index > 0:
-#             st.session_state.current_index -= 1
-#             fetch.schedule_prefetches(client)
-#             st.rerun()
-
-# def next_job_buttion(idx):
-#     client = st.session_state.clients.get(st.session_state.current_tenant)
-#     if st.button("Next Job", key='next_button'):
-#         if st.session_state.current_index < len(st.session_state.jobs) - 1:
-#             st.session_state.current_index += 1
-#             fetch.schedule_prefetches(client)
-#             st.rerun()
-
 def show_job_info(job):
     client = st.session_state.clients.get(st.session_state.current_tenant)
     # st.write(job)
     job_amt = job['total']
+    job_status = job.get("jobStatus", "Not available.")
     inv_data = job.get("invoice_data", {})
     inv_desc = inv_data.get("summary", "Not available.")
     inv_subtotal = inv_data.get("subtotal", "Not available.")
@@ -140,6 +99,8 @@ def show_job_info(job):
         'Cash': 'green',
     }
     
+    st.write(f"**Job Status**")
+    st.write(job_status)
     st.write(f"**Invoice summary**")
     for item in inv_desc.split("|"):
         st.write(item)
@@ -190,45 +151,68 @@ def show_images(imgs, container_height=1000):
         "Image Size:",
         min_value=1,
         max_value=10,
-        value=3,
+        value=st.session_state.prev_img_size,
         step=1,
         width=200
         )
-    
-    client = st.session_state.clients.get(st.session_state.current_tenant)
+    st.session_state.prev_img_size = img_size
 
+    def image_bytes_to_base64(image_bytes: bytes) -> str:
+        return base64.b64encode(image_bytes).decode("utf-8")
+    
+    def display_base64_image(b64_str: str, caption, width=300):
+        st.markdown(
+            f"""
+            <img src="data:image/png;base64,{b64_str}" style="width: {width}px;"/>
+            <p>{caption}</p>
+            """,
+            unsafe_allow_html=True
+        )
+
+    client = st.session_state.clients.get(st.session_state.current_tenant)
     with st.container(horizontal=True, height=container_height, border=False):
-        for filename, file_date, file_by, signed_url in imgs:
-            if signed_url:
-                data = gs.fetch_from_signed_url(signed_url)
-                st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(file_by)} at {client.format_local(file_date, fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
+        for img in imgs:
+            if img.get('url'):
+                try:
+                    data = gs.fetch_from_signed_url(img.get('url'))
+                    # st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
+                    data_b64 = image_bytes_to_base64(data)
+                    caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}'
+                    display_base64_image(data_b64, caption, width=img_size * 100)
+                except:
+                    st.write(f"ERROR")
+                    st.write("trying again..")
+                    try:
+                        data = gs.fetch_from_signed_url(img.get('url'))
+                        st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
+                    except:
+                        st.write(f"ERROR AGAIN")
             else:
-                st.write(filename)
+                st.write("Missing image URL")
 
 def show_pdfs(pdfs, container_height=1000):
     # Provide a search box to filter document names
-    search_query = st.text_input("Search document names", key=f"search_pdfs")
-    filtered_pdfs = pdfs
-    if search_query:
-        query_lower = search_query.lower()
-        filtered_pdfs = [(fname, file_date, file_by, signed_url) for fname, file_date, file_by, signed_url in pdfs if query_lower in fname.lower()]
-    if filtered_pdfs:
-        for fname, file_date, file_by, signed_url in filtered_pdfs:
-            with st.expander(fname):
-                if signed_url:
-                    data = gs.fetch_from_signed_url(signed_url)
-                    st.download_button(
-                        label=f"Download",
-                        data=data,
-                        file_name=fname,
-                        mime="application/octet-stream"
-                    )
-                    with st.container(height=container_height):
-                        pdf_viewer(data, key=fname)
-    else:
-        st.info("No documents match your search.")
+    # search_query = st.text_input("Search document names", key=f"search_pdfs")
+    # filtered_pdfs = pdfs
+    # if search_query:
+    #     query_lower = search_query.lower()
+    #     filtered_pdfs = [(fname, file_date, file_by, signed_url) for fname, file_date, file_by, signed_url in pdfs if query_lower in fname.lower()]
+    for pdf in pdfs:
+        fname = pdf.get('file_name')
+        url = pdf.get('url')
+        with st.expander(fname):
+            if url:
+                data = gs.fetch_from_signed_url(url)
+                st.download_button(
+                    label=f"Download",
+                    data=data,
+                    file_name=fname,
+                    mime="application/octet-stream"
+                )
+                with st.container(height=container_height):
+                    pdf_viewer(data, key=fname)
 
-def doc_check_form(job_num, job, attachments, doc_check_criteria, exdata_key='docchecks_testing'):
+def doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks_testing'):
     with st.form(key=f"doccheck_{job_num}"):
         client = st.session_state.clients.get(st.session_state.current_tenant)
         st.subheader(f"Job {job_num} Doc Check")
@@ -236,9 +220,9 @@ def doc_check_form(job_num, job, attachments, doc_check_criteria, exdata_key='do
 
         initial_checks = job.get("tmp_doccheck_bits", fetch.get_job_external_data(job, exdata_key)) # get tmp bits from prev submission if they exist, otherwise fetch from job's external data.
         if not initial_checks.get("qs", False):
-            initial_checks['qs'] = helpers.pre_fill_quote_signed_check(attachments.get("pdfs", []))
+            initial_checks['qs'] = helpers.pre_fill_quote_signed_check(pdfs)
         if not initial_checks.get("is", False):
-            initial_checks['is'] = helpers.pre_fill_invoice_signed_check(attachments.get("pdfs", []))
+            initial_checks['is'] = helpers.pre_fill_invoice_signed_check(pdfs)
         if initial_checks['is'] and initial_checks['qs']:
             st.session_state.prefill_txt = "Prefilled: Quote signed and Invoice signed"
         elif initial_checks['is']:

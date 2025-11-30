@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import datetime, date, timedelta
 from typing import Dict, List, Set, Tuple, Optional, Any, Iterable
 import json
 from google.cloud import secretmanager
 import time
+from zoneinfo import ZoneInfo
 
 import streamlit as st
 import streamlit_authenticator as stauth
@@ -15,10 +16,16 @@ import modules.google_store as gs
 import modules.helpers as helpers
 import modules.templates as templates
 import modules.fetching as fetch
+import modules.tasks as tasks
 
 ###############################################################################
 # Configuration and helpers
 ###############################################################################
+
+ATTACHMENT_DOWNLOADER_URL = 'https://attachment-downloader-901775793617.australia-southeast1.run.app/'
+# ATTACHMENT_DOWNLOADER_URL = 'http://0.0.0.0:8000'
+
+SIGNED_URL_TTL = 900
 
 TENANTS = [
     "foxtrotwhiskey", 
@@ -34,6 +41,8 @@ TENANTS = [
 ###############################################################################
 
 def main() -> None:
+
+
     st.set_page_config(page_title="ServiceTitan Job Browser", layout="wide")
     st.markdown(
         """
@@ -54,6 +63,7 @@ def main() -> None:
 
     templates.authenticate_app('st_auth_config_plumber_commissions.yaml')
 
+    
     if st.session_state["authentication_status"]:
         with st.spinner("Initialising..."):
             doc_check_criteria = helpers.get_doc_check_criteria()
@@ -69,28 +79,29 @@ def main() -> None:
                 st.session_state.current_tenant: str = ""
             if "current_index" not in st.session_state:
                 st.session_state.current_index: int = 0
-            if "prefetched" not in st.session_state:
-                # Cache of prefetched attachments keyed by job ID.  Each entry
-                # contains a dictionary with ``imgs`` and ``pdfs`` lists.
-                st.session_state.prefetched: Dict[str, Dict[str, List[Tuple[str, Any]]]] = {}
-            if "prefetch_futures" not in st.session_state:
-                st.session_state.prefetch_futures: Dict[str, Future] = {}
+            # if "prefetched" not in st.session_state:
+            #     # Cache of prefetched attachments keyed by job ID.  Each entry
+            #     # contains a dictionary with ``imgs`` and ``pdfs`` lists.
+            #     st.session_state.prefetched: Dict[str, Dict[str, List[Tuple[str, Any]]]] = {}
+            if "prev_img_size" not in st.session_state:
+                st.session_state.prev_img_size: int = 3
             if "app_guid" not in st.session_state:
                 st.session_state.app_guid = helpers.get_secret('ST_servco_integrations_guid')
-            # if "prefill_txt" not in st.session_state:
-            #     st.session_state.prefill_txt: str = ""
+            if "jobs_queued" not in st.session_state:
+                st.session_state.jobs_queued: Dict = {}
 
+        # st.write(st.session_state.jobs_queued)
         templates.sidebar_filters()
 
         with st.sidebar:
             st.markdown("---")
 
         # Process completed prefetch futures and update prefetched cache
-        helpers.process_completed_prefetches()
+        # helpers.process_completed_prefetches()
 
         # Display the current job if available
         if st.session_state.jobs:
-            client = st.session_state.clients.get(st.session_state.current_tenant)
+            # client = st.session_state.clients.get(st.session_state.current_tenant)
             idx = st.session_state.current_index
             # job, job_id, job_num = templates.job_nav_buttons(idx)
             job = st.session_state.jobs[idx]
@@ -112,36 +123,64 @@ def main() -> None:
                 templates.show_job_info(job)
 
             with attachments:
-                attachments = st.session_state.prefetched.get(job_id)
-                if attachments is None:
+                job_attachment_status, error_msg, last_update_time = fetch.get_job_status(job_id, st.session_state.clients['supabase'], st.session_state.current_tenant)
+                try:
+                    last_update_time = datetime.fromisoformat(last_update_time).replace(tzinfo=ZoneInfo("Australia/Sydney"))
+                    update_time_diff = datetime.now() - last_update_time
+                except TypeError:
+                    # This is broken, always TypeError
+                    update_time_diff = timedelta(seconds=0)
+
+                # st.write(update_time_diff)
+                # if job_attachment_status == 2 and update_time_diff < timedelta(seconds=30):
+                if job_attachment_status == 2:# and update_time_diff < timedelta(seconds=(SIGNED_URL_TTL-100)):
+                    attachments_response = fetch.get_attachments_supabase(job_id, st.session_state.clients['supabase'], st.session_state.current_tenant)
+
+                    imgs = [att for att in attachments_response if att['type'] == 'img']
+                    pdfs = [att for att in attachments_response if att['type'] == 'pdf']
+                    # vids = [att for att in attachments_response if att['type'] == 'vid']
+                    # other = [att for att in attachments_response if att['type'] == 'oth']
+
+                elif job_attachment_status == 1:
+                    with st.spinner("Downloading attachments. Refreshing in 2 seconds..."):
+                        # st.write('status = 1')
+                        time.sleep(2)
+                        st.rerun()
+                elif job_attachment_status == -1:
+                    st.write(error_msg)
+                    st.write("Please reload the page. If you keep seeing this error, please inform Albie (send screenshot of error message if possible).")
+                    imgs = None
+                    pdfs = None
+                else:
                     # If not already prefetched, download synchronously all attachments
-                    with st.spinner("Downloading attachments..."):
-                        attachments = fetch.download_attachments_for_job(job_id, client)
-                    st.session_state.prefetched[job_id] = attachments
+                    with st.spinner("Downloading attachments. Refreshing in 5 seconds..."):
+                        # st.write('status = else')
+                        fetch.request_job_download(job_id, st.session_state.current_tenant, ATTACHMENT_DOWNLOADER_URL, force_refresh=True)
+                        time.sleep(5)
+                        st.rerun()
 
                 # Display attachments in tabs: one for images and one for other docs
                 tab_images, tab_docs = st.tabs(["Images", "Other Documents"])
 
-                # Show images
-                with tab_images:
-                    imgs = attachments.get("imgs", [])
-                    imgs.sort(key=lambda img: img[1])
-                    if imgs:
-                        templates.show_images(imgs,900)
-                    else:
-                        st.info("No image attachments for this job.")
-
                 # Show other documents (e.g., PDFs)
                 with tab_docs:
-                    pdfs = attachments.get("pdfs", [])
-                    templates.show_pdfs(pdfs, 900)
+                    if pdfs:
+                        templates.show_pdfs(pdfs, 900)
+                    else:
+                        st.info("No PDFs for this job.")
 
+                # Sidebar form for the current job
+                with st.sidebar:
+                    templates.doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks_testing')
 
-
-            # Sidebar form for the current job
-            with st.sidebar:
-                templates.doc_check_form(job_num, job, attachments, doc_check_criteria, exdata_key='docchecks_testing')
-                # prefill_holder.text(st.session_state.prefill_txt)
+                # Show images
+                with tab_images:
+                    if imgs:
+                        with st.spinner("Loading images..."):
+                            imgs.sort(key=lambda img: img['file_date'])
+                            templates.show_images(imgs,900)
+                    else:
+                        st.info("No image attachments for this job.")
 
             
 

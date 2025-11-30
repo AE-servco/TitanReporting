@@ -1,7 +1,5 @@
 from servicetitan_api_client import ServiceTitanClient
 
-
-
 def format_employee_list(employee_response):
     # input can be either technician response or employee response
     formatted = {}

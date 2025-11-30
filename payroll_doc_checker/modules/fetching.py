@@ -3,15 +3,24 @@ from __future__ import annotations
 import datetime as _dt
 from typing import Dict, List, Set, Tuple, Optional, Any, Iterable
 import json
+import requests
+import time
+import asyncio
+
 
 import streamlit as st
 from concurrent.futures import ThreadPoolExecutor, Future, as_completed
 
 from servicetitan_api_client import ServiceTitanClient
+from supabase import Client
 
 import modules.formatting as format
 import modules.google_store as gs
 import modules.helpers as helpers
+import modules.tasks as tasks
+
+ATTACHMENT_DOWNLOADER_URL = 'https://attachment-downloader-901775793617.australia-southeast1.run.app/'
+# ATTACHMENT_DOWNLOADER_URL = 'http://0.0.0.0:8000'
 
 def fetch_jobs(
     start_date: _dt.date,
@@ -162,7 +171,22 @@ def get_tag_types(client: ServiceTitanClient):
     url = client.build_url('settings', 'tag-types')
     return client.get_all(url)
 
-def schedule_prefetches(client: ServiceTitanClient) -> None:
+def request_job_download(job_id, tenant, base_url=ATTACHMENT_DOWNLOADER_URL, force_refresh=False):
+    # print(f'requested job download for {job_id}...')
+
+    if job_id in st.session_state.jobs_queued.keys():
+        if _dt.datetime.now() - st.session_state.jobs_queued[job_id] < _dt.timedelta(hours=1):
+            # print("already queued this session")
+            return
+
+    url = base_url + '/tasks/process-job'
+    tasks.create_task(url, job_id, tenant, force_refresh)
+
+    st.session_state.jobs_queued[job_id] = _dt.datetime.now()
+    # print(f'finished job download for {job_id}')
+    return 
+
+def schedule_prefetches(client: ServiceTitanClient, downloader_url=ATTACHMENT_DOWNLOADER_URL) -> None:
     """Ensure up to three jobs (current and next two) are prefetched.
 
     For the current job index ``i``, this function schedules
@@ -174,16 +198,18 @@ def schedule_prefetches(client: ServiceTitanClient) -> None:
     if not jobs:
         return
     current = st.session_state.current_index
-    end = min(current + 3, len(jobs))
+    end = min(current+5, len(jobs))
     for i in range(current, end):
         job_id = str(jobs[i].get("id"))
+        # executor = ThreadPoolExecutor(max_workers=5)
+        # future = executor.submit(request_job_download, job_id, st.session_state.current_tenant, downloader_url)
+        request_job_download(job_id, st.session_state.current_tenant, downloader_url)
+    return
         # Skip if already prefetched or scheduled
-        if job_id in st.session_state.prefetched or job_id in st.session_state.prefetch_futures:
-            continue
-        # Schedule a background download
-        executor = ThreadPoolExecutor(max_workers=1)
-        future = executor.submit(download_attachments_for_job, job_id, client)
-        st.session_state.prefetch_futures[job_id] = future
+        # if job_id in st.session_state.prefetched or job_id in st.session_state.prefetch_futures:
+        #     continue
+        # # Schedule a background download
+        # st.session_state.prefetch_futures[job_id] = future
 
 # @st.cache_data(show_spinner=False)
 def fetch_invoices(
@@ -223,7 +249,34 @@ def fetch_tag_types(client: ServiceTitanClient):
     url = client.build_url('settings', 'tag-types')
     return client.get_all(url)
 
+def get_job_status(job_id: int, client: Client, tenant: str):
+    """
+    Return one of: {-1,0,1,2} representing 'error', 'pending', 'processing', 'processed', respectively or None if record doesn't exist.
+    """
+    response = (
+        client.table("gcs_job_attachment_status")
+        .select("status, error_msg, last_update")
+        .eq("job_id", job_id)
+        # .eq("tenant", tenant)
+        .execute()
+    )
+    try:
+        if len(response.data) == 0:
+            return 0, "", None
+        if len(response.data) > 1:
+            return -1, response.data[0]['error_msg'], None
+        else:
+            return response.data[0]['status'], response.data[0].get('error_msg'), response.data[0].get('last_update')
+    except KeyError:
+        return None, None, None
 
-
-
+def get_attachments_supabase(job_id: int, client: Client, tenant: str):
+    response = (
+        client.table("gcs_attachments")
+        .select("job_id,type,url,file_date,file_by,file_name")
+        .eq("job_id", int(job_id))
+        # .eq("tenant", tenant)
+        .execute()
+    )
+    return response.data
 

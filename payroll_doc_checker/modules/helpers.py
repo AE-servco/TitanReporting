@@ -4,6 +4,7 @@ import datetime as _dt
 from typing import Dict, List, Set, Tuple, Optional, Any, Iterable
 import json
 from google.cloud import secretmanager
+from supabase import create_client, Client
 
 import streamlit as st
 
@@ -38,6 +39,13 @@ def get_secret(secret_id, project_id="servco1", version_id="latest"):
     response = client.access_secret_version(request={"name": name})
     secret_payload = response.payload.data.decode("UTF-8")
     return secret_payload
+
+
+def get_supabase() -> Client:
+    url: str = get_secret("supabase_url")
+    key: str = get_secret("supabase_secret_key")
+    # key: str = get_secret("supabase_key")
+    return create_client(url, key)
 
 def state_codes():
     codes = {
@@ -140,45 +148,47 @@ def group_attachments_by_type(
     return result
 
 def pre_fill_quote_signed_check(pdfs):
-    for pdf in pdfs:
-        fname = pdf[0].lower()
-        if "estimate" in fname and "signed" in fname:
-            return 1
+    if pdfs:
+        for pdf in pdfs:
+            fname = pdf.get('file_name').lower()
+            if "estimate" in fname and "signed" in fname:
+                return 1
     return 0
 
 def pre_fill_invoice_signed_check(pdfs):
-    for pdf in pdfs:
-        fname = pdf[0].lower()
-        if "invoice" in fname and "signed" in fname:
-            return 1
+    if pdfs:
+        for pdf in pdfs:
+            fname = pdf.get('file_name').lower()
+            if "invoice" in fname and "signed" in fname:
+                return 1
     return 0
 
 def filter_out_unsuccessful_jobs(jobs, client: ServiceTitanClient):
     unsuccessful_tags = [tag.get("id") for tag in fetch.get_tag_types(client) if "Unsuccessful" in tag.get("name")]
     return [job for job in jobs if unsuccessful_tags[0] not in job.get("tagTypeIds")]
 
-def process_completed_prefetches() -> None:
-    """Check prefetch futures and move completed downloads into the cache.
+# def process_completed_prefetches() -> None:
+#     """Check prefetch futures and move completed downloads into the cache.
 
-    This function runs on every script execution.  It iterates over
-    ``st.session_state.prefetch_futures`` and for each future that has
-    finished, retrieves the images, stores them in
-    ``st.session_state.prefetched``, and removes the future from the
-    dictionary.  Because Streamlit reruns the script on most user
-    interactions, this effectively polls the futures when the user
-    interacts with the page.
-    """
-    done_ids: List[str] = []
-    for job_id, fut in st.session_state.prefetch_futures.items():
-        if fut.done():
-            try:
-                images = fut.result()
-            except Exception:
-                images = {}
-            st.session_state.prefetched[job_id] = images
-            done_ids.append(job_id)
-    for job_id in done_ids:
-        st.session_state.prefetch_futures.pop(job_id, None)
+#     This function runs on every script execution.  It iterates over
+#     ``st.session_state.prefetch_futures`` and for each future that has
+#     finished, retrieves the images, stores them in
+#     ``st.session_state.prefetched``, and removes the future from the
+#     dictionary.  Because Streamlit reruns the script on most user
+#     interactions, this effectively polls the futures when the user
+#     interacts with the page.
+#     """
+#     done_ids: List[str] = []
+#     for job_id, fut in st.session_state.prefetch_futures.items():
+#         if fut.done():
+#             try:
+#                 images = fut.result()
+#             except Exception:
+#                 images = {}
+#             st.session_state.prefetched[job_id] = images
+#             done_ids.append(job_id)
+#     for job_id in done_ids:
+#         st.session_state.prefetch_futures.pop(job_id, None)
 
 def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsucessful, custom_job_id=None):
     with st.spinner("Retrieving jobs..."):
@@ -187,6 +197,9 @@ def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filte
 
         if tenant_filter not in st.session_state.clients:
             st.session_state.clients[tenant_filter] = get_client(tenant_filter)
+
+        if "supabase" not in st.session_state.clients:
+            st.session_state.clients["supabase"] = get_supabase()
 
         client = st.session_state.clients.get(tenant_filter)
 
@@ -214,7 +227,7 @@ def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filte
         st.session_state.jobs = jobs
         st.session_state.current_index = 0
         st.session_state.prefetched = {}
-        st.session_state.prefetch_futures = {}
+        # st.session_state.prefetch_futures = {}
         # Kick off prefetch for the first three jobs
         fetch.schedule_prefetches(client)
         # Trigger an immediate rerun to process any completed futures

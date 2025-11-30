@@ -11,6 +11,7 @@ import modules.helpers as helpers
 import modules.templates as templates
 import modules.data_formatting as format
 import modules.data_fetching as fetching
+import modules.lookup_tables as lookup
 
 st.title("Weekly Commission Sheets (per technician)")
 
@@ -30,6 +31,10 @@ if ss["authentication_status"]:
     last_sunday = last_monday + dt.timedelta(days=6)
 
     with st.form("date_select"):
+        tenant = st.selectbox(
+            "Select tenant",
+            lookup.get_tenants().keys()
+        )
         # start_date = st.date_input("Start date", value=last_monday)
         end_date = st.date_input("Week ending", value=last_sunday)
         start_date = end_date - dt.timedelta(days=6)
@@ -37,8 +42,9 @@ if ss["authentication_status"]:
         submitted = st.form_submit_button("Fetch and build workbook")
         
     if submitted:
+        tenant_code = lookup.get_tenants()[tenant]
         with st.spinner("Loading..."):
-            ss.client = helpers.get_client('foxtrotwhiskey')
+            ss.client = helpers.get_client(tenant_code)
             with st.spinner("Fetching employee info..."):
                 employee_map = helpers.get_all_employee_ids(ss.client)
 
@@ -85,11 +91,11 @@ if ss["authentication_status"]:
                 open_estimates_grouped = open_estimates_df.groupby('job_id', as_index=False).agg({'est_subtotal': 'sum'})
                 sold_estimates_grouped = sold_estimates_df.groupby('job_id', as_index=False).agg({'est_subtotal': 'sum'})
 
+                # st.dataframe(invoices_df)
                 # st.dataframe(open_estimates_df)
                 # st.dataframe(sold_estimates_df)
                 # st.dataframe(open_estimates_grouped)
                 # st.dataframe(sold_estimates_grouped)
-                # st.dataframe(payments_grouped)
 
             with st.spinner("Merging data..."):
                 merged = helpers.merge_dfs([jobs_df, invoices_df, payments_grouped], on='invoiceId', how='left')
@@ -114,7 +120,7 @@ if ss["authentication_status"]:
                     end_date=end_date
                 )
         
-        templates.show_download_button(excel_bytes, f"commissions_{start_date}_{end_date}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        templates.show_download_button(excel_bytes, f"commissions_{tenant_code}_{start_date}_{end_date}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         # st.download_button(
         #     "Download Excel (all technicians)",
         #     data=excel_bytes,
