@@ -78,7 +78,7 @@ def show_job_info(job):
     client = st.session_state.clients.get(st.session_state.current_tenant)
     # st.write(job)
     job_amt = job['total']
-    job_status = job.get("status", "Not available.")
+    job_status = job.get("jobStatus", "Not available.")
     inv_data = job.get("invoice_data", {})
     inv_desc = inv_data.get("summary", "Not available.")
     inv_subtotal = inv_data.get("subtotal", "Not available.")
