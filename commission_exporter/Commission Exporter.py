@@ -47,33 +47,51 @@ if ss["authentication_status"]:
             ss.client = helpers.get_client(tenant_code)
             with st.spinner("Fetching employee info..."):
                 employee_map = helpers.get_all_employee_ids(ss.client)
+                # employee_map = {}
+
 
             with st.spinner("Fetching tags..."):
                 tenant_tags = fetching.fetch_tag_types(ss.client)
-
-            with st.spinner("Fetching jobs..."):
-                jobs = fetching.fetch_jobs(start_date, end_date, ss.client)
+                # tenant_tags = []
 
             with st.spinner("Fetching appointments..."):
-                appt_assmnts = fetching.fetch_appt_assmnts(start_date, end_date, ss.client)
+                appts = fetching.fetch_appts(ss.client, start_date, end_date)
+                first_appts = format.get_first_appts(appts)
+                job_ids = format.get_job_ids(first_appts)
+                appt_ids = [appt['id'] for appt in appts]
+
+                # st.write(appts)
+                # st.write('----------')
+                # st.write(first_appts)
+
+            with st.spinner("Fetching appointment assignments..."):
+                appt_assmnts = fetching.fetch_appt_assmnts(ss.client, appt_ids)
+                # appt_assmnts = []
+
+            with st.spinner("Fetching jobs..."):
+                jobs = fetching.fetch_jobs(ss.client, job_id_ls=job_ids)
+                invoice_ids = format.get_invoice_ids(jobs)
 
             with st.spinner("Fetching estimates..."):
                 estimates = fetching.fetch_estimates(start_date, end_date, ss.client)
+                # estimates = []
 
             with st.spinner("Fetching invoices..."):
-                invoice_ids = format.get_invoice_ids(jobs)
-
                 invoices = fetching.fetch_invoices(invoice_ids, ss.client)
+                # invoices = []
+
             with st.spinner("Fetching payments..."):
                 payments = fetching.fetch_payments(invoice_ids, ss.client)
+                # payments = []
             
             with st.spinner("Formatting data..."):
                 appt_assmnts = [format.format_appt_assmt(appt) for appt in appt_assmnts]
                 appt_assmnts_by_job, num_appts_per_job = format.group_appt_assmnts_by_job(appt_assmnts)
+                first_appts_by_id = format.extract_id_to_key(first_appts, 'jobId')
                 for job in jobs:
                     job['appt_techs'] = set(appt_assmnts_by_job.get(job['id'], []))
                     job['num_of_appts_in_mem'] = num_appts_per_job.get(job['id'], 0)
-
+                    job['first_appt'] = first_appts_by_id.get(job['id'], {})
                 jobs_w_nones = [format.format_job(job, ss.client, tenant_tags, exdata_key='docchecks_testing') for job in jobs]
                 jobs = [job for job in jobs_w_nones if job is not None]
                 invoices = [format.format_invoice(invoice) for invoice in invoices]
@@ -82,6 +100,7 @@ if ss["authentication_status"]:
                 sold_estimates = [e for e in [format.format_estimate(est, 'Sold') for est in estimates] if e is not None]
 
                 jobs_df = pd.DataFrame(jobs)
+                # st.dataframe(jobs_df)
                 invoices_df = pd.DataFrame(invoices)
                 payments_df = pd.DataFrame(payments)
                 # payments_grouped = payments_df.groupby('invoiceId', as_index=False).agg(','.join)
@@ -103,6 +122,7 @@ if ss["authentication_status"]:
                 merged = merged.rename(columns={'est_subtotal': 'open_est_subtotal'})
                 merged = helpers.merge_dfs([merged, sold_estimates_grouped], on='job_id')
                 merged = merged.rename(columns={'est_subtotal': 'sold_est_subtotal'})
+                merged = merged.sort_values(by='first_appt_start_dt')
                 # merged = pd.merge(pd.merge(jobs_df, invoices_df, on='invoiceId', how='left'), payments_grouped, on='invoiceId', how='left')
                 job_records = merged.to_dict(orient='records')
                 for job in job_records:

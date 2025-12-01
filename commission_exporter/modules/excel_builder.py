@@ -522,7 +522,7 @@ def build_workbook(
                     # if cat in cats_count_for_total:
 
                     formatted_cell(ws, curr_row, 1, job_count, font=cat_font)
-                    formatted_cell(ws, curr_row, 2, job['created_str'], font=cat_font)
+                    formatted_cell(ws, curr_row, 2, job['first_appt_start_str'], font=cat_font)
                     formatted_cell(ws, curr_row, 3, int(job['num']), font=cat_font)
                     formatted_cell(ws, curr_row, 4, job['suburb'], font=cat_font)
                     if not job['unsuccessful']:

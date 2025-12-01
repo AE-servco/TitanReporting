@@ -38,10 +38,14 @@ def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='d
             # just add to manual check list for now, might separate to different check list in future.
             formatted['sold_by'] = 'Manual Check'
 
+    if job['first_appt']:
+        formatted['first_appt_start_dt'] = client.from_utc(job['first_appt']['start'])
+        formatted['first_appt_start_str'] = client.st_date_to_local((job['first_appt']['start']), fmt="%d/%m/%Y")
+
     formatted['job_id'] = job['id']
     formatted['created_str'] = client.st_date_to_local(job['createdOn'], fmt="%d/%m/%Y")
     formatted['created_dt'] = client.from_utc(job['createdOn'])
-    formatted['completed_str'] = client.st_date_to_local(job['completedOn'], fmt="%m/%d/%Y") if job['completedOn'] is not None else "No data"
+    formatted['completed_str'] = client.st_date_to_local(job['completedOn'], fmt="%d/%m/%Y") if job['completedOn'] is not None else "No data"
     formatted['num'] = job['jobNumber'] if job['jobNumber'] is not None else -1
     formatted['status'] = job['jobStatus'] if job['jobStatus'] is not None else "No data"
     formatted['invoiceId'] = job['invoiceId'] if job['invoiceId'] is not None else -1
@@ -64,8 +68,11 @@ def format_external_data_for_xl(exdata):
         return {check_map[k]: v for k,v in exdata.items()}
     return {v: 0 for k,v in check_map.items()}
 
-def get_invoice_ids(job_response):
+def get_invoice_ids(job_response) -> List[str]:
     return [str(job['invoiceId']) for job in job_response]
+
+def get_job_ids(appt_response) -> List[str]:
+    return [str(appt['jobId']) for appt in appt_response]
 
 def format_invoice(invoice):
     formatted = {}
@@ -126,6 +133,25 @@ def format_appt(appt): # TODO: finish figuring out what "start time" counts.
     formatted['appt_start'] = appt['start']
     formatted['appt_end'] = appt['end']
     return formatted
+
+# def get_first_appts(appts) -> Dict[int, Dict]:
+#     output = {}
+#     for appt in appts:
+#         if appt.get('appointmentNumber', '').endswith('-1'):
+#             output.setdefault(appt['jobId'], []).append(appt)
+#     return output
+
+def get_first_appts(appts) -> List:
+    return [appt for appt in appts if appt.get('appointmentNumber', '').endswith('-1')]
+
+def extract_id_to_key(input: List, id_val: str = 'id', keep_id: bool = True) -> Dict:
+    output = {}
+    for item in input:
+        value_data = item.copy()
+        if not keep_id:
+            del value_data[id_val]
+        output[item[id_val]] = value_data
+    return output
 
 def format_estimate(estimate, status='Open'): # TODO: finish figuring out what "start time" counts.
     formatted = {}
