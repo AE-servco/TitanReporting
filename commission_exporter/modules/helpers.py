@@ -86,9 +86,11 @@ def categorise_job(job):
             return prefix + '_wo'
             # return 'wk_scheduled'
         return prefix + '_uncategorised'
-    day = job['created_dt'].weekday()
-    if day <5: # weekdays
+    day = job['first_appt_start_dt'].weekday()
+    if day <5 and job['first_appt_start_dt'].time() < _dt.time(18,0,0): # weekdays
         return _categorise(job, 'wk')
+    if day <5 and job['first_appt_start_dt'].time() >= _dt.time(18,0,0): # weekdays
+        return _categorise(job, 'ah')
     if day >=5: # weekends
         return _categorise(job, 'wkend')
 
