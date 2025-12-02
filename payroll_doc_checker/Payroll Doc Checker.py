@@ -115,6 +115,12 @@ def main() -> None:
                     st.link_button(f"**Job {job_num}**", f"https://{st.session_state.current_tenant}.eh.go.servicetitan.com/#/Job/Index/{job_id}", type='tertiary')
                     templates.nav_button('next')
                 st.text(f"({idx + 1} of {len(st.session_state.jobs)})")
+                with st.form("jobindexselector", width=200):
+                    index_selected = st.number_input("Go to image number:", min_value=1, max_value=len(st.session_state.jobs), value=1)
+                    index_selector_submit = st.form_submit_button("Go")
+                    if index_selector_submit:
+                        st.session_state.current_index = index_selected-1
+                        st.rerun()
 
             job_info, attachments = st.columns([1,4])
 

@@ -186,7 +186,7 @@ def show_images(imgs, container_height=1000):
                         data = gs.fetch_from_signed_url(img.get('url'))
                         st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
                     except:
-                        print(f'ERROR: IMAGE FETCHING url = {img.get('url')}')
+                        print(f"ERROR: IMAGE FETCHING url = {img.get('url')}")
                         st.write(f"Errored again, please try again later or go to the job in ServiceTitan.")
             else:
                 st.write("Missing image URL")
