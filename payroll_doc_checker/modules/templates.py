@@ -39,9 +39,9 @@ def sidebar_filters():
             ]
         )
         today = date.today()
-        default_start = today - timedelta(days=7)
+        default_start = today - timedelta(days=1)
         start_date = st.date_input("Start date", value=default_start, format="DD/MM/YYYY")
-        end_date = st.date_input("End date", value=today, format="DD/MM/YYYY")
+        end_date = st.date_input("End date", value=default_start, format="DD/MM/YYYY")
         custom_job_id = st.text_input(
             "Job ID Search", placeholder="Manual search for job", help="Job ID is different to the job number. ID is the number at the end of the URL of the job's page in ServiceTitan. This overrides any date filters and will show only the job specified (if it exists)."
         )
@@ -180,13 +180,14 @@ def show_images(imgs, container_height=1000):
                     caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}'
                     display_base64_image(data_b64, caption, width=img_size * 100)
                 except:
-                    st.write(f"ERROR")
-                    st.write("trying again..")
+                    st.write(f"Error fetching images, trying again..")
+                    # st.write("trying again..")
                     try:
                         data = gs.fetch_from_signed_url(img.get('url'))
                         st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
                     except:
-                        st.write(f"ERROR AGAIN")
+                        print(f"ERROR: IMAGE FETCHING url = {img.get('url')}")
+                        st.write(f"Errored again, please try again later or go to the job in ServiceTitan.")
             else:
                 st.write("Missing image URL")
 
@@ -202,20 +203,25 @@ def show_pdfs(pdfs, container_height=1000):
         url = pdf.get('url')
         with st.expander(fname):
             if url:
-                data = gs.fetch_from_signed_url(url)
-                st.download_button(
-                    label=f"Download",
-                    data=data,
-                    file_name=fname,
-                    mime="application/octet-stream"
-                )
-                with st.container(height=container_height):
-                    pdf_viewer(data, 
-                               key=fname,
-                               zoom_level=1.25,
-                               width="100%")
+                try:
+                    data = gs.fetch_from_signed_url(url)
+                    st.download_button(
+                        label=f"Download",
+                        data=data,
+                        file_name=fname,
+                        mime="application/octet-stream"
+                    )
+                    with st.container(height=container_height):
+                        pdf_viewer(data, 
+                                key=fname,
+                                zoom_level=1.25,
+                                width="100%")
+                except:
+                    print(f'ERROR: PDF FETCHING url = {url}')
+                    with st.container(height=container_height):
+                        st.write("Error fetching PDF, please try again later or go to the job in ServiceTitan.")
 
-def doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks_testing'):
+def doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks_live'):
     with st.form(key=f"doccheck_{job_num}"):
         client = st.session_state.clients.get(st.session_state.current_tenant)
         st.subheader(f"Job {job_num} Doc Check")

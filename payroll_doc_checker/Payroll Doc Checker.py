@@ -84,7 +84,7 @@ def main() -> None:
             #     # contains a dictionary with ``imgs`` and ``pdfs`` lists.
             #     st.session_state.prefetched: Dict[str, Dict[str, List[Tuple[str, Any]]]] = {}
             if "prev_img_size" not in st.session_state:
-                st.session_state.prev_img_size: int = 3
+                st.session_state.prev_img_size: int = 2
             if "app_guid" not in st.session_state:
                 st.session_state.app_guid = helpers.get_secret('ST_servco_integrations_guid')
             if "jobs_queued" not in st.session_state:
@@ -115,6 +115,13 @@ def main() -> None:
                     st.link_button(f"**Job {job_num}**", f"https://{st.session_state.current_tenant}.eh.go.servicetitan.com/#/Job/Index/{job_id}", type='tertiary')
                     templates.nav_button('next')
                 st.text(f"({idx + 1} of {len(st.session_state.jobs)})")
+                with st.form("jobindexselector", width=200):
+                    index_selected = st.number_input("Go to image number:", min_value=1, max_value=len(st.session_state.jobs), value=1)
+                    index_selector_submit = st.form_submit_button("Go")
+                    if index_selector_submit:
+                        st.session_state.current_index = index_selected-1
+                        fetch.schedule_prefetches(st.session_state.clients[st.session_state.current_tenant])
+                        st.rerun()
 
             job_info, attachments = st.columns([1,4])
 
@@ -171,7 +178,7 @@ def main() -> None:
 
                 # Sidebar form for the current job
                 with st.sidebar:
-                    templates.doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks_testing')
+                    templates.doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks_live')
 
                 # Show images
                 with tab_images:

@@ -52,7 +52,7 @@ def format_payments(payments):
             output.setdefault(invoice['appliedTo'], []).append(inv_dict)
     return output
 
-def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='docchecks_testing'):
+def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='docchecks_live'):
     
     def check_unsuccessful(job, tags):
         unsuccessful_tags = {tag.get("id") for tag in tags if "Unsuccessful" in tag.get("name")}
