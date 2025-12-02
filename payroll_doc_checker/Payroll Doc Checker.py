@@ -84,7 +84,7 @@ def main() -> None:
             #     # contains a dictionary with ``imgs`` and ``pdfs`` lists.
             #     st.session_state.prefetched: Dict[str, Dict[str, List[Tuple[str, Any]]]] = {}
             if "prev_img_size" not in st.session_state:
-                st.session_state.prev_img_size: int = 3
+                st.session_state.prev_img_size: int = 2
             if "app_guid" not in st.session_state:
                 st.session_state.app_guid = helpers.get_secret('ST_servco_integrations_guid')
             if "jobs_queued" not in st.session_state:
