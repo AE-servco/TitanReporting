@@ -9,7 +9,8 @@ import os
 
 from google.auth.transport import requests as grequests
 
-BUCKET_NAME = "service_titan_reporter_data"
+BUCKET_NAME = "prestigious_config_files"
+# BUCKET_NAME = "service_titan_reporter_data"
 
 def is_running_in_cloud_run():
     """Checks if the application is running in Google Cloud Run."""
@@ -74,7 +75,7 @@ def upload_bytes_to_gcs_signed(
         bucket_name: Name of the GCS bucket.
         blob_name: Path/name of the file inside the bucket.
         content_type: Optional MIME type (e.g., "image/jpeg").
-        expires_in_seconds: How long the signed URL should remain valid (default 3 hours).
+        expires_in_seconds: How long the signed URL should remain valid (default 1 hour).
 
     Returns:
         A signed URL for downloading the uploaded object.

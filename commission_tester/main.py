@@ -42,13 +42,25 @@ def get_week_data_ranges(df: pd.DataFrame):
     extract the start and end rows for each week. 
     Returns dict: {week_end_date: (start,end)}
     """
-    pass
+    week_ranges = {}
+    curr_row = 1
+    curr_week = None
+    curr_start = 1
+    # curr_end = 1
+    for row in df.iterrows():
+        if type(row[1][1]) == str and 'WEEKLY COMMISSION' in row[1][1]:
+            if curr_week:
+                week_ranges[curr_week] = (curr_start, curr_row-1)
+            curr_week = row[1][6]
+            curr_start = curr_row
+        curr_row += 1
+    return week_ranges
 
-def extract_summary_from_week(week_end_date: date):
+def extract_summary_from_week(df: pd.DataFrame, week_ranges: dict, week_end_date: date):
     """
     Gets summary data from the week specified.
     """
-    pass
+    print(df.iloc(week_ranges[week_end_date][0]:week_ranges[week_end_date][1]))
 
 def extract_jobs_from_week(week_end_date: date):
     """
@@ -63,20 +75,25 @@ def test_job_equality(j1: JobData, j2: JobData):
     pass
 
 def main():
-    j1 = JobData(1234, date(2025,11,24), 'Mascot', 15564.2, 1235.1, 0, 3000.0, ['Credit Card', 'EFT'], 15564.2*1.1, 0, 0, "COMPLETED & PAID JOBS")
-    j2 = JobData(123, date(2025,11,25), 'Mascot', 1234.2, 123.1, 0, 1000.0, ['Cash'], 0, 1234.2*1.1, 0, "COMPLETED & PAID JOBS")
-    j3 = JobData(1234, date(2025,11,24), 'Mascot', 15564.2, 1235.1, 0, 3000.0, ['Credit Card', 'EFT'], 15564.2*1.1, 0, 0, "COMPLETED & PAID JOBS")
+    # j1 = JobData(1234, date(2025,11,24), 'Mascot', 15564.2, 1235.1, 0, 3000.0, ['Credit Card', 'EFT'], 15564.2*1.1, 0, 0, "COMPLETED & PAID JOBS")
+    # j2 = JobData(123, date(2025,11,25), 'Mascot', 1234.2, 123.1, 0, 1000.0, ['Cash'], 0, 1234.2*1.1, 0, "COMPLETED & PAID JOBS")
+    # j3 = JobData(1234, date(2025,11,24), 'Mascot', 15564.2, 1235.1, 0, 3000.0, ['Credit Card', 'EFT'], 15564.2*1.1, 0, 0, "COMPLETED & PAID JOBS")
 
-    w1 = WeekData({
-        j1.num: j1,
-        j2.num: j2
-    })
+    # w1 = WeekData({
+    #     j1.num: j1,
+    #     j2.num: j2
+    # })
 
-    print(j1)
-    print(j2)
-    print(w1)
-    print(j1==j2)
-    print(j1==j3)
+    # print(j1)
+    # print(j2)
+    # print(w1)
+    # print(j1==j2)
+    # print(j1==j3)
+    sheet = pd.read_excel(EXCEL_FILE, sheet_name=SHEET_NAME, header=None)
+    week_ranges = get_week_data_ranges(sheet)
+    test_week = list(week_ranges.keys())[0]
+    print(test_week)
+    extract_summary_from_week(sheet, week_ranges, test_week)
 
 if __name__ == '__main__':
     main()

@@ -61,7 +61,7 @@ def main() -> None:
 
     st.sidebar.title("Doc Checks Payroll")
 
-    templates.authenticate_app('st_auth_config_plumber_commissions.yaml')
+    templates.authenticate_app('st_auth_config_payroll_doc_checker.yaml')
 
     
     if st.session_state["authentication_status"]:
