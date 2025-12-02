@@ -120,6 +120,7 @@ def main() -> None:
                     index_selector_submit = st.form_submit_button("Go")
                     if index_selector_submit:
                         st.session_state.current_index = index_selected-1
+                        fetch.schedule_prefetches(st.session_state.clients[st.session_state.current_tenant])
                         st.rerun()
 
             job_info, attachments = st.columns([1,4])

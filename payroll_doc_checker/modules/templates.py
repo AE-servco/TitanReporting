@@ -39,9 +39,9 @@ def sidebar_filters():
             ]
         )
         today = date.today()
-        default_start = today - timedelta(days=7)
+        default_start = today - timedelta(days=1)
         start_date = st.date_input("Start date", value=default_start, format="DD/MM/YYYY")
-        end_date = st.date_input("End date", value=today, format="DD/MM/YYYY")
+        end_date = st.date_input("End date", value=default_start, format="DD/MM/YYYY")
         custom_job_id = st.text_input(
             "Job ID Search", placeholder="Manual search for job", help="Job ID is different to the job number. ID is the number at the end of the URL of the job's page in ServiceTitan. This overrides any date filters and will show only the job specified (if it exists)."
         )
