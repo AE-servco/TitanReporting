@@ -215,7 +215,7 @@ def show_pdfs(pdfs, container_height=1000):
                                zoom_level=1.25,
                                width="100%")
 
-def doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks_testing'):
+def doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks_live'):
     with st.form(key=f"doccheck_{job_num}"):
         client = st.session_state.clients.get(st.session_state.current_tenant)
         st.subheader(f"Job {job_num} Doc Check")

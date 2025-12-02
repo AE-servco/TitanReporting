@@ -171,7 +171,7 @@ def main() -> None:
 
                 # Sidebar form for the current job
                 with st.sidebar:
-                    templates.doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks_testing')
+                    templates.doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks_live')
 
                 # Show images
                 with tab_images:
