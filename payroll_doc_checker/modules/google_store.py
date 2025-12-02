@@ -74,7 +74,7 @@ def upload_bytes_to_gcs_signed(
         bucket_name: Name of the GCS bucket.
         blob_name: Path/name of the file inside the bucket.
         content_type: Optional MIME type (e.g., "image/jpeg").
-        expires_in_seconds: How long the signed URL should remain valid (default 1 hour).
+        expires_in_seconds: How long the signed URL should remain valid (default 3 hours).
 
     Returns:
         A signed URL for downloading the uploaded object.
