@@ -24,11 +24,11 @@ def get_client(tenant) -> ServiceTitanClient:
     @st.cache_resource(show_spinner=False)
     def _create_client(tenant) -> ServiceTitanClient:
             client = ServiceTitanClient(
-                app_key=gs.get_secret("ST_app_key_tester"), 
-                app_guid=gs.get_secret("ST_servco_integrations_guid"), 
-                tenant=gs.get_secret(f"ST_tenant_id_{tenant}"), 
-                client_id=gs.get_secret(f"ST_client_id_{tenant}"), 
-                client_secret=gs.get_secret(f"ST_client_secret_{tenant}"), 
+                app_key=gs.get_secret("st_app_key_tester"), 
+                app_guid=gs.get_secret("st_servco_integrations_guid"), 
+                tenant=gs.get_secret(f"st_tenant_id_{tenant}"), 
+                client_id=gs.get_secret(f"st_client_id_{tenant}"), 
+                client_secret=gs.get_secret(f"st_client_secret_{tenant}"), 
                 environment="production"
             )
             return client

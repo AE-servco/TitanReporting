@@ -67,8 +67,8 @@ def get_invoices_for_xero(tenant_stripped, start_date, end_date):
         formatted['*AccountCode'] = account_codes()[tenant_stripped]
         return formatted
 
-    st_conn = sp.auth.servicepytan_connect(app_key=get_secret("ST_app_key_tester"), tenant_id=get_secret(f"ST_tenant_id_{tenant_stripped}"), client_id=get_secret(f"ST_client_id_{tenant_stripped}"), 
-    client_secret=get_secret(f"ST_client_secret_{tenant_stripped}"), timezone="Australia/Sydney")
+    st_conn = sp.auth.servicepytan_connect(app_key=get_secret("st_app_key_tester"), tenant_id=get_secret(f"st_tenant_id_{tenant_stripped}"), client_id=get_secret(f"st_client_id_{tenant_stripped}"), 
+    client_secret=get_secret(f"st_client_secret_{tenant_stripped}"), timezone="Australia/Sydney")
     st_data_service = sp.DataService(conn=st_conn)
 
     start_time = datetime.combine(start_date, time(0,0,0))

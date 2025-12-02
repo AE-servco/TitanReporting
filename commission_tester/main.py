@@ -16,7 +16,7 @@ SHEET_NAME = 'Bradley'
 
 @dataclass(order=True)
 class JobData():
-    num: int
+    num: int | str
     date: date
     suburb: str
     subtotal: float
@@ -60,13 +60,45 @@ def extract_summary_from_week(df: pd.DataFrame, week_ranges: dict, week_end_date
     """
     Gets summary data from the week specified.
     """
-    print(df.iloc(week_ranges[week_end_date][0]:week_ranges[week_end_date][1]))
+    pass
 
-def extract_jobs_from_week(week_end_date: date):
+def extract_jobs_from_week(df: pd.DataFrame, week_ranges: dict, week_end_date: date) -> WeekData:
     """
     Gets job data from the week specified.
     """
-    pass
+    job_section = df[week_ranges[week_end_date][0]:week_ranges[week_end_date][1]]
+    
+    curr_cat = 'COMPLETED & PAID JOBS'
+    in_job_section = False
+    jobs = {}
+    for row in job_section.iterrows():
+        row_data = row[1]
+        if not in_job_section:
+            if type(row_data[1]) == str and 'COMPLETED & PAID JOBS' in row_data[1]:
+                in_job_section = True
+            continue
+        # print(type(row_data[1]), row_data[1])
+        if type(row_data[1]) == int:
+            j_date = row_data[2]
+            j_num = row_data[3]
+            j_suburb = row_data[4]
+            j_subtotal = row_data[5]
+            j_materials = row_data[6]
+            j_merchantfee = row_data[7]
+            j_profit = row_data[8]
+            j_paymenttypes = row_data[9].split(', ') if type(row_data[9]) == str else ['N/A']
+            j_eftpos = row_data[21]
+            j_cash = row_data[22]
+            j_paymentplan = row_data[23]
+            
+            job = JobData(j_num, j_date, j_suburb, j_subtotal, j_materials, j_merchantfee, j_profit, j_paymenttypes, j_eftpos, j_cash, j_paymentplan, curr_cat)
+            jobs[j_num] = job
+
+        if type(row_data[1]) == str:
+            curr_cat = row_data[1]
+
+    week_data = WeekData(jobs)
+    return week_data
 
 def test_job_equality(j1: JobData, j2: JobData):
     """
@@ -91,9 +123,9 @@ def main():
     # print(j1==j3)
     sheet = pd.read_excel(EXCEL_FILE, sheet_name=SHEET_NAME, header=None)
     week_ranges = get_week_data_ranges(sheet)
-    test_week = list(week_ranges.keys())[0]
+    test_week = list(week_ranges.keys())[1]
     print(test_week)
-    extract_summary_from_week(sheet, week_ranges, test_week)
+    print(extract_jobs_from_week(sheet, week_ranges, test_week))
 
 if __name__ == '__main__':
     main()

@@ -107,11 +107,11 @@ if __name__ == "__main__":
     # tenant = 'foxtrotwhiskey'
     # at_id = 143899860
     # client = ServiceTitanClient(
-    #             app_key=get_secret("ST_app_key_tester"), 
-    #             app_guid=get_secret("ST_servco_integrations_guid"), 
-    #             tenant=get_secret(f"ST_tenant_id_{tenant}"), 
-    #             client_id=get_secret(f"ST_client_id_{tenant}"), 
-    #             client_secret=get_secret(f"ST_client_secret_{tenant}"), 
+    #             app_key=get_secret("st_app_key_tester"), 
+    #             app_guid=get_secret("st_servco_integrations_guid"), 
+    #             tenant=get_secret(f"st_tenant_id_{tenant}"), 
+    #             client_id=get_secret(f"st_client_id_{tenant}"), 
+    #             client_secret=get_secret(f"st_client_secret_{tenant}"), 
     #             environment="production"
     #         )
     # url = client.build_url(
