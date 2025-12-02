@@ -6,7 +6,7 @@ import pytz
 
 import servicepytan as sp
 
-def get_secret(secret_id, project_id="servco1", version_id="latest"):
+def get_secret(secret_id, project_id="prestigious-gcp", version_id="latest"):
     client = secretmanager.SecretManagerServiceClient()
     name = f"projects/{project_id}/secrets/{secret_id}/versions/{version_id}"
     response = client.access_secret_version(request={"name": name})
