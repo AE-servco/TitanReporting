@@ -4,7 +4,7 @@ steps:
     args:
       [
         'build',
-        '-t', 'australia-southeast1-docker.pkg.dev/${_GCP_PROJECT}/streamlit-repo/${_IMAGE_NAME}',
+        '-t', 'australia-southeast1-docker.pkg.dev/${_GCP_PROJECT}/${_ARTIFACT_REPO}/${_IMAGE_NAME}',
         './payroll_doc_checker'
       ]
 
@@ -13,7 +13,7 @@ steps:
     args:
       [
         'push',
-        'australia-southeast1-docker.pkg.dev/${_GCP_PROJECT}/streamlit-repo/${_IMAGE_NAME}'
+        'australia-southeast1-docker.pkg.dev/${_GCP_PROJECT}/${_ARTIFACT_REPO}/${_IMAGE_NAME}'
       ]
 
   # Step 3: Deploy to Cloud Run
@@ -22,7 +22,7 @@ steps:
     args:
       [
         'run', 'deploy', '${_SERVICE_NAME}',
-        '--image', 'australia-southeast1-docker.pkg.dev/${_GCP_PROJECT}/streamlit-repo/${_IMAGE_NAME}',
+        '--image', 'australia-southeast1-docker.pkg.dev/${_GCP_PROJECT}/${_ARTIFACT_REPO}/${_IMAGE_NAME}',
         '--region', 'australia-southeast1',
         '--allow-unauthenticated'
       ]
@@ -31,7 +31,7 @@ substitutions:
   _IMAGE_NAME: 'payroll_doc_checker'
 
 images:
-  - 'australia-southeast1-docker.pkg.dev/${_GCP_PROJECT}/streamlit-repo/${_IMAGE_NAME}'
+  - 'australia-southeast1-docker.pkg.dev/${_GCP_PROJECT}/${_ARTIFACT_REPO}/${_IMAGE_NAME}'
 
 options:
   logging: CLOUD_LOGGING_ONLY
