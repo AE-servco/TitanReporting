@@ -153,7 +153,7 @@ def extract_id_to_key(input: List, id_val: str = 'id', keep_id: bool = True) -> 
         output[item[id_val]] = value_data
     return output
 
-def format_estimate(estimate, status='Open'): # TODO: finish figuring out what "start time" counts.
+def format_estimate(estimate, sold: bool): # TODO: finish figuring out what "start time" counts.
     formatted = {}
     try:
         if sold:
