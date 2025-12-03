@@ -115,8 +115,8 @@ def main():
     MANUAL_EXCEL_FILE = '/Users/albie/Documents/code/github repos/TitanReporting/commission_tester/FY2026 - VIC Commission Sheet.xlsx'
     SHEET_NAME = 'Bradley'
 
-    sheet = pd.read_excel(MANUAL_EXCEL_FILE, sheet_name=SHEET_NAME, header=None)
-
+    manual_excel = pd.ExcelFile(MANUAL_EXCEL_FILE)
+    print(manual_excel.sheet_names)
 
 
     # j1 = JobData(1234, date(2025,11,24), 'Mascot', 15564.2, 1235.1, 0, 3000.0, ['Credit Card', 'EFT'], 15564.2*1.1, 0, 0, "COMPLETED & PAID JOBS")
