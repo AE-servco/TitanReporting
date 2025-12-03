@@ -171,8 +171,6 @@ def format_estimate(estimate, sold: bool): # TODO: finish figuring out what "sta
 
 def format_employee_list(employee_response):
     # input can be either technician response or employee response
-
-
     formatted = {}
     for employee in employee_response:
         team = employee.get('team', 'O')
