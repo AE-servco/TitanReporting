@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 import pandas as pd
 from datetime import date, time, datetime
 from pprint import pprint
@@ -30,6 +30,28 @@ class JobData():
     cash: float
     payment_plan: float
     category: str
+
+    def __eq__(self, value: 'JobData'):
+        if self.num == value.num \
+            and self.date == value.date \
+            and self.suburb == value.suburb \
+            and self.subtotal == value.subtotal \
+            and self.materials == value.materials \
+            and self.merchant_fees == value.merchant_fees \
+            and self.profit == value.profit \
+            and self.payment_types == value.payment_types \
+            and self.eftpos == value.eftpos \
+            and self.cash == value.cash \
+            and self.payment_plan == value.payment_plan \
+            and self.category == value.category:
+            return True
+        diff = {}
+        for field in fields(self):
+            self_val = getattr(self, field.name)
+            other_val = getattr(value, field.name)
+            if self_val != other_val:
+                diff[field.name] = (self_val, other_val)
+        return diff
 
 class JobDiff():
     # Class for differences in jobs? 
@@ -109,25 +131,25 @@ def test_job_equality(j1: JobData, j2: JobData):
     pass
 
 def main():
-    # j1 = JobData(1234, date(2025,11,24), 'Mascot', 15564.2, 1235.1, 0, 3000.0, ['Credit Card', 'EFT'], 15564.2*1.1, 0, 0, "COMPLETED & PAID JOBS")
-    # j2 = JobData(123, date(2025,11,25), 'Mascot', 1234.2, 123.1, 0, 1000.0, ['Cash'], 0, 1234.2*1.1, 0, "COMPLETED & PAID JOBS")
-    # j3 = JobData(1234, date(2025,11,24), 'Mascot', 15564.2, 1235.1, 0, 3000.0, ['Credit Card', 'EFT'], 15564.2*1.1, 0, 0, "COMPLETED & PAID JOBS")
+    j1 = JobData(1234, date(2025,11,24), 'Mascot', 15564.2, 1235.1, 0, 3000.0, ['Credit Card', 'EFT'], 15564.2*1.1, 0, 0, "COMPLETED & PAID JOBS")
+    j2 = JobData(123, date(2025,11,25), 'Mascot', 1234.2, 123.1, 0, 1000.0, ['Cash'], 0, 1234.2*1.1, 0, "COMPLETED & PAID JOBS")
+    j3 = JobData(1234, date(2025,11,24), 'Mascot', 15564.2, 1235.1, 0, 3000.0, ['Credit Card', 'EFT'], 15564.2*1.1, 0, 0, "COMPLETED & PAID JOBS")
 
     # w1 = WeekData({
     #     j1.num: j1,
     #     j2.num: j2
     # })
 
-    # print(j1)
-    # print(j2)
+    print(j1)
+    print(j2)
     # print(w1)
-    # print(j1==j2)
-    # print(j1==j3)
-    sheet = pd.read_excel(EXCEL_FILE, sheet_name=SHEET_NAME, header=None)
-    week_ranges = get_week_data_ranges(sheet)
-    test_week = list(week_ranges.keys())[1]
-    print(test_week)
-    pprint(extract_jobs_from_week(sheet, week_ranges, test_week))
+    print(j1==j2)
+    print(j1==j3)
+    # sheet = pd.read_excel(EXCEL_FILE, sheet_name=SHEET_NAME, header=None)
+    # week_ranges = get_week_data_ranges(sheet)
+    # test_week = list(week_ranges.keys())[1]
+    # print(test_week)
+    # pprint(extract_jobs_from_week(sheet, week_ranges, test_week))
 
 if __name__ == '__main__':
     main()
