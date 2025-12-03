@@ -3,7 +3,7 @@ from google.cloud import tasks_v2
 import datetime
 import json
 
-def create_task(url, job_id, tenant, force_refresh=False, project_id='servco1', queue='ST-attachment-download-queue', location='australia-southeast1'):
+def create_task(url, job_id, tenant, force_refresh=False, project_id='prestigious-gcp', queue='ST-attachment-download-queue', location='australia-southeast1'):
     client = tasks_v2.CloudTasksClient()
     parent = client.queue_path(project_id, location, queue)
 

@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 import pandas as pd
 from datetime import date, time, datetime
+from pprint import pprint
+
 
 EXCEL_FILE = '/Users/albie/Documents/code/github repos/TitanReporting/commission_tester/FY2026 - VIC Commission Sheet.xlsx'
 SHEET_NAME = 'Bradley'
@@ -125,7 +127,7 @@ def main():
     week_ranges = get_week_data_ranges(sheet)
     test_week = list(week_ranges.keys())[1]
     print(test_week)
-    print(extract_jobs_from_week(sheet, week_ranges, test_week))
+    pprint(extract_jobs_from_week(sheet, week_ranges, test_week))
 
 if __name__ == '__main__':
     main()
