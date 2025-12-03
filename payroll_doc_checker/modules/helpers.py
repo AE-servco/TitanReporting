@@ -33,7 +33,7 @@ def get_doc_check_criteria():
     }
     return checks
 
-def get_secret(secret_id, project_id="servco1", version_id="latest"):
+def get_secret(secret_id, project_id="prestigious-gcp", version_id="latest"):
     client = secretmanager.SecretManagerServiceClient()
     name = f"projects/{project_id}/secrets/{secret_id}/versions/{version_id}"
     response = client.access_secret_version(request={"name": name})
@@ -63,11 +63,11 @@ def get_client(tenant) -> ServiceTitanClient:
     def _create_client(tenant) -> ServiceTitanClient:
             # state_code = state_codes()[state]
             client = ServiceTitanClient(
-                app_key=get_secret("ST_app_key_tester"), 
-                app_guid=get_secret("ST_servco_integrations_guid"), 
-                tenant=get_secret(f"ST_tenant_id_{tenant}"), 
-                client_id=get_secret(f"ST_client_id_{tenant}"), 
-                client_secret=get_secret(f"ST_client_secret_{tenant}"), 
+                app_key=get_secret("st_app_key_tester"), 
+                app_guid=get_secret("st_servco_integrations_guid"), 
+                tenant=get_secret(f"st_tenant_id_{tenant}"), 
+                client_id=get_secret(f"st_client_id_{tenant}"), 
+                client_secret=get_secret(f"st_client_secret_{tenant}"), 
                 environment="production"
             )
             return client

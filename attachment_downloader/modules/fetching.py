@@ -61,7 +61,8 @@ def download_attachments_for_job(job_id: str, client: ServiceTitanClient, sb_cli
     category, the list will be empty.
     """
 
-    GCS_BUCKET = 'doc-check-attachments'
+    GCS_BUCKET = 'prestigious-doc-check-attachments'
+    # GCS_BUCKET = 'doc-check-attachments'
 
     attachments = fetch_job_attachments(job_id, client)
 

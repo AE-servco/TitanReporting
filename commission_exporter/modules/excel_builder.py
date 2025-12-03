@@ -30,15 +30,20 @@ def build_workbook(
     CATEGORY_ORDER = {
         'wk_complete_paid': 'COMPLETED & PAID JOBS', 
         'wkend_complete_paid': 'WEEKEND COMPLETED & PAID JOBS', 
+        'ah_complete_paid': 'AFTERHOURS COMPLETED & PAID JOBS', 
         'prev': 'PREVIOUS JOBS COMPLETED & PAID (COMMISSION) - Modoras Team Please do ADD to THIS SECTION or AMEND/TOUCH', 
         'wk_complete_unpaid': 'CURRENT JOBS COMPLETED (AWAITING PAYMENT)', 
         'wkend_complete_unpaid': 'WEEKEND CURRENT JOBS COMPLETED (AWAITING PAYMENT)', 
+        'ah_complete_unpaid': 'AFTERHOURS CURRENT JOBS COMPLETED (AWAITING PAYMENT)', 
         'wk_wo': 'CURRENT WORK ORDERS (AWAITING PAYMENT)', 
         'wkend_wo': 'WEEKEND WORK ORDERS (AWAITING PAYMENT)', 
+        'ah_wo': 'AFTERHOURS WORK ORDERS (AWAITING PAYMENT)', 
         'wk_unsucessful': 'UNSUCCESSFUL JOBS',
         'wkend_unsucessful': 'WEEKEND UNSUCCESSFUL JOBS',
+        'ah_unsucessful': 'AFTERHOURS UNSUCCESSFUL JOBS',
         'wk_uncategorised': 'WEEK UNCATEGORISED',
         'wkend_uncategorised': 'WEEKEND UNCATEGORISED',
+        'ah_uncategorised': 'AFTERHOURS UNCATEGORISED',
     }
     dates = {
         'monday': end_date - dt.timedelta(days=6),
@@ -438,63 +443,6 @@ def build_workbook(
         curr_row += 1
         # =========================================
 
-        
-        # Summary input variables 
-        # =========================================
-
-        job_counts_per_day = {
-            '0': 0,
-            '1': 0,
-            '2': 0,
-            '3': 0,
-            '4': 0,
-            '5': 0,
-            '6': 0,
-            '7': 0,
-        }
-
-        sales_per_day = {
-            '0': 0,
-            '1': 0,
-            '2': 0,
-            '3': 0,
-            '4': 0,
-            '5': 0,
-            '6': 0,
-            '7': 0,
-        }
-
-        profit_per_day = {
-            '0': 0,
-            '1': 0,
-            '2': 0,
-            '3': 0,
-            '4': 0,
-            '5': 0,
-            '6': 0,
-            '7': 0,
-        }
-        monday_jobs = 0
-        tuesday_jobs = 0
-        wednesday_jobs = 0
-        thursday_jobs = 0
-        friday_jobs = 0
-        saturday_jobs = 0
-        
-        monday_sales = 0
-        tuesday_sales = 0
-        wednesday_sales = 0
-        thursday_sales = 0
-        friday_sales = 0
-        saturday_sales = 0
-        
-        monday_profit = 0
-        tuesday_profit = 0
-        wednesday_profit = 0
-        thursday_profit = 0
-        friday_profit = 0
-        saturday_profit = 0
-
         cat_row_info = {}
 
         for cat, cat_text in CATEGORY_ORDER.items():
@@ -522,7 +470,7 @@ def build_workbook(
                     # if cat in cats_count_for_total:
 
                     formatted_cell(ws, curr_row, 1, job_count, font=cat_font)
-                    formatted_cell(ws, curr_row, 2, job['created_str'], font=cat_font)
+                    formatted_cell(ws, curr_row, 2, job['first_appt_start_str'], font=cat_font)
                     formatted_cell(ws, curr_row, 3, int(job['num']), font=cat_font)
                     formatted_cell(ws, curr_row, 4, job['suburb'], font=cat_font)
                     if not job['unsuccessful']:
@@ -548,6 +496,7 @@ def build_workbook(
                     formatted_cell(ws, curr_row, 19, job['Invoice Emailed'], font=cat_font)
                     formatted_cell(ws, curr_row, 20, job['5 Star Review'], font=cat_font)
 
+                    formatted_cell(ws, curr_row, 25, job['first_appt_start_dt'].strftime("%d/%m/%Y %H:%M"), font=cat_font)
                         # SUMIF(date_col, "date", profit/sales col)
                     
                     payments = job.get('payment_amt')
