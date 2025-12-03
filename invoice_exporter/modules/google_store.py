@@ -2,7 +2,7 @@ import json
 import yaml
 from google.cloud import storage
 
-BUCKET_NAME = "service_titan_reporter_data"
+BUCKET_NAME = "prestigious_config_files"
 
 def _get_bucket():
     client = storage.Client()
