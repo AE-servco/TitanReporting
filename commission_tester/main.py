@@ -4,8 +4,6 @@ from datetime import date, time, datetime
 from pprint import pprint
 
 
-EXCEL_FILE = '/Users/albie/Documents/code/github repos/TitanReporting/commission_tester/FY2026 - VIC Commission Sheet.xlsx'
-SHEET_NAME = 'Bradley'
 
 # sheet = pd.read_excel(EXCEL_FILE, sheet_name=SHEET_NAME, header=None)
 
@@ -31,20 +29,7 @@ class JobData():
     payment_plan: float
     category: str
 
-    def __eq__(self, value: 'JobData'):
-        if self.num == value.num \
-            and self.date == value.date \
-            and self.suburb == value.suburb \
-            and self.subtotal == value.subtotal \
-            and self.materials == value.materials \
-            and self.merchant_fees == value.merchant_fees \
-            and self.profit == value.profit \
-            and self.payment_types == value.payment_types \
-            and self.eftpos == value.eftpos \
-            and self.cash == value.cash \
-            and self.payment_plan == value.payment_plan \
-            and self.category == value.category:
-            return True
+    def diff(self, value: 'JobData'):
         diff = {}
         for field in fields(self):
             self_val = getattr(self, field.name)
@@ -124,32 +109,34 @@ def extract_jobs_from_week(df: pd.DataFrame, week_ranges: dict, week_end_date: d
     week_data = WeekData(jobs)
     return week_data
 
-def test_job_equality(j1: JobData, j2: JobData):
-    """
-    Test if jobs are equal, return JobDiff object if not, True if so.
-    """
-    pass
+
 
 def main():
-    j1 = JobData(1234, date(2025,11,24), 'Mascot', 15564.2, 1235.1, 0, 3000.0, ['Credit Card', 'EFT'], 15564.2*1.1, 0, 0, "COMPLETED & PAID JOBS")
-    j2 = JobData(123, date(2025,11,25), 'Mascot', 1234.2, 123.1, 0, 1000.0, ['Cash'], 0, 1234.2*1.1, 0, "COMPLETED & PAID JOBS")
-    j3 = JobData(1234, date(2025,11,24), 'Mascot', 15564.2, 1235.1, 0, 3000.0, ['Credit Card', 'EFT'], 15564.2*1.1, 0, 0, "COMPLETED & PAID JOBS")
+    MANUAL_EXCEL_FILE = '/Users/albie/Documents/code/github repos/TitanReporting/commission_tester/FY2026 - VIC Commission Sheet.xlsx'
+    SHEET_NAME = 'Bradley'
 
-    # w1 = WeekData({
-    #     j1.num: j1,
-    #     j2.num: j2
-    # })
+    sheet = pd.read_excel(MANUAL_EXCEL_FILE, sheet_name=SHEET_NAME, header=None)
 
-    print(j1)
-    print(j2)
-    # print(w1)
-    print(j1==j2)
-    print(j1==j3)
-    # sheet = pd.read_excel(EXCEL_FILE, sheet_name=SHEET_NAME, header=None)
-    # week_ranges = get_week_data_ranges(sheet)
-    # test_week = list(week_ranges.keys())[1]
-    # print(test_week)
-    # pprint(extract_jobs_from_week(sheet, week_ranges, test_week))
+
+
+    # j1 = JobData(1234, date(2025,11,24), 'Mascot', 15564.2, 1235.1, 0, 3000.0, ['Credit Card', 'EFT'], 15564.2*1.1, 0, 0, "COMPLETED & PAID JOBS")
+    # j2 = JobData(123, date(2025,11,25), 'Mascot', 1234.2, 123.1, 0, 1000.0, ['Cash'], 0, 1234.2*1.1, 0, "COMPLETED & PAID JOBS")
+    # j3 = JobData(1234, date(2025,11,24), 'Mascot', 15564.2, 1235.1, 0, 3000.0, ['Credit Card', 'EFT'], 15564.2*1.1, 0, 0, "COMPLETED & PAID JOBS")
+
+    # # w1 = WeekData({
+    # #     j1.num: j1,
+    # #     j2.num: j2
+    # # })
+
+    # # print(j1)
+    # # print(j2)
+    # # print(w1)
+    # pprint(j1.diff(j2))
+    # pprint(j1.diff(j3))
+    # # week_ranges = get_week_data_ranges(sheet)
+    # # test_week = list(week_ranges.keys())[1]
+    # # print(test_week)
+    # # pprint(extract_jobs_from_week(sheet, week_ranges, test_week))
 
 if __name__ == '__main__':
     main()

@@ -120,6 +120,7 @@ if __name__ == "__main__":
     # data = client.get(url)
     # print(upload_bytes_to_gcs_signed(data=data, bucket_name='doc-check-attachments', blob_name='test_attachment'))
     delete_all_in_bucket('doc-check-attachments')
+    delete_all_in_bucket('prestigious-doc-check-attachments')
     # credentials, project_id = google.auth.default()
     # # r = requests.Request()
     # # credentials.refresh(r)
