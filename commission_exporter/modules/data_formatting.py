@@ -127,11 +127,15 @@ def format_appt(appt): # TODO: finish figuring out what "start time" counts.
     formatted['appt_end'] = appt['end']
     return formatted
 
-def format_estimate(estimate, status='Open'): # TODO: finish figuring out what "start time" counts.
+def format_estimate(estimate, sold=True): 
     formatted = {}
     try:
-        if estimate['status']['name'] != status:
-            return None
+        if sold:
+            if estimate['status']['name'] != "Sold":
+                return None
+        else:
+            if estimate['status']['name'] == "Sold":
+                return None
     except KeyError:
         return None
     formatted['job_id'] = estimate['jobId']

@@ -78,8 +78,8 @@ if ss["authentication_status"]:
                 jobs = [job for job in jobs_w_nones if job is not None]
                 invoices = [format.format_invoice(invoice) for invoice in invoices]
                 payments = helpers.flatten_list([format.format_payment(payment, ss.client) for payment in payments])
-                open_estimates = [e for e in [format.format_estimate(est, 'Open') for est in estimates] if e is not None]
-                sold_estimates = [e for e in [format.format_estimate(est, 'Sold') for est in estimates] if e is not None]
+                open_estimates = [e for e in [format.format_estimate(est, sold=False) for est in estimates] if e is not None]
+                sold_estimates = [e for e in [format.format_estimate(est, sold=True) for est in estimates] if e is not None]
 
                 jobs_df = pd.DataFrame(jobs)
                 invoices_df = pd.DataFrame(invoices)
