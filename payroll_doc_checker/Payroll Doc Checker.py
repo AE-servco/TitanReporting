@@ -125,6 +125,11 @@ def main() -> None:
 
             job_info, attachments = st.columns([1,4])
 
+            project_id = job.get("projectId")
+            if project_id:
+                with st.spinner("Loading project data..."):
+                    project = fetch.fetch_project(project_id)
+
             with job_info:
                 # prefill_holder = st.text("")
                 templates.show_job_info(job)

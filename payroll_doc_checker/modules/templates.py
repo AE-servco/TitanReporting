@@ -84,6 +84,7 @@ def show_job_info(job):
     inv_subtotal = inv_data.get("subtotal", "Not available.")
     inv_bal = inv_data.get("balance", "Not available.")
     inv_amt_paid = inv_data.get("amt_paid", "Not available.")
+    project_id = job.get("projectId")
 
     # invoice_desc = {
     #     "Invoice items": inv_desc.split("|")
@@ -99,6 +100,8 @@ def show_job_info(job):
         'Cash': 'green',
     }
     
+    if project_id:
+        st.link_button(f"**Project {project_id}**", f"https://{st.session_state.current_tenant}.eh.go.servicetitan.com/#/project/{project_id}", type='tertiary')
     st.write(f"**Job Status**")
     st.write(job_status)
     st.write(f"**Invoice summary**")
@@ -127,23 +130,6 @@ def show_job_info(job):
     st.write('Started at ' + client.format_local(client.from_utc_string(job['last_appt_start']), fmt="%H:%M, %d/%m/%Y")) 
     st.write('Ended at ' + client.format_local(client.from_utc_string(job['last_appt_end']), fmt="%H:%M, %d/%m/%Y"))
 
-    # table_df = pd.DataFrame({
-    #     "First Appointment": [
-    #         job['first_appt_num'], 
-    #         client.format_local(client.from_utc_string(job['first_appt_start']), fmt="%H:%M, %d/%m/%Y"), 
-    #         client.format_local(client.from_utc_string(job['first_appt_end']), fmt="%H:%M, %d/%m/%Y"), 
-    #         client.format_local(client.from_utc_string(job['first_appt_arrival_start']), fmt="%H:%M, %d/%m/%Y"), 
-    #         client.format_local(client.from_utc_string(job['first_appt_arrival_end']), fmt="%H:%M, %d/%m/%Y")],
-    #     "Last Appointment": [
-    #         job['last_appt_num'], 
-    #         client.format_local(client.from_utc_string(job['last_appt_start']), fmt="%H:%M, %d/%m/%Y"), 
-    #         client.format_local(client.from_utc_string(job['last_appt_end']), fmt="%H:%M, %d/%m/%Y"), 
-    #         client.format_local(client.from_utc_string(job['last_appt_arrival_start']), fmt="%H:%M, %d/%m/%Y"),
-    #         client.format_local(client.from_utc_string(job['last_appt_arrival_end']), fmt="%H:%M, %d/%m/%Y")
-    #     ]
-    # }, index=['Appointment #', 'Recorded Start time', 'Recorded End time', 'Arrival window start', 'Arrival window end'])
-    # st.table(table_df)
-    # st.write(job)
 
 @st.fragment
 def show_images(imgs, container_height=1000):

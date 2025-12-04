@@ -247,6 +247,22 @@ def fetch_payments(
     payments = _client.get_all(base_path, params=params)
     return payments
 
+def fetch_project(
+    project_id: int,
+    _client: ServiceTitanClient,
+) -> List[Dict[str, Any]]:
+    """
+    Retrieve project data given a project id
+    """
+    base_path = _client.build_url('jpm', 'projects')
+
+    params = {
+        'ids': str(project_id)
+    }
+
+    project = _client.get_all(base_path, params=params)
+    return project
+
 def fetch_tag_types(client: ServiceTitanClient):
     url = client.build_url('settings', 'tag-types')
     return client.get_all(url)
