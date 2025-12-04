@@ -114,6 +114,7 @@ def build_workbook(
     font_red_bold = Font(color='FF0000', bold=True)
     font_green_bold = Font(color='1F9C40', bold=True)
     font_green = Font(color='1F9C40')
+    font_purple = Font(color='5F4F7D')
     font_bold = Font(bold=True)
 
     cell_border_full = Border(top=thin_border, bottom=thin_border, right=thin_border, left=thin_border)
@@ -496,8 +497,8 @@ def build_workbook(
                     formatted_cell(ws, curr_row, 19, job['Invoice Emailed'], font=cat_font)
                     formatted_cell(ws, curr_row, 20, job['5 Star Review'], font=cat_font)
 
-                    formatted_cell(ws, curr_row, 25, job['first_appt_start_dt'].strftime("%d/%m/%Y %H:%M"), font=cat_font)
-                        # SUMIF(date_col, "date", profit/sales col)
+                    formatted_cell(ws, curr_row, 25, f"=ROUND(E{curr_row}*1.1,2)", font=font_purple)
+                    formatted_cell(ws, curr_row, 26, f"=ROUND(Y{curr_row} - V{curr_row} - W{curr_row} - X{curr_row},2)", font=font_purple)
                     
                     payments = job.get('payment_amt')
 
