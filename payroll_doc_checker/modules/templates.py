@@ -101,7 +101,14 @@ def show_job_info(job):
     }
     
     if project_id:
-        st.link_button(f"**Project {project_id}**", f"https://{st.session_state.current_tenant}.eh.go.servicetitan.com/#/project/{project_id}", type='tertiary')
+        st.link_button(f"**Project (Click me)**", f"https://{st.session_state.current_tenant}.eh.go.servicetitan.com/#/project/{project_id}", type='tertiary')
+        other_jobs_in_proj = job.get('other_in_proj')
+        if other_jobs_in_proj:
+            other_job_count = 1
+            for other_job in other_jobs_in_proj:
+                if other_job != job['id']:
+                    st.link_button(f"Other Job {other_job_count} (Click me)", f"https://{st.session_state.current_tenant}.eh.go.servicetitan.com/#/Job/Index/{other_job}", type='tertiary')
+                    other_job_count += 1
     st.write(f"**Job Status**")
     st.write(job_status)
     st.write(f"**Invoice summary**")
