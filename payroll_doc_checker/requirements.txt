@@ -10,6 +10,5 @@ google-cloud-secret-manager
 oauth2client
 google-auth
 streamlit-pdf-viewer
-extra-streamlit-components
 google-cloud-tasks
 supabase
