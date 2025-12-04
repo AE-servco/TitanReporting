@@ -15,7 +15,7 @@ import modules.lookup_tables as lookup
 
 st.title("Weekly Commission Sheets (per technician)")
 
-CONFIG_FILENAME = 'st_auth_config_invoice_exporter.yaml'
+CONFIG_FILENAME = 'st_auth_config_commission_exporter.yaml'
 config = gs.load_yaml_from_gcs(CONFIG_FILENAME)
 
 authenticator = stauth.Authenticate(

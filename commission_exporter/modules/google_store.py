@@ -3,7 +3,7 @@ import yaml
 from google.cloud import storage
 from google.cloud import secretmanager
 
-BUCKET_NAME = "service_titan_reporter_data"
+BUCKET_NAME = "prestigious_config_files"
 
 def get_secret(secret_id, project_id="prestigious-gcp", version_id="latest"):
     client = secretmanager.SecretManagerServiceClient()
