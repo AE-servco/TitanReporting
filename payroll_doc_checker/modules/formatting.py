@@ -52,22 +52,23 @@ def format_payments(payments):
             output.setdefault(invoice['appliedTo'], []).append(inv_dict)
     return output
 
-def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='docchecks_live'):
+# def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='docchecks_live'):
     
-    def check_unsuccessful(job, tags):
-        unsuccessful_tags = {tag.get("id") for tag in tags if "Unsuccessful" in tag.get("name")}
-        job_tags = set(job.get('tagTypeIds'))
-        return bool(unsuccessful_tags & job_tags)
+#     def check_unsuccessful(job, tags):
+#         unsuccessful_tags = {tag.get("id") for tag in tags if "Unsuccessful" in tag.get("name")}
+#         job_tags = set(job.get('tagTypeIds'))
+#         return bool(unsuccessful_tags & job_tags)
  
-    formatted = {}
-    formatted['created_str'] = client.st_date_to_local(job['createdOn'], fmt="%d/%m/%Y")
-    formatted['created_dt'] = client.from_utc(job['createdOn'])
-    formatted['completed_str'] = client.st_date_to_local(job['completedOn'], fmt="%m/%d/%Y") if job['completedOn'] is not None else "No data"
-    formatted['num'] = job['jobNumber'] if job['jobNumber'] is not None else -1
-    formatted['status'] = job['jobStatus'] if job['jobStatus'] is not None else "No data"
-    formatted['invoiceId'] = job['invoiceId'] if job['invoiceId'] is not None else -1
-    formatted['unsuccessful'] = check_unsuccessful(job, tenant_tags)
-    return formatted
+#     formatted = {}
+#     formatted['created_str'] = client.st_date_to_local(job['createdOn'], fmt="%d/%m/%Y")
+#     formatted['created_dt'] = client.from_utc(job['createdOn'])
+#     formatted['completed_str'] = client.st_date_to_local(job['completedOn'], fmt="%m/%d/%Y") if job['completedOn'] is not None else "No data"
+#     formatted['num'] = job['jobNumber'] if job['jobNumber'] is not None else -1
+#     formatted['status'] = job['jobStatus'] if job['jobStatus'] is not None else "No data"
+#     formatted['invoiceId'] = job['invoiceId'] if job['invoiceId'] is not None else -1
+#     formatted['project_id'] = job['projectId'] if job['projectId'] is not None else -1
+#     formatted['unsuccessful'] = check_unsuccessful(job, tenant_tags)
+#     return formatted
 
 def combine_job_data(jobs: list, invoices: dict, payments: dict):
     """Combines job, invoice, payment, and any other data for jobs into a single dictionary.

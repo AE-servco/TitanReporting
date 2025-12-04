@@ -107,7 +107,7 @@ def main() -> None:
 
         # Display the current job if available
         if st.session_state.jobs:
-            # client = st.session_state.clients.get(st.session_state.current_tenant)
+            client = st.session_state.clients.get(st.session_state.current_tenant)
             idx = st.session_state.current_index
             # job, job_id, job_num = templates.job_nav_buttons(idx)
             job = st.session_state.jobs[idx]
@@ -121,15 +121,26 @@ def main() -> None:
                     st.link_button(f"**Job {job_num}**", f"https://{st.session_state.current_tenant}.eh.go.servicetitan.com/#/Job/Index/{job_id}", type='tertiary')
                     templates.nav_button('next')
                 st.text(f"({idx + 1} of {len(st.session_state.jobs)})")
-                with st.form("jobindexselector", width=200):
-                    index_selected = st.number_input("Go to image number:", min_value=1, max_value=len(st.session_state.jobs), value=1)
-                    index_selector_submit = st.form_submit_button("Go")
-                    if index_selector_submit:
-                        st.session_state.current_index = index_selected-1
-                        fetch.schedule_prefetches(st.session_state.clients[st.session_state.current_tenant])
-                        st.rerun()
+                with st.form("jobindexselector", width=200, border=False):
+                    # with st.container(horizontal_alignment='distribute'):
+                    with st.container(horizontal=True, horizontal_alignment='center'):
+                        st.text("Select job:")
+                        index_selected = st.number_input("", min_value=1, max_value=len(st.session_state.jobs), value=1, label_visibility='collapsed', width=60)
+                        index_selector_submit = st.form_submit_button("Go", type='tertiary')
+                        if index_selector_submit:
+                            st.session_state.current_index = index_selected-1
+                            fetch.schedule_prefetches(client)
+                            st.rerun()
 
             job_info, attachments = st.columns([1,4])
+
+            project_id = job.get("projectId")
+            if project_id:
+                with st.spinner("Loading project data..."):
+                    project = fetch.fetch_project(project_id, client)
+                    if project:
+                        job['other_in_proj'] = project[0].get('jobIds')
+                    del project
 
             with job_info:
                 # prefill_holder = st.text("")
