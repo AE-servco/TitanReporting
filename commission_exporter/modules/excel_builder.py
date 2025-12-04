@@ -4,7 +4,8 @@ from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Border, Side, PatternFill, Font, Alignment
 from openpyxl.comments import Comment
-from openpyxl.formatting.rule import CellIsRule
+from openpyxl.formatting.rule import CellIsRule, FormulaRule
+
 
 def formatted_cell(worksheet, row: int, col: int, val = None, font: Font | None=None, border: Border | None=None, number_format: str | None=None, fill: PatternFill | None=None):
     if val or val == 0:
@@ -480,7 +481,7 @@ def build_workbook(
                     else:
                         formatted_cell(ws, curr_row, 5, job['open_est_subtotal'], font=cat_font).number_format = '$ 00.00'
                     # 7
-                    formatted_cell(ws, curr_row, 8, f"={get_column_letter(5)}{curr_row}-{get_column_letter(6)}{curr_row}-{get_column_letter(7)}{curr_row}", font=cat_font).number_format = '$ 00.00'
+                    formatted_cell(ws, curr_row, 8, f"={get_column_letter(5)}{curr_row}-{get_column_letter(6)}{curr_row}-{get_column_letter(7)}{curr_row}", font=cat_font).number_format = '$ 00.00' # profit col
                     formatted_cell(ws, curr_row, 9, job['payment_types'], font=cat_font)
                     # 10 TODO: all doc checks complete
                     doc_check_complete_col = f'=IF(OR({", ".join([f"{get_column_letter(i)}{curr_row}=0" for i in range(11,20)])}), "N","Y")'
@@ -688,7 +689,13 @@ def build_workbook(
         formatted_cell(ws, summary_top_row + 10,6, border = cell_border['right'])
         
 
+        ws.conditional_formatting.add(
+            f'H{cat_row_info['wk_complete_paid'][0]}:H{cat_row_info['wkend_complete_paid'][1]}', 
+            FormulaRule(formula=[f'$J{cat_row_info['wk_complete_paid'][0]}="N"'], fill=PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid"))
+        )
 
+        # 'wk_complete_paid',
+        # 'wkend_complete_paid',
 
         for row in ws[f'V{27}:X{curr_row-3}']:
             for cell in row:
