@@ -96,3 +96,18 @@ def categorise_job(job):
 
 def merge_dfs(dfs: list, on='job_id', how='left'):
     return reduce(lambda left, right: pd.merge(left, right, on=on, how=how), dfs)
+
+def get_last_day_of_month_datetime(year, month):
+    """
+    Returns the last day of the specified month and year as a date object.
+    """
+    if month == 12:
+        next_month_year = year + 1
+        next_month = 1
+    else:
+        next_month_year = year
+        next_month = month + 1
+    
+    first_day_of_next_month = _dt.date(next_month_year, next_month, 1)
+    last_day_of_current_month = first_day_of_next_month - _dt.timedelta(days=1)
+    return last_day_of_current_month
