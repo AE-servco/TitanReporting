@@ -7,7 +7,7 @@ from servicetitan_api_client import ServiceTitanClient
 import modules.lookup_tables as lookup
 import modules.helpers as helpers
 
-def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='docchecks_testing'):
+def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='docchecks_live'):
     
     def check_unsuccessful(job, tags):
         unsuccessful_tags = {tag.get("id") for tag in tags if "Unsuccessful" in tag.get("name")}

@@ -92,7 +92,7 @@ if ss["authentication_status"]:
                     job['appt_techs'] = set(appt_assmnts_by_job.get(job['id'], []))
                     job['num_of_appts_in_mem'] = num_appts_per_job.get(job['id'], 0)
                     job['first_appt'] = first_appts_by_id.get(job['id'], {})
-                jobs_w_nones = [format.format_job(job, ss.client, tenant_tags, exdata_key='docchecks_testing') for job in jobs]
+                jobs_w_nones = [format.format_job(job, ss.client, tenant_tags, exdata_key='docchecks_live') for job in jobs]
                 jobs = [job for job in jobs_w_nones if job is not None]
                 invoices = [format.format_invoice(invoice) for invoice in invoices]
                 payments = helpers.flatten_list([format.format_payment(payment, ss.client) for payment in payments])
