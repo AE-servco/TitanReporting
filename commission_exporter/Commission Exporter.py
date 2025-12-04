@@ -13,6 +13,14 @@ import modules.data_formatting as format
 import modules.data_fetching as fetching
 import modules.lookup_tables as lookup
 
+###############################################################################
+# Filter warnings
+###############################################################################
+import warnings
+warnings.filterwarnings("ignore", message=".*cookie_manager.*")
+
+
+
 st.title("Weekly Commission Sheets (per technician)")
 
 CONFIG_FILENAME = 'st_auth_config_commission_exporter.yaml'
