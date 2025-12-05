@@ -39,46 +39,47 @@ if ss["authentication_status"]:
     last_monday = today - dt.timedelta(days=today.weekday() + 7)
     last_sunday = last_monday + dt.timedelta(days=6)
 
-    timeframe = st.selectbox(
-        "Select timeframe",
-        [
-            'Month',
-            'Week'
-        ],
+    # timeframe = st.selectbox(
+    #     "Select timeframe",
+    #     [
+    #         'Month',
+    #         'Week'
+    #     ],
         
-    )
-
-
+    # )
 
     with st.form("date_select"):
         tenant = st.selectbox(
             "Select tenant",
             lookup.get_tenants().keys()
         )
+        end_date = st.date_input("Week ending", value=last_sunday)
+        start_date = end_date - dt.timedelta(days=6)
+        submitted = st.form_submit_button("Fetch and build workbook")
 
-        if timeframe == 'Week':
-            end_date = st.date_input("Week ending", value=last_sunday)
-            start_date = end_date - dt.timedelta(days=6)
-            submitted = st.form_submit_button("Fetch and build workbook")
+        # if timeframe == 'Week':
+        #     end_date = st.date_input("Week ending", value=last_sunday)
+        #     start_date = end_date - dt.timedelta(days=6)
+        #     submitted = st.form_submit_button("Fetch and build workbook")
 
-        elif timeframe == 'Month':
-            mon_abbr_to_num = {name: num for num, name in enumerate(calendar.month_abbr) if num}
-            year = st.selectbox(
-                            "Year",
-                            [
-                                2025,
-                                2026
-                            ]
-                        )
-            month = st.selectbox(
-                            "Month",
-                            list(mon_abbr_to_num.keys())
-                        )
-            end_date = helpers.get_last_day_of_month_datetime(year, mon_abbr_to_num[month])
-            start_date = dt.date(year, mon_abbr_to_num[month], 1)
-            submitted = st.form_submit_button("Fetch and build workbook")
-        else: 
-            st.write("Select week or month above")
+        # elif timeframe == 'Month':
+        #     mon_abbr_to_num = {name: num for num, name in enumerate(calendar.month_abbr) if num}
+        #     year = st.selectbox(
+        #                     "Year",
+        #                     [
+        #                         2025,
+        #                         2026
+        #                     ]
+        #                 )
+        #     month = st.selectbox(
+        #                     "Month",
+        #                     list(mon_abbr_to_num.keys())
+        #                 )
+        #     end_date = helpers.get_last_day_of_month_datetime(year, mon_abbr_to_num[month])
+        #     start_date = dt.date(year, mon_abbr_to_num[month], 1)
+        #     submitted = st.form_submit_button("Fetch and build workbook")
+        # else: 
+        #     st.write("Select week or month above")
             
 
         
@@ -141,23 +142,16 @@ if ss["authentication_status"]:
                         job['appt_techs'] = set(appt_assmnts_by_job.get(job['id'], []))
                         job['num_of_appts_in_mem'] = num_appts_per_job.get(job['id'], 0)
                         job['first_appt'] = first_appts_by_id.get(job['id'], {})
-                with st.spinner("Formatting data... dotting the i's"):
                     jobs_w_nones = [format.format_job(job, ss.client, tenant_tags, exdata_key='docchecks_live') for job in jobs]
-                with st.spinner("Formatting data...6"):
                     jobs = [job for job in jobs_w_nones if job is not None]
-                with st.spinner("Formatting data...7"):
                     invoices = [format.format_invoice(invoice) for invoice in invoices]
-                with st.spinner("Formatting data...8"):
                     payments = helpers.flatten_list([format.format_payment(payment, ss.client) for payment in payments])
-                with st.spinner("Formatting data... Nearly there..."):
                     open_estimates = [e for e in [format.format_estimate(est, sold=False) for est in estimates] if e is not None]
                     sold_estimates = [e for e in [format.format_estimate(est, sold=True) for est in estimates] if e is not None]
 
                     jobs_df = pd.DataFrame(jobs)
                     invoices_df = pd.DataFrame(invoices)
                     payments_df = pd.DataFrame(payments)
-                    # st.dataframe(payments_df)
-                with st.spinner("Formatting data... So close!"):
                     # payments_grouped = payments_df.groupby('invoiceId', as_index=False).agg(','.join)
                     payments_grouped = payments_df.groupby('invoiceId', as_index=False).agg(lambda x: ', '.join(sorted(list(set(x)))))
                     open_estimates_df = pd.DataFrame(open_estimates)
@@ -170,6 +164,7 @@ if ss["authentication_status"]:
                     # st.dataframe(sold_estimates_df)
                     # st.dataframe(open_estimates_grouped)
                     # st.dataframe(sold_estimates_grouped)
+                    st.dataframe(payments_df)
 
                 with st.spinner("Merging data..."):
                     merged = helpers.merge_dfs([jobs_df, invoices_df, payments_grouped], on='invoiceId', how='left')
