@@ -24,19 +24,29 @@ def authenticate_app(config_file):
     authenticator.login(location='main')
 
 def sidebar_filters():
+
+    default_tenant_map = {
+        'ghadeer': 0, # NSW
+        'nick': 1, # VIC
+        'tim': 2, # QLD
+        'lachlan': 3, # WA
+    }
+
     # Sidebar controls for date range and filters
     with st.sidebar.form(key=f"filter_form"):
         st.header("Job filters")
+
         tenant_filter = st.selectbox(
             "ServiceTitan Tenant",
             [
                 "FoxtrotWhiskey (NSW)", 
+                "MikeEcho (VIC)",
+                "BravoGolf (QLD)",
                 "SierraDelta (WA)",
-                "VictorTango (VIC)",
-                "EchoZulu (QLD)",
-                "MikeEcho (VIC new)",
-                "BravoGolf (QLD new)",
-            ]
+                "EchoZulu (old QLD)",
+                "VictorTango (old VIC)",
+            ],
+            index = default_tenant_map[st.session_state.username] if st.session_state.username in default_tenant_map else 0
         )
         today = date.today()
         default_start = today - timedelta(days=1)
@@ -225,6 +235,8 @@ def doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks
             initial_checks['qs'] = helpers.pre_fill_quote_signed_check(pdfs)
         if not initial_checks.get("is", False):
             initial_checks['is'] = helpers.pre_fill_invoice_signed_check(pdfs)
+        if not initial_checks.get("ie", False):
+            initial_checks['ie'] = helpers.pre_fill_invoice_emailed_check(job)
         if initial_checks['is'] and initial_checks['qs']:
             st.session_state.prefill_txt = "Prefilled: Quote signed and Invoice signed"
         elif initial_checks['is']:

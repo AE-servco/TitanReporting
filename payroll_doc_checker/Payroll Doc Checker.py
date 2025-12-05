@@ -125,7 +125,7 @@ def main() -> None:
                     # with st.container(horizontal_alignment='distribute'):
                     with st.container(horizontal=True, horizontal_alignment='center'):
                         st.text("Select job:")
-                        index_selected = st.number_input("", min_value=1, max_value=len(st.session_state.jobs), value=1, label_visibility='collapsed', width=60)
+                        index_selected = st.number_input("invisible label", min_value=1, max_value=len(st.session_state.jobs), value=1, label_visibility='collapsed', width=60)
                         index_selector_submit = st.form_submit_button("Go", type='tertiary')
                         if index_selector_submit:
                             st.session_state.current_index = index_selected-1

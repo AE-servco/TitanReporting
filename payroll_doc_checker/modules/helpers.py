@@ -163,6 +163,10 @@ def pre_fill_invoice_signed_check(pdfs):
                 return 1
     return 0
 
+def pre_fill_invoice_emailed_check(job):
+    sent_stat = job['invoice_data']['sent_status']
+    return sent_stat == 'Sent' or sent_stat == 'Opened'
+
 def filter_out_unsuccessful_jobs(jobs, client: ServiceTitanClient):
     unsuccessful_tags = [tag.get("id") for tag in fetch.get_tag_types(client) if "Unsuccessful" in tag.get("name")]
     return [job for job in jobs if unsuccessful_tags[0] not in job.get("tagTypeIds")]
@@ -213,7 +217,6 @@ def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filte
             if filter_unsucessful:
                 jobs = filter_out_unsuccessful_jobs(jobs, client)
 
-        # TODO: Add invoice & payment logic
         invoice_ids = format.get_invoice_ids(jobs)
         invoices = fetch.fetch_invoices(invoice_ids, client)
         payments = fetch.fetch_payments(invoice_ids, client)

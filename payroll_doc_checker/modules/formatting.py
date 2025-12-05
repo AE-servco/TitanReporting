@@ -26,21 +26,22 @@ def format_invoice(invoice):
     formatted['balance'] = float(invoice['balance'])
     formatted['amt_paid'] = round(float(invoice['total']) - float(invoice['balance']),2)
     formatted['invoiceId'] = invoice['id']
+    formatted['sent_status'] = invoice['sentStatus']
     if invoice['items']:
-        formatted['summary'] = '|'.join([i['description'].split('<')[0] for i in invoice['items']])
+        desc_list = []
+        for i in invoice['items']:
+            spl = i['description'].split('<')
+            if spl[0] == '':
+                if spl[1][1] == '>':
+                    desc_list.append(spl[1][2:])
+                else:
+                    desc_list.append(spl[1])
+            else:
+                desc_list.append(spl[0])
+        formatted['summary'] = '|'.join(desc_list)
     else:
         formatted['summary'] = 'no invoice items'
     return formatted
-
-# def format_payment(payment):
-#     output = []
-#     for invoice in payment['appliedTo']:
-#         formatted = {}
-#         formatted['invoiceId'] = invoice['appliedTo']
-#         formatted['payment_types'] = payment['type']
-#         formatted['payment_amt'] = payment['type'][:2] + invoice.get('appliedAmount', '0')
-#         output.append(formatted)
-#     return output
 
 def format_payments(payments):
     output = {}

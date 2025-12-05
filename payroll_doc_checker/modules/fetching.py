@@ -221,12 +221,14 @@ def fetch_invoices(
     """
     Retrieve all invoices given a list of ids
     """
-    if type(ids[0]) != str:
-        ids = [str(id) for id in ids]
-    base_path = _client.build_url('accounting', 'invoices')
+    if len(ids) > 0:
+        if type(ids[0]) != str:
+            ids = [str(id) for id in ids]
+        base_path = _client.build_url('accounting', 'invoices')
 
-    invoices = _client.get_all_id_filter(base_path, ids=ids)
-    return invoices
+        invoices = _client.get_all_id_filter(base_path, ids=ids)
+        return invoices
+    return []
 
 # @st.cache_data(show_spinner=False)
 def fetch_payments(
@@ -236,16 +238,18 @@ def fetch_payments(
     """
     Retrieve all invoices given a list of ids
     """
-    if type(invoice_ids[0]) != str:
-        invoice_ids = [str(id) for id in invoice_ids]
-    base_path = _client.build_url('accounting', 'payments')
+    if len(invoice_ids) > 0:
+        if type(invoice_ids[0]) != str:
+            invoice_ids = [str(id) for id in invoice_ids]
+        base_path = _client.build_url('accounting', 'payments')
 
-    params = {
-        'appliedToInvoiceIds': ','.join(invoice_ids)
-    }
+        params = {
+            'appliedToInvoiceIds': ','.join(invoice_ids)
+        }
 
-    payments = _client.get_all(base_path, params=params)
-    return payments
+        payments = _client.get_all(base_path, params=params)
+        return payments
+    return []
 
 def fetch_project(
     project_id: int,
