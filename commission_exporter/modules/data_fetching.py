@@ -69,10 +69,10 @@ def fetch_payments(
     base_path = _client.build_url('accounting', 'payments')
 
     params = {
-        'appliedToInvoiceIds': ','.join(invoice_ids)
+        # 'appliedToInvoiceIds': ','.join(invoice_ids)
     }
 
-    payments = _client.get_all(base_path, params=params)
+    payments = _client.get_all_id_filter(base_path, ids= invoice_ids, id_filter_name='appliedToInvoiceIds', params=params)
     return payments
 
 def fetch_tag_types(client: ServiceTitanClient):

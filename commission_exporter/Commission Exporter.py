@@ -4,6 +4,7 @@ from streamlit import session_state as ss
 import streamlit_authenticator as stauth
 import datetime as dt
 import pandas as pd
+import calendar
 
 import modules.google_store as gs
 from modules.excel_builder import build_workbook 
@@ -38,16 +39,49 @@ if ss["authentication_status"]:
     last_monday = today - dt.timedelta(days=today.weekday() + 7)
     last_sunday = last_monday + dt.timedelta(days=6)
 
+    # timeframe = st.selectbox(
+    #     "Select timeframe",
+    #     [
+    #         'Month',
+    #         'Week'
+    #     ],
+        
+    # )
+
     with st.form("date_select"):
         tenant = st.selectbox(
             "Select tenant",
             lookup.get_tenants().keys()
         )
-        # start_date = st.date_input("Start date", value=last_monday)
         end_date = st.date_input("Week ending", value=last_sunday)
         start_date = end_date - dt.timedelta(days=6)
-
         submitted = st.form_submit_button("Fetch and build workbook")
+
+        # if timeframe == 'Week':
+        #     end_date = st.date_input("Week ending", value=last_sunday)
+        #     start_date = end_date - dt.timedelta(days=6)
+        #     submitted = st.form_submit_button("Fetch and build workbook")
+
+        # elif timeframe == 'Month':
+        #     mon_abbr_to_num = {name: num for num, name in enumerate(calendar.month_abbr) if num}
+        #     year = st.selectbox(
+        #                     "Year",
+        #                     [
+        #                         2025,
+        #                         2026
+        #                     ]
+        #                 )
+        #     month = st.selectbox(
+        #                     "Month",
+        #                     list(mon_abbr_to_num.keys())
+        #                 )
+        #     end_date = helpers.get_last_day_of_month_datetime(year, mon_abbr_to_num[month])
+        #     start_date = dt.date(year, mon_abbr_to_num[month], 1)
+        #     submitted = st.form_submit_button("Fetch and build workbook")
+        # else: 
+        #     st.write("Select week or month above")
+            
+
         
     if submitted:
         tenant_code = lookup.get_tenants()[tenant]
@@ -64,99 +98,101 @@ if ss["authentication_status"]:
 
             with st.spinner("Fetching appointments..."):
                 appts = fetching.fetch_appts(ss.client, start_date, end_date)
-                first_appts = format.get_first_appts(appts)
-                job_ids = format.get_job_ids(first_appts)
-                appt_ids = [appt['id'] for appt in appts]
 
-                # st.write(appts)
-                # st.write('----------')
-                # st.write(first_appts)
+            if len(appts) > 0:
+                with st.spinner("Fetching appointments..."):
+                    first_appts = format.get_first_appts(appts)
+                    job_ids = format.get_job_ids(first_appts)
+                    appt_ids = [appt['id'] for appt in appts]
 
-            with st.spinner("Fetching appointment assignments..."):
-                appt_assmnts = fetching.fetch_appt_assmnts(ss.client, appt_ids)
-                # appt_assmnts = []
+                with st.spinner("Fetching appointment assignments..."):
+                    appt_assmnts = fetching.fetch_appt_assmnts(ss.client, appt_ids)
+                    # appt_assmnts = []
 
-            with st.spinner("Fetching jobs..."):
-                jobs = fetching.fetch_jobs(ss.client, job_id_ls=job_ids)
-                invoice_ids = format.get_invoice_ids(jobs)
+                with st.spinner("Fetching jobs..."):
+                    jobs = fetching.fetch_jobs(ss.client, job_id_ls=job_ids)
+                    invoice_ids = format.get_invoice_ids(jobs)
+                    # st.write(len(jobs))
+                    # st.write(jobs)
 
-            with st.spinner("Fetching estimates..."):
-                estimates = fetching.fetch_estimates(start_date, end_date, ss.client)
-                # estimates = []
+                with st.spinner("Fetching estimates..."):
+                    estimates = fetching.fetch_estimates(start_date, end_date, ss.client)
+                    # st.write(len(estimates))
+                    # st.write(estimates)
+                    # estimates = []
 
-            with st.spinner("Fetching invoices..."):
-                invoices = fetching.fetch_invoices(invoice_ids, ss.client)
-                # invoices = []
+                with st.spinner("Fetching invoices..."):
+                    invoices = fetching.fetch_invoices(invoice_ids, ss.client)
+                    # st.write(len(invoices))
+                    # st.write(invoices)
+                    # invoices = []
 
-            with st.spinner("Fetching payments..."):
-                payments = fetching.fetch_payments(invoice_ids, ss.client)
-                # payments = []
+                with st.spinner("Fetching payments..."):
+                    payments = fetching.fetch_payments(invoice_ids, ss.client)
+                    # st.write(len(payments))
+                    # st.write(payments)
+                    # # payments = []
+                    # st.write(invoice_ids)
+                
+                with st.spinner("Formatting data..."):
+                    appt_assmnts = [format.format_appt_assmt(appt) for appt in appt_assmnts]
+                    appt_assmnts_by_job, num_appts_per_job = format.group_appt_assmnts_by_job(appt_assmnts)
+                    first_appts_by_id = format.extract_id_to_key(first_appts, 'jobId')
+                    for job in jobs:
+                        job['appt_techs'] = set(appt_assmnts_by_job.get(job['id'], []))
+                        job['num_of_appts_in_mem'] = num_appts_per_job.get(job['id'], 0)
+                        job['first_appt'] = first_appts_by_id.get(job['id'], {})
+                    jobs_w_nones = [format.format_job(job, ss.client, tenant_tags, exdata_key='docchecks_live') for job in jobs]
+                    jobs = [job for job in jobs_w_nones if job is not None]
+                    invoices = [format.format_invoice(invoice) for invoice in invoices]
+                    payments = helpers.flatten_list([format.format_payment(payment, ss.client) for payment in payments])
+                    open_estimates = [e for e in [format.format_estimate(est, sold=False) for est in estimates] if e is not None]
+                    sold_estimates = [e for e in [format.format_estimate(est, sold=True) for est in estimates] if e is not None]
+
+                    jobs_df = pd.DataFrame(jobs)
+                    invoices_df = pd.DataFrame(invoices)
+                    payments_df = pd.DataFrame(payments)
+                    # payments_grouped = payments_df.groupby('invoiceId', as_index=False).agg(','.join)
+                    payments_grouped = payments_df.groupby('invoiceId', as_index=False).agg(lambda x: ', '.join(sorted(list(set(x)))))
+                    open_estimates_df = pd.DataFrame(open_estimates)
+                    sold_estimates_df = pd.DataFrame(sold_estimates)
+                    open_estimates_grouped = open_estimates_df.groupby('job_id', as_index=False).agg({'est_subtotal': 'sum'})
+                    sold_estimates_grouped = sold_estimates_df.groupby('job_id', as_index=False).agg({'est_subtotal': 'sum'})
+
+                    # st.dataframe(invoices_df)
+                    # st.dataframe(open_estimates_df)
+                    # st.dataframe(sold_estimates_df)
+                    # st.dataframe(open_estimates_grouped)
+                    # st.dataframe(sold_estimates_grouped)
+                    # st.dataframe(payments_df)
+
+                with st.spinner("Merging data..."):
+                    merged = helpers.merge_dfs([jobs_df, invoices_df, payments_grouped], on='invoiceId', how='left')
+                    merged = helpers.merge_dfs([merged, open_estimates_grouped], on='job_id')
+                    merged = merged.rename(columns={'est_subtotal': 'open_est_subtotal'})
+                    merged = helpers.merge_dfs([merged, sold_estimates_grouped], on='job_id')
+                    merged = merged.rename(columns={'est_subtotal': 'sold_est_subtotal'})
+                    merged = merged.sort_values(by='first_appt_start_dt')
+                    # merged = pd.merge(pd.merge(jobs_df, invoices_df, on='invoiceId', how='left'), payments_grouped, on='invoiceId', how='left')
+                    job_records = merged.to_dict(orient='records')
+                    for job in job_records:
+                        job['payments_in_time'] = helpers.check_payment_dates(job, end_date)
+                # st.write(job_records)
+                # st.dataframe(merged)
+                
+                with st.spinner("Separating by technician..."):
+                    # group by tech name
+                    jobs_by_tech = format.group_jobs_by_tech(job_records, employee_map, end_date)
+
+                with st.spinner("Building spreadsheet..."):
+                    excel_bytes = build_workbook(
+                        jobs_by_tech=jobs_by_tech,
+                        end_date=end_date
+                    )
             
-            with st.spinner("Formatting data..."):
-                appt_assmnts = [format.format_appt_assmt(appt) for appt in appt_assmnts]
-                appt_assmnts_by_job, num_appts_per_job = format.group_appt_assmnts_by_job(appt_assmnts)
-                first_appts_by_id = format.extract_id_to_key(first_appts, 'jobId')
-                for job in jobs:
-                    job['appt_techs'] = set(appt_assmnts_by_job.get(job['id'], []))
-                    job['num_of_appts_in_mem'] = num_appts_per_job.get(job['id'], 0)
-                    job['first_appt'] = first_appts_by_id.get(job['id'], {})
-                jobs_w_nones = [format.format_job(job, ss.client, tenant_tags, exdata_key='docchecks_live') for job in jobs]
-                jobs = [job for job in jobs_w_nones if job is not None]
-                invoices = [format.format_invoice(invoice) for invoice in invoices]
-                payments = helpers.flatten_list([format.format_payment(payment, ss.client) for payment in payments])
-                open_estimates = [e for e in [format.format_estimate(est, sold=False) for est in estimates] if e is not None]
-                sold_estimates = [e for e in [format.format_estimate(est, sold=True) for est in estimates] if e is not None]
-
-                jobs_df = pd.DataFrame(jobs)
-                # st.dataframe(jobs_df)
-                invoices_df = pd.DataFrame(invoices)
-                payments_df = pd.DataFrame(payments)
-                # payments_grouped = payments_df.groupby('invoiceId', as_index=False).agg(','.join)
-                payments_grouped = payments_df.groupby('invoiceId', as_index=False).agg(lambda x: ', '.join(sorted(list(set(x)))))
-                open_estimates_df = pd.DataFrame(open_estimates)
-                sold_estimates_df = pd.DataFrame(sold_estimates)
-                open_estimates_grouped = open_estimates_df.groupby('job_id', as_index=False).agg({'est_subtotal': 'sum'})
-                sold_estimates_grouped = sold_estimates_df.groupby('job_id', as_index=False).agg({'est_subtotal': 'sum'})
-
-                # st.dataframe(invoices_df)
-                # st.dataframe(open_estimates_df)
-                # st.dataframe(sold_estimates_df)
-                # st.dataframe(open_estimates_grouped)
-                # st.dataframe(sold_estimates_grouped)
-
-            with st.spinner("Merging data..."):
-                merged = helpers.merge_dfs([jobs_df, invoices_df, payments_grouped], on='invoiceId', how='left')
-                merged = helpers.merge_dfs([merged, open_estimates_grouped], on='job_id')
-                merged = merged.rename(columns={'est_subtotal': 'open_est_subtotal'})
-                merged = helpers.merge_dfs([merged, sold_estimates_grouped], on='job_id')
-                merged = merged.rename(columns={'est_subtotal': 'sold_est_subtotal'})
-                merged = merged.sort_values(by='first_appt_start_dt')
-                # merged = pd.merge(pd.merge(jobs_df, invoices_df, on='invoiceId', how='left'), payments_grouped, on='invoiceId', how='left')
-                job_records = merged.to_dict(orient='records')
-                for job in job_records:
-                    job['payments_in_time'] = helpers.check_payment_dates(job, end_date)
-            # st.write(job_records)
-            # st.dataframe(merged)
-            
-            with st.spinner("Separating by technician..."):
-                # group by tech name
-                jobs_by_tech = format.group_jobs_by_tech(job_records, employee_map)
-
-            with st.spinner("Building spreadsheet..."):
-                excel_bytes = build_workbook(
-                    jobs_by_tech=jobs_by_tech,
-                    end_date=end_date
-                )
-        
-        templates.show_download_button(excel_bytes, f"commissions_{tenant_code}_{start_date}_{end_date}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-        # st.download_button(
-        #     "Download Excel (all technicians)",
-        #     data=excel_bytes,
-        #     file_name=f"commissions_{start_date}_{end_date}.xlsx",
-        #     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        # )
-
-        # st.write(jobs_by_tech)
+                templates.show_download_button(excel_bytes, f"commissions_{tenant_code}_{start_date}_{end_date}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            else:
+                st.write("No data available.")
 
 elif ss["authentication_status"] is False:
     st.error('Please log in.')

@@ -7,12 +7,12 @@ from servicetitan_api_client import ServiceTitanClient
 import modules.lookup_tables as lookup
 import modules.helpers as helpers
 
+def check_unsuccessful(job, tags):
+    unsuccessful_tags = {tag.get("id") for tag in tags if "Unsuccessful" in tag.get("name") or "Cancelled" in tag.get("name")}
+    job_tags = set(job.get('tagTypeIds'))
+    return bool(unsuccessful_tags & job_tags)
+
 def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='docchecks_live'):
-    
-    def check_unsuccessful(job, tags):
-        unsuccessful_tags = {tag.get("id") for tag in tags if "Unsuccessful" in tag.get("name")}
-        job_tags = set(job.get('tagTypeIds'))
-        return bool(unsuccessful_tags & job_tags)
     
     # if 116255355 in job['tagTypeIds'] or 
     if job['jobStatus'] == 'Canceled': 
@@ -46,6 +46,7 @@ def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='d
     formatted['created_str'] = client.st_date_to_local(job['createdOn'], fmt="%d/%m/%Y")
     formatted['created_dt'] = client.from_utc(job['createdOn'])
     formatted['completed_str'] = client.st_date_to_local(job['completedOn'], fmt="%d/%m/%Y") if job['completedOn'] is not None else "No data"
+    formatted['completed_dt'] = client.from_utc(job['completedOn']) if job['completedOn'] is not None else None
     formatted['num'] = job['jobNumber'] if job['jobNumber'] is not None else -1
     formatted['status'] = job['jobStatus'] if job['jobStatus'] is not None else "No data"
     formatted['invoiceId'] = job['invoiceId'] if job['invoiceId'] is not None else -1
@@ -113,9 +114,10 @@ def format_payment(payment, client: ServiceTitanClient):
         formatted['invoiceId'] = invoice['appliedTo']
         formatted['payment_types'] = payment['type']
         try:    
-            formatted['payment_dates'] = client.st_date_to_local(invoice['appliedOn'])[:10] # cut off at just date
+            formatted['payment_dates'] = client.st_date_to_local(payment['date'])[:10] # cut off at just date
+            # formatted['payment_dates'] = client.st_date_to_local(invoice['appliedOn'])[:10] # cut off at just date
         except KeyError:
-            formatted['payment_dates'] = 'no applied date'
+            formatted['payment_dates'] = 'no payment date'
         formatted['payment_amt'] = payment['type'][:2] + invoice.get('appliedAmount', '0')
         output.append(formatted)
     return output
@@ -182,7 +184,7 @@ def format_employee_list(employee_response):
             formatted[employee['userId']] = {'name': employee['name'], 'team': 'O'}
     return formatted
 
-def group_jobs_by_tech(job_records, employee_map):
+def group_jobs_by_tech(job_records, employee_map, end_date):
     jobs_by_tech: dict[str, list[dict]] = {}
     for j in job_records:
         tid = j.get("sold_by")
@@ -195,7 +197,7 @@ def group_jobs_by_tech(job_records, employee_map):
             name = tech_info.get("name", f"{tid}")
             tech_role = tech_info.get('team', 'O')
             name = name + tech_role
-        j_category = helpers.categorise_job(j)
+        j_category = helpers.categorise_job(j, end_date)
         jobs_by_tech.setdefault(name, dict()).setdefault(j_category, []).append(j)
     return jobs_by_tech
 
