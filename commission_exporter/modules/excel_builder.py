@@ -691,7 +691,7 @@ def build_workbook(
 
         ws.conditional_formatting.add(
             f"H{cat_row_info['wk_complete_paid'][0]}:H{cat_row_info['wkend_complete_paid'][1]}", 
-            FormulaRule(formula=[f'$J{cat_row_info['wk_complete_paid'][0]}="N"'], fill=PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid"))
+            FormulaRule(formula=[f'$J{cat_row_info["wk_complete_paid"][0]}="N"'], fill=PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid"))
         )
 
         # 'wk_complete_paid',
