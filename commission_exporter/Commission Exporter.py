@@ -133,18 +133,15 @@ if ss["authentication_status"]:
                     # # payments = []
                     # st.write(invoice_ids)
                 
-                with st.spinner("Formatting data...1"):
+                with st.spinner("Formatting data..."):
                     appt_assmnts = [format.format_appt_assmt(appt) for appt in appt_assmnts]
-                with st.spinner("Formatting data...2"):
                     appt_assmnts_by_job, num_appts_per_job = format.group_appt_assmnts_by_job(appt_assmnts)
-                with st.spinner("Formatting data...3"):
                     first_appts_by_id = format.extract_id_to_key(first_appts, 'jobId')
-                with st.spinner("Formatting data...4"):
                     for job in jobs:
                         job['appt_techs'] = set(appt_assmnts_by_job.get(job['id'], []))
                         job['num_of_appts_in_mem'] = num_appts_per_job.get(job['id'], 0)
                         job['first_appt'] = first_appts_by_id.get(job['id'], {})
-                with st.spinner("Formatting data...5"):
+                with st.spinner("Formatting data... dotting the i's"):
                     jobs_w_nones = [format.format_job(job, ss.client, tenant_tags, exdata_key='docchecks_live') for job in jobs]
                 with st.spinner("Formatting data...6"):
                     jobs = [job for job in jobs_w_nones if job is not None]

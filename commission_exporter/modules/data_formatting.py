@@ -8,7 +8,7 @@ import modules.lookup_tables as lookup
 import modules.helpers as helpers
 
 def check_unsuccessful(job, tags):
-    unsuccessful_tags = {tag.get("id") for tag in tags if "Unsuccessful" in tag.get("name")}
+    unsuccessful_tags = {tag.get("id") for tag in tags if "Unsuccessful" in tag.get("name") or "Cancelled" in tag.get("name")}
     job_tags = set(job.get('tagTypeIds'))
     return bool(unsuccessful_tags & job_tags)
 
