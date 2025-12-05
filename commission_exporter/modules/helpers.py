@@ -64,18 +64,23 @@ def check_payment_dates(job, end_date):
                 return False
     return True
 
-def categorise_job(job):
+def categorise_job(job, end_date):
 
     def _categorise(job, prefix):
         status = job['status']
         balance = float(job['balance'])
         payments_in_time = job['payments_in_time']
+        completed_dt = job['completed_dt']
         if job['unsuccessful']:
             return prefix + '_unsucessful'
-        if status == 'Completed' and balance == 0 and payments_in_time:
-            return prefix + '_complete_paid'
-        if status == 'Completed' and (balance != 0 or not payments_in_time):
-            return prefix + '_complete_unpaid'
+        if status == 'Completed':
+            if completed_dt:
+                if completed_dt.date() > end_date:
+                    return prefix + '_wo'
+            if balance == 0 and payments_in_time:
+                return prefix + '_complete_paid'
+            if balance != 0 or not payments_in_time:
+                return prefix + '_complete_unpaid'
         if status == 'Hold':
             return prefix + '_wo'
             # return 'wk_hold'
@@ -87,10 +92,10 @@ def categorise_job(job):
             # return 'wk_scheduled'
         return prefix + '_uncategorised'
     day = job['first_appt_start_dt'].weekday()
-    if day <5 and job['first_appt_start_dt'].time() < _dt.time(18,0,0): # weekdays
+    if day <5: # weekdays
+        if job['first_appt_start_dt'].time() >= _dt.time(18,0,0) and job['first_appt_start_dt'].date() == job.get('completed_dt', _dt.datetime(2000,1,1)).date():
+            return _categorise(job, 'ah')
         return _categorise(job, 'wk')
-    if day <5 and job['first_appt_start_dt'].time() >= _dt.time(18,0,0): # weekdays
-        return _categorise(job, 'ah')
     if day >=5: # weekends
         return _categorise(job, 'wkend')
 

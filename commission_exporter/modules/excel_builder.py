@@ -452,7 +452,7 @@ def build_workbook(
 
         for cat, cat_text in CATEGORY_ORDER.items():
             cat_font = None
-            if cat in ['wk_complete_unpaid', 'wk_wo']:
+            if cat in ['wk_complete_unpaid', 'wk_wo', 'wkend_complete_unpaid', 'wkend_wo']:
                 cat_font = font_green
             formatted_cell(ws, curr_row,1,cat_text, font=cat_font)
             curr_row += 1

@@ -46,6 +46,7 @@ def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='d
     formatted['created_str'] = client.st_date_to_local(job['createdOn'], fmt="%d/%m/%Y")
     formatted['created_dt'] = client.from_utc(job['createdOn'])
     formatted['completed_str'] = client.st_date_to_local(job['completedOn'], fmt="%d/%m/%Y") if job['completedOn'] is not None else "No data"
+    formatted['completed_dt'] = client.from_utc(job['completedOn']) if job['completedOn'] is not None else None
     formatted['num'] = job['jobNumber'] if job['jobNumber'] is not None else -1
     formatted['status'] = job['jobStatus'] if job['jobStatus'] is not None else "No data"
     formatted['invoiceId'] = job['invoiceId'] if job['invoiceId'] is not None else -1
@@ -183,7 +184,7 @@ def format_employee_list(employee_response):
             formatted[employee['userId']] = {'name': employee['name'], 'team': 'O'}
     return formatted
 
-def group_jobs_by_tech(job_records, employee_map):
+def group_jobs_by_tech(job_records, employee_map, end_date):
     jobs_by_tech: dict[str, list[dict]] = {}
     for j in job_records:
         tid = j.get("sold_by")
@@ -196,7 +197,7 @@ def group_jobs_by_tech(job_records, employee_map):
             name = tech_info.get("name", f"{tid}")
             tech_role = tech_info.get('team', 'O')
             name = name + tech_role
-        j_category = helpers.categorise_job(j)
+        j_category = helpers.categorise_job(j, end_date)
         jobs_by_tech.setdefault(name, dict()).setdefault(j_category, []).append(j)
     return jobs_by_tech
 

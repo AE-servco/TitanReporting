@@ -164,7 +164,7 @@ if ss["authentication_status"]:
                     # st.dataframe(sold_estimates_df)
                     # st.dataframe(open_estimates_grouped)
                     # st.dataframe(sold_estimates_grouped)
-                    st.dataframe(payments_df)
+                    # st.dataframe(payments_df)
 
                 with st.spinner("Merging data..."):
                     merged = helpers.merge_dfs([jobs_df, invoices_df, payments_grouped], on='invoiceId', how='left')
@@ -182,7 +182,7 @@ if ss["authentication_status"]:
                 
                 with st.spinner("Separating by technician..."):
                     # group by tech name
-                    jobs_by_tech = format.group_jobs_by_tech(job_records, employee_map)
+                    jobs_by_tech = format.group_jobs_by_tech(job_records, employee_map, end_date)
 
                 with st.spinner("Building spreadsheet..."):
                     excel_bytes = build_workbook(
