@@ -8,6 +8,7 @@ def get_doc_check_criteria():
         'qe': 'Quote Emailed',
         'id': 'Invoice Description',
         'is': 'Invoice Signed',
+        'ins': 'Invoice Not Signed (Client Offsite)',
         'ie': 'Invoice Emailed',
         '5s': '5 Star Review',
     }
