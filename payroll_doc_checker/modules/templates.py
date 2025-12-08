@@ -62,14 +62,18 @@ def sidebar_filters():
             default=["Completed"]
         )
         filter_unsucessful = st.checkbox("Exclude unsuccessful jobs", value=True)
-        fetch_jobs_button = st.form_submit_button("Fetch Jobs", type="primary")
-
+        
         doc_check_crits = helpers.get_doc_check_criteria()
         doc_check_filters = st.multiselect(
-            "Completed doc checks",
-            list(doc_check_crits.values())
+            "Missing doc check filter",
+            list(doc_check_crits.values()),
+            help="Filters for jobs that don't have one of these boxes ticked."
         )
         doc_check_filters = [doc_check_crits.inv[f] for f in doc_check_filters]
+
+
+        fetch_jobs_button = st.form_submit_button("Fetch Jobs", type="primary")
+
 
     # When the fetch button is pressed, call the API and reset state
     if fetch_jobs_button:
