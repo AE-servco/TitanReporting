@@ -225,7 +225,7 @@ def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filte
             for job in jobs:    
                 initial_checks = job.get("tmp_doccheck_bits", fetch.get_job_external_data(job, exdata_key))
                 for check in doc_check_filters:
-                    if not initial_checks[check]:
+                    if not initial_checks.get(check):
                         filtered_jobs.append(job)
                         break
             jobs = filtered_jobs.copy()

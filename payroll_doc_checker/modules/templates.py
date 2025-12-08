@@ -62,18 +62,22 @@ def sidebar_filters():
             default=["Completed"]
         )
         filter_unsucessful = st.checkbox("Exclude unsuccessful jobs", value=True)
+        
+        doc_check_crits = helpers.get_doc_check_criteria()
+        doc_check_filters = st.multiselect(
+            "Missing doc check filter",
+            list(doc_check_crits.values()),
+            help="Filters for jobs that don't have one of these boxes ticked."
+        )
+        doc_check_filters = [doc_check_crits.inv[f] for f in doc_check_filters]
+
+
         fetch_jobs_button = st.form_submit_button("Fetch Jobs", type="primary")
 
-        doc_check_crits = helpers.get_doc_check_criteria()
-        doc_check_filter = st.multiselect(
-            "Completed doc checks",
-            list(doc_check_crits.values())
-        )
-        doc_check_filter = doc_check_crits.inv[doc_check_filter]
 
     # When the fetch button is pressed, call the API and reset state
     if fetch_jobs_button:
-        helpers.fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsucessful, custom_job_id, doc_check_filter)
+        helpers.fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsucessful, custom_job_id, doc_check_filters)
 
 def nav_button(dir):
     client = st.session_state.clients.get(st.session_state.current_tenant)
