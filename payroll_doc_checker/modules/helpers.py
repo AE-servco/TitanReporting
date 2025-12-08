@@ -12,6 +12,8 @@ from servicetitan_api_client import ServiceTitanClient
 import modules.google_store as gs
 import modules.formatting as format
 import modules.fetching as fetch
+from bidict import bidict
+
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"}
 
@@ -19,7 +21,7 @@ def flatten_list(nested_list):
     return [item for sublist in nested_list for item in sublist]
 
 def get_doc_check_criteria():
-    checks = {
+    checks = bidict({
         'pb': 'Before Photo',
         'pa': 'After Photo',
         'pr': 'Receipt Photo',
@@ -28,9 +30,10 @@ def get_doc_check_criteria():
         'qe': 'Quote Emailed',
         'id': 'Invoice Description',
         'is': 'Invoice Signed',
+        'ins': 'Invoice Not Signed (Client Offsite)',
         'ie': 'Invoice Emailed',
         '5s': '5 Star Review',
-    }
+    })
     return checks
 
 def get_secret(secret_id, project_id="prestigious-gcp", version_id="latest"):
@@ -194,7 +197,7 @@ def filter_out_unsuccessful_jobs(jobs, client: ServiceTitanClient):
 #     for job_id in done_ids:
 #         st.session_state.prefetch_futures.pop(job_id, None)
 
-def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsucessful, custom_job_id=None):
+def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsucessful, custom_job_id=None, doc_check_filters=None, exdata_key="docchecks_live"):
     with st.spinner("Retrieving jobs..."):
         tenant_filter = tenant_filter.split(" ")[0].lower()
         st.session_state.current_tenant = tenant_filter
@@ -216,6 +219,18 @@ def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filte
             jobs = fetch.fetch_jobs(start_date, end_date, client, status_filters=job_status_filter)
             if filter_unsucessful:
                 jobs = filter_out_unsuccessful_jobs(jobs, client)
+
+        # TODO: Add doc check filter logic
+        if doc_check_filters:
+            filtered_jobs = []
+            for job in jobs:    
+                initial_checks = job.get("tmp_doccheck_bits", fetch.get_job_external_data(job, exdata_key))
+                for check in doc_check_filters:
+                    if not initial_checks.get(check):
+                        filtered_jobs.append(job)
+                        break
+            jobs = filtered_jobs.copy()
+            del filtered_jobs
 
         invoice_ids = format.get_invoice_ids(jobs)
         invoices = fetch.fetch_invoices(invoice_ids, client)

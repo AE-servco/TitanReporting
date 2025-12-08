@@ -10,6 +10,7 @@ import pandas as pd
 import base64
 from streamlit_pdf_viewer import pdf_viewer
 import base64
+from bidict import bidict
 
 
 import modules.fetching as fetch
@@ -39,7 +40,7 @@ def sidebar_filters():
         tenant_filter = st.selectbox(
             "ServiceTitan Tenant",
             [
-                "FoxtrotWhiskey (NSW)", 
+                "FoxtrotWhiskey (NSW)",
                 "MikeEcho (VIC)",
                 "BravoGolf (QLD)",
                 "SierraDelta (WA)",
@@ -61,11 +62,22 @@ def sidebar_filters():
             default=["Completed"]
         )
         filter_unsucessful = st.checkbox("Exclude unsuccessful jobs", value=True)
+        
+        doc_check_crits = helpers.get_doc_check_criteria()
+        doc_check_filters = st.multiselect(
+            "Missing doc check filter",
+            list(doc_check_crits.values()),
+            help="Filters for jobs that don't have one of these boxes ticked."
+        )
+        doc_check_filters = [doc_check_crits.inv[f] for f in doc_check_filters]
+
+
         fetch_jobs_button = st.form_submit_button("Fetch Jobs", type="primary")
+
 
     # When the fetch button is pressed, call the API and reset state
     if fetch_jobs_button:
-        helpers.fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsucessful, custom_job_id)
+        helpers.fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsucessful, custom_job_id, doc_check_filters)
 
 def nav_button(dir):
     client = st.session_state.clients.get(st.session_state.current_tenant)
@@ -86,7 +98,6 @@ def nav_button(dir):
 
 def show_job_info(job):
     client = st.session_state.clients.get(st.session_state.current_tenant)
-    # st.write(job)
     job_amt = job['total']
     job_status = job.get("jobStatus", "Not available.")
     inv_data = job.get("invoice_data", {})
@@ -95,11 +106,6 @@ def show_job_info(job):
     inv_bal = inv_data.get("balance", "Not available.")
     inv_amt_paid = inv_data.get("amt_paid", "Not available.")
     project_id = job.get("projectId")
-
-    # invoice_desc = {
-    #     "Invoice items": inv_desc.split("|")
-    # }
-    # st.table(invoice_desc, border="horizontal")
 
     payment_data = job.get("payment_data", [])
 

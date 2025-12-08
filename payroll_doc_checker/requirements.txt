@@ -12,3 +12,4 @@ google-auth
 streamlit-pdf-viewer
 google-cloud-tasks
 supabase
+bidict
