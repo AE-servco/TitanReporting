@@ -2,6 +2,8 @@ from dataclasses import dataclass, field, fields
 import pandas as pd
 from datetime import date, time, datetime
 from pprint import pprint
+import math
+import json
 
 
 
@@ -17,17 +19,18 @@ from pprint import pprint
 @dataclass(order=True)
 class JobData():
     num: int | str
-    date: date
+    date: 'date'
     suburb: str
     subtotal: float
-    materials: float
-    merchant_fees: float
-    profit: float
+    materials: float = field(compare=False)
+    merchant_fees: float = field(compare=False)
+    profit: float = field(compare=False)
     payment_types: list = field(compare=False)
     eftpos: float
     cash: float
     payment_plan: float
     category: str
+    other_j_nums: list = field(compare=False)
 
     def diff(self, value: 'JobData'):
         diff = {}
@@ -35,6 +38,9 @@ class JobData():
             self_val = getattr(self, field.name)
             other_val = getattr(value, field.name)
             if self_val != other_val:
+                if type(self_val) == datetime or type(self_val) == datetime:
+                    self_val = self_val.strftime("%d/%m/%Y")
+                    other_val = other_val.strftime("%d/%m/%Y")
                 diff[field.name] = (self_val, other_val)
         return diff
 
@@ -75,10 +81,17 @@ def extract_summary_from_week(df: pd.DataFrame, week_ranges: dict, week_end_date
     """
     pass
 
-def extract_jobs_from_week(df: pd.DataFrame, week_ranges: dict, week_end_date: date) -> WeekData:
+def extract_jobs_from_week(df: pd.DataFrame, week_ranges: dict, week_end_date: date, manual_or_auto: str = 'manual') -> WeekData:
     """
     Gets job data from the week specified.
     """
+    payment_type_map = {
+        'Credit Card': 'Card',
+        'EFT/Bank Transfer': 'EFT',
+        'Cash': 'Cash',
+        'N/A': 'N/A'
+    }
+
     job_section = df[week_ranges[week_end_date][0]:week_ranges[week_end_date][1]]
     
     curr_cat = 'COMPLETED & PAID JOBS'
@@ -92,19 +105,31 @@ def extract_jobs_from_week(df: pd.DataFrame, week_ranges: dict, week_end_date: d
             continue
         # print(type(row_data[1]), row_data[1])
         if type(row_data.iloc[1]) == int:
-            j_date = row_data.iloc[2]
+            j_date = datetime.strptime(row_data.iloc[2], "%d/%m/%Y") if type(row_data.iloc[2]) == str else row_data.iloc[2] 
             j_num = row_data.iloc[3]
+            j_nums = []
+            if type(j_num) == str:
+                j_nums = [int(n) for n in j_num.split('/')]
+                j_num = j_nums[0]
             j_suburb = row_data.iloc[4]
-            j_subtotal = row_data.iloc[5]
-            j_materials = row_data.iloc[6]
-            j_merchantfee = row_data.iloc[7]
-            j_profit = row_data.iloc[8]
+            j_subtotal = row_data.iloc[5] if not math.isnan(row_data.iloc[5]) else 0
+            j_materials = row_data.iloc[6] if not math.isnan(row_data.iloc[6]) else 0
+            j_merchantfee = row_data.iloc[7] if not math.isnan(row_data.iloc[7]) else 0
+            j_profit = row_data.iloc[8] if not math.isnan(row_data.iloc[8]) else 0
             j_paymenttypes = row_data.iloc[9].split(', ') if type(row_data.iloc[9]) == str else ['N/A']
-            j_eftpos = row_data.iloc[21]
-            j_cash = row_data.iloc[22]
-            j_paymentplan = row_data.iloc[23]
+            j_paymenttypes = [payment_type_map[jpt] if jpt in payment_type_map else jpt for jpt in j_paymenttypes]
+            offset = 0
+            if manual_or_auto == 'auto':
+                offset = 1
+            j_eftpos = row_data.iloc[offset + 21] if not math.isnan(row_data.iloc[offset + 21]) else 0
+            j_cash = row_data.iloc[offset + 22] if not math.isnan(row_data.iloc[offset + 22]) else 0
+            j_paymentplan = row_data.iloc[offset + 23] if not math.isnan(row_data.iloc[offset + 23]) else 0
             
-            job = JobData(j_num, j_date, j_suburb, j_subtotal, j_materials, j_merchantfee, j_profit, j_paymenttypes, j_eftpos, j_cash, j_paymentplan, curr_cat)
+            # if j_nums:
+            #     for j in j_nums:
+            #         job = JobData(j, j_date, j_suburb, j_subtotal, j_materials, j_merchantfee, j_profit, j_paymenttypes, j_eftpos, j_cash, j_paymentplan, curr_cat)
+            #         jobs[j_num] = job
+            job = JobData(j_num, j_date, j_suburb, j_subtotal, j_materials, j_merchantfee, j_profit, j_paymenttypes, j_eftpos, j_cash, j_paymentplan, curr_cat, j_nums)
             jobs[j_num] = job
 
         if type(row_data.iloc[1]) == str:
@@ -118,10 +143,13 @@ def flatten_list(nested_list):
     return [item for sublist in nested_list for item in sublist]
 
 def main():
+    output = {}
+
     MANUAL_EXCEL_FILE = '/Users/albie/Documents/code/github repos/TitanReporting/commission_tester/data/FY2026 - VIC Commission Sheet.xlsx'
     AUTO_EXCEL_FILE = '/Users/albie/Documents/code/github repos/TitanReporting/commission_tester/data/test_sheet.xlsx'
-    MANUAL_SHEET_NAME = 'Bradley'
+    MANUAL_SHEET_NAME = 'Liam'
     STATE = 'VIC'
+    # AUTO_SHEET_NAME = f'Jarrod {STATE}'
     AUTO_SHEET_NAME = f'{MANUAL_SHEET_NAME} {STATE}'
     TEST_DATE = datetime(2025,11,30,0,0)
 
@@ -130,50 +158,48 @@ def main():
 
     manual_df = manual_excel.parse(sheet_name=MANUAL_SHEET_NAME)
     auto_df = auto_excel.parse(sheet_name=AUTO_SHEET_NAME, header=None)
+    # print(manual_df)
     # print(auto_df)
 
     manual_week_ranges = get_week_data_ranges(manual_df)
     auto_week_ranges = get_week_data_ranges(auto_df)
+    # print(manual_week_ranges)
     # print(auto_week_ranges)
 
     manual_test_week = extract_jobs_from_week(manual_df, manual_week_ranges, TEST_DATE)
-    auto_test_week = extract_jobs_from_week(auto_df, auto_week_ranges, TEST_DATE)
-    
-    # manual_jobs = flatten_list([job.split('/') if type(job)==str else [job] for job in manual_test_week.jobs.keys()])
-    # auto_jobs = flatten_list([job.split('/') if type(job)==str else [job] for job in auto_test_week.jobs.keys()])
-    # print(manual_jobs)
-    # print(auto_jobs)
+    auto_test_week = extract_jobs_from_week(auto_df, auto_week_ranges, TEST_DATE, manual_or_auto='auto')
+    # pprint(manual_test_week)
+    # pprint(auto_test_week)
 
     manual_jobs = [int(j) if type(j) != float else 0 for j in flatten_list([job.split('/') if type(job)==str else [job] for job in manual_test_week.jobs.keys()])]
     auto_jobs = [int(j) if type(j) != float else 0 for j in flatten_list([job.split('/') if type(job)==str else [job] for job in auto_test_week.jobs.keys()])]
 
     manual_jobs_set = set(manual_jobs)
     auto_jobs_set = set(auto_jobs)
+    # print(manual_jobs_set)
+    # print(auto_jobs_set)
 
     in_man_not_auto = manual_jobs_set.difference(auto_jobs_set)
     in_auto_not_man = auto_jobs_set.difference(manual_jobs_set)
 
-    print(in_man_not_auto)
-    print(in_auto_not_man)
+    # print(in_man_not_auto)
+    # print(in_auto_not_man)
 
-    # j1 = JobData(1234, date(2025,11,24), 'Mascot', 15564.2, 1235.1, 0, 3000.0, ['Credit Card', 'EFT'], 15564.2*1.1, 0, 0, "COMPLETED & PAID JOBS")
-    # j2 = JobData(123, date(2025,11,25), 'Mascot', 1234.2, 123.1, 0, 1000.0, ['Cash'], 0, 1234.2*1.1, 0, "COMPLETED & PAID JOBS")
-    # j3 = JobData(1234, date(2025,11,24), 'Mascot', 15564.2, 1235.1, 0, 3000.0, ['Credit Card', 'EFT'], 15564.2*1.1, 0, 0, "COMPLETED & PAID JOBS")
+    if in_man_not_auto:
+        output['jobs_missing_from_automation'] = sorted(list(in_man_not_auto))
+    if in_auto_not_man:
+        output['jobs_missing_from_manual'] = sorted(list(in_auto_not_man))
 
-    # # w1 = WeekData({
-    # #     j1.num: j1,
-    # #     j2.num: j2
-    # # })
+    jobs_in_both = manual_jobs_set.intersection(auto_jobs_set)
 
-    # # print(j1)
-    # # print(j2)
-    # # print(w1)
-    # pprint(j1.diff(j2))
-    # pprint(j1.diff(j3))
-    # # week_ranges = get_week_data_ranges(sheet)
-    # # test_week = list(week_ranges.keys())[1]
-    # # print(test_week)
-    # # pprint(extract_jobs_from_week(sheet, week_ranges, test_week))
+    output['job_diffs (manual, auto)'] = {}
+    for job in jobs_in_both:
+        # print(job)
+        if manual_test_week.jobs.get(job) != auto_test_week.jobs.get(job):
+            output['job_diffs (manual, auto)'][job] = manual_test_week.jobs.get(job).diff(auto_test_week.jobs.get(job))
+
+    with(open(f'data/{MANUAL_SHEET_NAME}_differences.json', 'w')) as f:
+        json.dump(output, f)
 
 if __name__ == '__main__':
     main()

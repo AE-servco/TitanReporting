@@ -77,9 +77,9 @@ def categorise_job(job, end_date):
             if completed_dt:
                 if completed_dt.date() > end_date:
                     return prefix + '_wo'
-            if balance == 0 and payments_in_time:
+            if balance <= 0 and payments_in_time:
                 return prefix + '_complete_paid'
-            if balance != 0 or not payments_in_time:
+            if balance > 0 or not payments_in_time:
                 return prefix + '_complete_unpaid'
         if status == 'Hold':
             return prefix + '_wo'
