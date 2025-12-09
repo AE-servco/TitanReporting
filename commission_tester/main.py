@@ -57,12 +57,16 @@ def get_week_data_ranges(df: pd.DataFrame):
     curr_start = 1
     # curr_end = 1
     for row in df.iterrows():
-        if type(row[1][1]) == str and 'WEEKLY COMMISSION' in row[1][1]:
+        # print(row)
+        if type(row[1].iloc[1]) == str and 'WEEKLY COMMISSION' in row[1].iloc[1]:
+            print(type(row[1].iloc[1]))
             if curr_week:
                 week_ranges[curr_week] = (curr_start, curr_row-1)
-            curr_week = row[1][6]
+            curr_week = row[1].iloc[6]
+            print(curr_week)
             curr_start = curr_row
         curr_row += 1
+    week_ranges[curr_week] = (curr_start, curr_row-1)
     return week_ranges
 
 def extract_summary_from_week(df: pd.DataFrame, week_ranges: dict, week_end_date: date):
@@ -110,14 +114,42 @@ def extract_jobs_from_week(df: pd.DataFrame, week_ranges: dict, week_end_date: d
     return week_data
 
 
+def flatten_list(nested_list):
+    return [item for sublist in nested_list for item in sublist]
 
 def main():
     MANUAL_EXCEL_FILE = '/Users/albie/Documents/code/github repos/TitanReporting/commission_tester/FY2026 - VIC Commission Sheet.xlsx'
-    SHEET_NAME = 'Bradley'
+    AUTO_EXCEL_FILE = '/Users/albie/Documents/code/github repos/TitanReporting/commission_tester/test_sheet.xlsx'
+    MANUAL_SHEET_NAME = 'Bradley'
+    STATE = 'VIC'
+    AUTO_SHEET_NAME = f'{MANUAL_SHEET_NAME} {STATE}'
+    TEST_DATE = datetime(2025,11,30,0,0)
 
+    auto_excel = pd.ExcelFile(AUTO_EXCEL_FILE)
     manual_excel = pd.ExcelFile(MANUAL_EXCEL_FILE)
-    print(manual_excel.sheet_names)
 
+    manual_df = manual_excel.parse(sheet_name=MANUAL_SHEET_NAME)
+    auto_df = auto_excel.parse(sheet_name=AUTO_SHEET_NAME, header=None)
+    print(auto_df)
+
+    # manual_week_ranges = get_week_data_ranges(manual_df)
+    auto_week_ranges = get_week_data_ranges(auto_df)
+
+    print(auto_week_ranges)
+    # manual_test_week = extract_jobs_from_week(manual_df, manual_week_ranges, TEST_DATE)
+    # auto_test_week = extract_jobs_from_week(auto_df, auto_week_ranges, TEST_DATE)
+    
+    # manual_jobs = flatten_list([job.split('/') if type(job)==str else job for job in manual_test_week.jobs.keys()])
+    # auto_jobs = flatten_list([job.split('/') if type(job)==str else job for job in auto_test_week.jobs.keys()])
+
+    # manual_jobs_set = set(manual_jobs)
+    # auto_jobs_set = set(auto_jobs)
+
+    # in_man_not_auto = manual_jobs_set.difference(auto_jobs_set)
+    # in_auto_not_man = auto_jobs_set.difference(manual_jobs_set)
+
+    # print(in_man_not_auto)
+    # print(in_auto_not_man)
 
     # j1 = JobData(1234, date(2025,11,24), 'Mascot', 15564.2, 1235.1, 0, 3000.0, ['Credit Card', 'EFT'], 15564.2*1.1, 0, 0, "COMPLETED & PAID JOBS")
     # j2 = JobData(123, date(2025,11,25), 'Mascot', 1234.2, 123.1, 0, 1000.0, ['Cash'], 0, 1234.2*1.1, 0, "COMPLETED & PAID JOBS")
