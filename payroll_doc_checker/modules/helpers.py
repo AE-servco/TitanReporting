@@ -197,7 +197,7 @@ def filter_out_unsuccessful_jobs(jobs, client: ServiceTitanClient):
 #     for job_id in done_ids:
 #         st.session_state.prefetch_futures.pop(job_id, None)
 
-def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsucessful, custom_job_id=None, doc_check_filters=None, exdata_key="docchecks_live"):
+def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsuccessful, custom_job_id=None, doc_check_filters=None, exdata_key="docchecks_live"):
     with st.spinner("Retrieving jobs..."):
         tenant_filter = tenant_filter.split(" ")[0].lower()
         st.session_state.current_tenant = tenant_filter
@@ -217,7 +217,7 @@ def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filte
             jobs = fetch.fetch_jobs(start_date, end_date, client, custom_job_id)
         else:
             jobs = fetch.fetch_jobs(start_date, end_date, client, status_filters=job_status_filter)
-            if filter_unsucessful:
+            if filter_unsuccessful:
                 jobs = filter_out_unsuccessful_jobs(jobs, client)
 
         # TODO: Add doc check filter logic

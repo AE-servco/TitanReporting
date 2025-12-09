@@ -72,7 +72,7 @@ def categorise_job(job, end_date):
         payments_in_time = job['payments_in_time']
         completed_dt = job['completed_dt']
         if job['unsuccessful']:
-            return prefix + '_unsucessful'
+            return prefix + '_unsuccessful'
         if status == 'Completed':
             if completed_dt:
                 if completed_dt.date() > end_date:

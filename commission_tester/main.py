@@ -59,11 +59,11 @@ def get_week_data_ranges(df: pd.DataFrame):
     for row in df.iterrows():
         # print(row)
         if type(row[1].iloc[1]) == str and 'WEEKLY COMMISSION' in row[1].iloc[1]:
-            print(type(row[1].iloc[1]))
             if curr_week:
                 week_ranges[curr_week] = (curr_start, curr_row-1)
             curr_week = row[1].iloc[6]
-            print(curr_week)
+            if type(curr_week) == str:
+                curr_week = datetime.strptime(curr_week, "%d/%m/%Y")
             curr_start = curr_row
         curr_row += 1
     week_ranges[curr_week] = (curr_start, curr_row-1)
@@ -87,28 +87,28 @@ def extract_jobs_from_week(df: pd.DataFrame, week_ranges: dict, week_end_date: d
     for row in job_section.iterrows():
         row_data = row[1]
         if not in_job_section:
-            if type(row_data[1]) == str and 'COMPLETED & PAID JOBS' in row_data[1]:
+            if type(row_data.iloc[1]) == str and 'COMPLETED & PAID JOBS' in row_data.iloc[1]:
                 in_job_section = True
             continue
         # print(type(row_data[1]), row_data[1])
-        if type(row_data[1]) == int:
-            j_date = row_data[2]
-            j_num = row_data[3]
-            j_suburb = row_data[4]
-            j_subtotal = row_data[5]
-            j_materials = row_data[6]
-            j_merchantfee = row_data[7]
-            j_profit = row_data[8]
-            j_paymenttypes = row_data[9].split(', ') if type(row_data[9]) == str else ['N/A']
-            j_eftpos = row_data[21]
-            j_cash = row_data[22]
-            j_paymentplan = row_data[23]
+        if type(row_data.iloc[1]) == int:
+            j_date = row_data.iloc[2]
+            j_num = row_data.iloc[3]
+            j_suburb = row_data.iloc[4]
+            j_subtotal = row_data.iloc[5]
+            j_materials = row_data.iloc[6]
+            j_merchantfee = row_data.iloc[7]
+            j_profit = row_data.iloc[8]
+            j_paymenttypes = row_data.iloc[9].split(', ') if type(row_data.iloc[9]) == str else ['N/A']
+            j_eftpos = row_data.iloc[21]
+            j_cash = row_data.iloc[22]
+            j_paymentplan = row_data.iloc[23]
             
             job = JobData(j_num, j_date, j_suburb, j_subtotal, j_materials, j_merchantfee, j_profit, j_paymenttypes, j_eftpos, j_cash, j_paymentplan, curr_cat)
             jobs[j_num] = job
 
-        if type(row_data[1]) == str:
-            curr_cat = row_data[1]
+        if type(row_data.iloc[1]) == str:
+            curr_cat = row_data.iloc[1]
 
     week_data = WeekData(jobs)
     return week_data
@@ -118,8 +118,8 @@ def flatten_list(nested_list):
     return [item for sublist in nested_list for item in sublist]
 
 def main():
-    MANUAL_EXCEL_FILE = '/Users/albie/Documents/code/github repos/TitanReporting/commission_tester/FY2026 - VIC Commission Sheet.xlsx'
-    AUTO_EXCEL_FILE = '/Users/albie/Documents/code/github repos/TitanReporting/commission_tester/test_sheet.xlsx'
+    MANUAL_EXCEL_FILE = '/Users/albie/Documents/code/github repos/TitanReporting/commission_tester/data/FY2026 - VIC Commission Sheet.xlsx'
+    AUTO_EXCEL_FILE = '/Users/albie/Documents/code/github repos/TitanReporting/commission_tester/data/test_sheet.xlsx'
     MANUAL_SHEET_NAME = 'Bradley'
     STATE = 'VIC'
     AUTO_SHEET_NAME = f'{MANUAL_SHEET_NAME} {STATE}'
@@ -130,26 +130,31 @@ def main():
 
     manual_df = manual_excel.parse(sheet_name=MANUAL_SHEET_NAME)
     auto_df = auto_excel.parse(sheet_name=AUTO_SHEET_NAME, header=None)
-    print(auto_df)
+    # print(auto_df)
 
-    # manual_week_ranges = get_week_data_ranges(manual_df)
+    manual_week_ranges = get_week_data_ranges(manual_df)
     auto_week_ranges = get_week_data_ranges(auto_df)
+    # print(auto_week_ranges)
 
-    print(auto_week_ranges)
-    # manual_test_week = extract_jobs_from_week(manual_df, manual_week_ranges, TEST_DATE)
-    # auto_test_week = extract_jobs_from_week(auto_df, auto_week_ranges, TEST_DATE)
+    manual_test_week = extract_jobs_from_week(manual_df, manual_week_ranges, TEST_DATE)
+    auto_test_week = extract_jobs_from_week(auto_df, auto_week_ranges, TEST_DATE)
     
-    # manual_jobs = flatten_list([job.split('/') if type(job)==str else job for job in manual_test_week.jobs.keys()])
-    # auto_jobs = flatten_list([job.split('/') if type(job)==str else job for job in auto_test_week.jobs.keys()])
+    # manual_jobs = flatten_list([job.split('/') if type(job)==str else [job] for job in manual_test_week.jobs.keys()])
+    # auto_jobs = flatten_list([job.split('/') if type(job)==str else [job] for job in auto_test_week.jobs.keys()])
+    # print(manual_jobs)
+    # print(auto_jobs)
 
-    # manual_jobs_set = set(manual_jobs)
-    # auto_jobs_set = set(auto_jobs)
+    manual_jobs = [int(j) if type(j) != float else 0 for j in flatten_list([job.split('/') if type(job)==str else [job] for job in manual_test_week.jobs.keys()])]
+    auto_jobs = [int(j) if type(j) != float else 0 for j in flatten_list([job.split('/') if type(job)==str else [job] for job in auto_test_week.jobs.keys()])]
 
-    # in_man_not_auto = manual_jobs_set.difference(auto_jobs_set)
-    # in_auto_not_man = auto_jobs_set.difference(manual_jobs_set)
+    manual_jobs_set = set(manual_jobs)
+    auto_jobs_set = set(auto_jobs)
 
-    # print(in_man_not_auto)
-    # print(in_auto_not_man)
+    in_man_not_auto = manual_jobs_set.difference(auto_jobs_set)
+    in_auto_not_man = auto_jobs_set.difference(manual_jobs_set)
+
+    print(in_man_not_auto)
+    print(in_auto_not_man)
 
     # j1 = JobData(1234, date(2025,11,24), 'Mascot', 15564.2, 1235.1, 0, 3000.0, ['Credit Card', 'EFT'], 15564.2*1.1, 0, 0, "COMPLETED & PAID JOBS")
     # j2 = JobData(123, date(2025,11,25), 'Mascot', 1234.2, 123.1, 0, 1000.0, ['Cash'], 0, 1234.2*1.1, 0, "COMPLETED & PAID JOBS")

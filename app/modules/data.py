@@ -144,7 +144,7 @@ def convert_df_for_download(df):
 def get_commission_data(state, start_date, end_date):
 
     app_guid = get_secret('ST_servco_integrations_guid')
-    unsucessfultag = 116255355
+    unsuccessfultag = 116255355
     # Filter for unsuccessful tag on job, soldBy should be in job, get technician name through settings endpoint
     # Payment type???
     # Do they get comms if its just the call out fee?
