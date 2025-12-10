@@ -144,62 +144,58 @@ def flatten_list(nested_list):
 
 def main():
     output = {}
-
+    auto_files = [
+        ('/Users/albie/Documents/code/github repos/TitanReporting/commission_tester/data/test 2:11:25.xlsx', datetime(2025,11,2,0,0)),
+        ('/Users/albie/Documents/code/github repos/TitanReporting/commission_tester/data/test 9:11:25.xlsx', datetime(2025,11,9,0,0)),
+        ('/Users/albie/Documents/code/github repos/TitanReporting/commission_tester/data/test 16:11:25.xlsx', datetime(2025,11,16,0,0)),
+        ('/Users/albie/Documents/code/github repos/TitanReporting/commission_tester/data/test 23:11:25.xlsx', datetime(2025,11,23,0,0)),
+    ]
     MANUAL_EXCEL_FILE = '/Users/albie/Documents/code/github repos/TitanReporting/commission_tester/data/FY2026 - VIC Commission Sheet.xlsx'
-    AUTO_EXCEL_FILE = '/Users/albie/Documents/code/github repos/TitanReporting/commission_tester/data/test_sheet.xlsx'
-    MANUAL_SHEET_NAME = 'Liam'
+    # AUTO_EXCEL_FILE = '/Users/albie/Documents/code/github repos/TitanReporting/commission_tester/data/test_sheet.xlsx'
+    MANUAL_SHEET_NAME = 'Shaun - No OT'
     STATE = 'VIC'
-    # AUTO_SHEET_NAME = f'Jarrod {STATE}'
-    AUTO_SHEET_NAME = f'{MANUAL_SHEET_NAME} {STATE}'
-    TEST_DATE = datetime(2025,11,30,0,0)
+    AUTO_SHEET_NAME = f'Shaun {STATE}'
+    # AUTO_SHEET_NAME = f'{MANUAL_SHEET_NAME} {STATE}'
+    # TEST_DATE = datetime(2025,11,30,0,0)
 
-    auto_excel = pd.ExcelFile(AUTO_EXCEL_FILE)
     manual_excel = pd.ExcelFile(MANUAL_EXCEL_FILE)
-
     manual_df = manual_excel.parse(sheet_name=MANUAL_SHEET_NAME)
-    auto_df = auto_excel.parse(sheet_name=AUTO_SHEET_NAME, header=None)
-    # print(manual_df)
-    # print(auto_df)
-
     manual_week_ranges = get_week_data_ranges(manual_df)
-    auto_week_ranges = get_week_data_ranges(auto_df)
-    # print(manual_week_ranges)
-    # print(auto_week_ranges)
 
-    manual_test_week = extract_jobs_from_week(manual_df, manual_week_ranges, TEST_DATE)
-    auto_test_week = extract_jobs_from_week(auto_df, auto_week_ranges, TEST_DATE, manual_or_auto='auto')
-    # pprint(manual_test_week)
-    # pprint(auto_test_week)
+    for filename, date_in in auto_files:
+        auto_excel = pd.ExcelFile(filename)
+        try:
+            auto_df = auto_excel.parse(sheet_name=AUTO_SHEET_NAME, header=None)
+        except ValueError:
+            continue
+        auto_week_ranges = get_week_data_ranges(auto_df)
+        auto_test_week = extract_jobs_from_week(auto_df, auto_week_ranges, date_in, manual_or_auto='auto')
+        auto_jobs = [int(j) if type(j) != float else 0 for j in flatten_list([job.split('/') if type(job)==str else [job] for job in auto_test_week.jobs.keys()])]
+        auto_jobs_set = set(auto_jobs)
 
-    manual_jobs = [int(j) if type(j) != float else 0 for j in flatten_list([job.split('/') if type(job)==str else [job] for job in manual_test_week.jobs.keys()])]
-    auto_jobs = [int(j) if type(j) != float else 0 for j in flatten_list([job.split('/') if type(job)==str else [job] for job in auto_test_week.jobs.keys()])]
+        manual_test_week = extract_jobs_from_week(manual_df, manual_week_ranges, date_in)
+        manual_jobs = [int(j) if type(j) != float else 0 for j in flatten_list([job.split('/') if type(job)==str else [job] for job in manual_test_week.jobs.keys()])]
 
-    manual_jobs_set = set(manual_jobs)
-    auto_jobs_set = set(auto_jobs)
-    # print(manual_jobs_set)
-    # print(auto_jobs_set)
+        manual_jobs_set = set(manual_jobs)
 
-    in_man_not_auto = manual_jobs_set.difference(auto_jobs_set)
-    in_auto_not_man = auto_jobs_set.difference(manual_jobs_set)
+        in_man_not_auto = manual_jobs_set.difference(auto_jobs_set)
+        in_auto_not_man = auto_jobs_set.difference(manual_jobs_set)
 
-    # print(in_man_not_auto)
-    # print(in_auto_not_man)
+        if in_man_not_auto:
+            output['jobs_missing_from_automation'] = sorted(list(in_man_not_auto))
+        if in_auto_not_man:
+            output['jobs_missing_from_manual'] = sorted(list(in_auto_not_man))
 
-    if in_man_not_auto:
-        output['jobs_missing_from_automation'] = sorted(list(in_man_not_auto))
-    if in_auto_not_man:
-        output['jobs_missing_from_manual'] = sorted(list(in_auto_not_man))
+        jobs_in_both = manual_jobs_set.intersection(auto_jobs_set)
 
-    jobs_in_both = manual_jobs_set.intersection(auto_jobs_set)
+        output['job_diffs (manual, auto)'] = {}
+        for job in jobs_in_both:
+            # print(job)
+            if manual_test_week.jobs.get(job) != auto_test_week.jobs.get(job):
+                output['job_diffs (manual, auto)'][job] = manual_test_week.jobs.get(job).diff(auto_test_week.jobs.get(job))
 
-    output['job_diffs (manual, auto)'] = {}
-    for job in jobs_in_both:
-        # print(job)
-        if manual_test_week.jobs.get(job) != auto_test_week.jobs.get(job):
-            output['job_diffs (manual, auto)'][job] = manual_test_week.jobs.get(job).diff(auto_test_week.jobs.get(job))
-
-    with(open(f'data/{MANUAL_SHEET_NAME}_differences.json', 'w')) as f:
-        json.dump(output, f)
+        with(open(f'data/{MANUAL_SHEET_NAME}_{date_in.strftime("%Y%m%d")}_differences.json', 'w')) as f:
+            json.dump(output, f)
 
 if __name__ == '__main__':
     main()

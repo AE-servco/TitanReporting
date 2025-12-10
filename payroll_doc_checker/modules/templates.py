@@ -241,8 +241,9 @@ def doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks
             initial_checks['qs'] = helpers.pre_fill_quote_signed_check(pdfs)
         if not initial_checks.get("is", False):
             initial_checks['is'] = helpers.pre_fill_invoice_signed_check(pdfs)
-        if not initial_checks.get("ie", False):
-            initial_checks['ie'] = helpers.pre_fill_invoice_emailed_check(job)
+        # vv Turned off until I can check its sent by the plumber vv
+        # if not initial_checks.get("ie", False):
+        #     initial_checks['ie'] = helpers.pre_fill_invoice_emailed_check(job)
         if initial_checks['is'] and initial_checks['qs']:
             st.session_state.prefill_txt = "Prefilled: Quote signed and Invoice signed"
         elif initial_checks['is']:
