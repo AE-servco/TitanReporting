@@ -59,8 +59,10 @@ def fetch_jobs(
         jobs: Iterable[Dict[str, Any]] = resp.get("data") or []
     else:
         params = {
-                    "createdOnOrAfter": created_after,
-                    "createdBefore": created_before,
+                    "completedOnOrAfter": created_after,
+                    "completedBefore": created_before,
+                    # "createdOnOrAfter": created_after,
+                    # "createdBefore": created_before,
                 }
         if _client.app_guid:
             params["externalDataApplicationGuid"] = _client.app_guid
