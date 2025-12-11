@@ -39,47 +39,47 @@ if ss["authentication_status"]:
     last_monday = today - dt.timedelta(days=today.weekday() + 7)
     last_sunday = last_monday + dt.timedelta(days=6)
 
-    # timeframe = st.selectbox(
-    #     "Select timeframe",
-    #     [
-    #         'Month',
-    #         'Week'
-    #     ],
+    timeframe = st.selectbox(
+        "Select timeframe",
+        [
+            'Month',
+            'Week'
+        ],
         
-    # )
+    )
 
     with st.form("date_select"):
         tenant = st.selectbox(
             "Select tenant",
             lookup.get_tenants().keys()
         )
-        end_date = st.date_input("Week ending", value=last_sunday)
-        start_date = end_date - dt.timedelta(days=6)
-        submitted = st.form_submit_button("Fetch and build workbook")
+        # end_date = st.date_input("Week ending", value=last_sunday)
+        # start_date = end_date - dt.timedelta(days=6)
+        # submitted = st.form_submit_button("Fetch and build workbook")
 
-        # if timeframe == 'Week':
-        #     end_date = st.date_input("Week ending", value=last_sunday)
-        #     start_date = end_date - dt.timedelta(days=6)
-        #     submitted = st.form_submit_button("Fetch and build workbook")
+        if timeframe == 'Week':
+            end_date = st.date_input("Week ending", value=last_sunday)
+            start_date = end_date - dt.timedelta(days=6)
+            submitted = st.form_submit_button("Fetch and build workbook")
 
-        # elif timeframe == 'Month':
-        #     mon_abbr_to_num = {name: num for num, name in enumerate(calendar.month_abbr) if num}
-        #     year = st.selectbox(
-        #                     "Year",
-        #                     [
-        #                         2025,
-        #                         2026
-        #                     ]
-        #                 )
-        #     month = st.selectbox(
-        #                     "Month",
-        #                     list(mon_abbr_to_num.keys())
-        #                 )
-        #     end_date = helpers.get_last_day_of_month_datetime(year, mon_abbr_to_num[month])
-        #     start_date = dt.date(year, mon_abbr_to_num[month], 1)
-        #     submitted = st.form_submit_button("Fetch and build workbook")
-        # else: 
-        #     st.write("Select week or month above")
+        elif timeframe == 'Month':
+            mon_abbr_to_num = {name: num for num, name in enumerate(calendar.month_abbr) if num}
+            year = st.selectbox(
+                            "Year",
+                            [
+                                2025,
+                                2026
+                            ]
+                        )
+            month = st.selectbox(
+                            "Month",
+                            list(mon_abbr_to_num.keys())
+                        )
+            end_date = helpers.get_last_day_of_month_datetime(year, mon_abbr_to_num[month])
+            start_date = dt.date(year, mon_abbr_to_num[month], 1)
+            submitted = st.form_submit_button("Fetch and build workbook")
+        else: 
+            st.write("Select week or month above")
             
 
         

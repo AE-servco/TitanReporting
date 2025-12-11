@@ -6,6 +6,8 @@ from openpyxl.styles import Border, Side, PatternFill, Font, Alignment
 from openpyxl.comments import Comment
 from openpyxl.formatting.rule import CellIsRule, FormulaRule
 
+import modules.helpers as helpers
+
 
 def formatted_cell(worksheet, row: int, col: int, val = None, font: Font | None=None, border: Border | None=None, number_format: str | None=None, fill: PatternFill | None=None):
     if val or val == 0:
@@ -46,6 +48,10 @@ def build_workbook(
         'wkend_uncategorised': 'WEEKEND UNCATEGORISED',
         'ah_uncategorised': 'AFTERHOURS UNCATEGORISED',
     }
+
+    # month = end_date.month
+    # days_in_month = end_date.day
+
     dates = {
         'monday': end_date - dt.timedelta(days=6),
         'tuesday': end_date - dt.timedelta(days=5),
@@ -275,8 +281,8 @@ def build_workbook(
         formatted_cell(ws, summary_top_row + 8, col_offset + 12, 'WED', font = font_bold, border = cell_border['top'])
         formatted_cell(ws, summary_top_row + 8, col_offset + 13, 'THU', font = font_bold, border = cell_border['top'])
         formatted_cell(ws, summary_top_row + 8, col_offset + 14, 'FRI', font = font_bold, border = cell_border['top'])
-        formatted_cell(ws, summary_top_row + 8, col_offset + 15, 'Total', font = font_bold, border = cell_border['top'])
-        formatted_cell(ws, summary_top_row + 8, col_offset + 16, 'SAT', font = font_green_bold, border = cell_border['topleft'])
+        # formatted_cell(ws, summary_top_row + 8, col_offset + 15, 'Total', font = font_bold, border = cell_border['top'])
+        formatted_cell(ws, summary_top_row + 8, col_offset + 15, 'SAT', font = font_green_bold, border = cell_border['topleft'])
         formatted_cell(ws, summary_top_row + 8, col_offset + 17, 'Awaiting Payment', font = font_red_bold, border = cell_border['topleft'])
         formatted_cell(ws, summary_top_row + 8, col_offset + 18, 'Awaiting Payment', font = font_red_bold, border = cell_border['topleftright'])
         ##
@@ -288,83 +294,83 @@ def build_workbook(
         formatted_cell(ws, summary_top_row + 12, col_offset + 9, 'Success rate')
         formatted_cell(ws, summary_top_row + 13, col_offset + 9, 'Avg sale')
 
-        formatted_cell(ws, summary_top_row + 12, col_offset + 10, '=K11/(K11+K12)', number_format=percentage_format)
-        formatted_cell(ws, summary_top_row + 13, col_offset + 10, '=K10/K11', number_format=accounting_format)
+        # formatted_cell(ws, summary_top_row + 12, col_offset + 10, '=K11/(K11+K12)', number_format=percentage_format)
+        # formatted_cell(ws, summary_top_row + 13, col_offset + 10, '=K10/K11', number_format=accounting_format)
 
-        formatted_cell(ws, summary_top_row + 12, col_offset + 11, '=L11/(L11+L12)', number_format=percentage_format)
-        formatted_cell(ws, summary_top_row + 13, col_offset + 11, '=L10/L11', number_format=accounting_format)
+        # formatted_cell(ws, summary_top_row + 12, col_offset + 11, '=L11/(L11+L12)', number_format=percentage_format)
+        # formatted_cell(ws, summary_top_row + 13, col_offset + 11, '=L10/L11', number_format=accounting_format)
         
-        formatted_cell(ws, summary_top_row + 12, col_offset + 12, '=M11/(M11+M12)', number_format=percentage_format)
-        formatted_cell(ws, summary_top_row + 13, col_offset + 12, '=M10/M11', number_format=accounting_format)
-        formatted_cell(ws, summary_top_row + 12, col_offset + 13, '=N11/(N11+N12)', number_format=percentage_format)
-        formatted_cell(ws, summary_top_row + 13, col_offset + 13, '=N10/N11', number_format=accounting_format)
-        formatted_cell(ws, summary_top_row + 12, col_offset + 14, '=O11/(O11+O12)', number_format=percentage_format)
-        formatted_cell(ws, summary_top_row + 13, col_offset + 14, '=O10/O11', number_format=accounting_format)
+        # formatted_cell(ws, summary_top_row + 12, col_offset + 12, '=M11/(M11+M12)', number_format=percentage_format)
+        # formatted_cell(ws, summary_top_row + 13, col_offset + 12, '=M10/M11', number_format=accounting_format)
+        # formatted_cell(ws, summary_top_row + 12, col_offset + 13, '=N11/(N11+N12)', number_format=percentage_format)
+        # formatted_cell(ws, summary_top_row + 13, col_offset + 13, '=N10/N11', number_format=accounting_format)
+        # formatted_cell(ws, summary_top_row + 12, col_offset + 14, '=O11/(O11+O12)', number_format=percentage_format)
+        # formatted_cell(ws, summary_top_row + 13, col_offset + 14, '=O10/O11', number_format=accounting_format)
 
-        formatted_cell(ws, summary_top_row + 10, col_offset + 15, '=SUM(K11:O11)') 
-        formatted_cell(ws, summary_top_row + 11, col_offset + 15, '=SUM(K12:O12)')
-        formatted_cell(ws, summary_top_row + 12, col_offset + 15, '=P11/(P11+P12)', number_format=percentage_format)
-        formatted_cell(ws, summary_top_row + 13, col_offset + 15, '=P10/P11', number_format=accounting_format)
+        # formatted_cell(ws, summary_top_row + 10, col_offset + 15, '=SUM(K11:O11)') 
+        # formatted_cell(ws, summary_top_row + 11, col_offset + 15, '=SUM(K12:O12)')
+        # formatted_cell(ws, summary_top_row + 12, col_offset + 15, '=P11/(P11+P12)', number_format=percentage_format)
+        # formatted_cell(ws, summary_top_row + 13, col_offset + 15, '=P10/P11', number_format=accounting_format)
         
-        formatted_cell(ws, summary_top_row + 12, col_offset + 16, '=Q11/(Q11+Q12)', number_format=percentage_format)
-        formatted_cell(ws, summary_top_row + 13, col_offset + 16, '=Q10/Q11', number_format=accounting_format)
+        # formatted_cell(ws, summary_top_row + 12, col_offset + 16, '=Q11/(Q11+Q12)', number_format=percentage_format)
+        # formatted_cell(ws, summary_top_row + 13, col_offset + 16, '=Q10/Q11', number_format=accounting_format)
 
-        # box 6 - management summary
-        formatted_cell(ws, summary_top_row + 15, col_offset + 10, 'Management Summary - SALES ONLY - COLUMN F', font = font_bold, border = cell_border['topleft'], fill=blue_fill)
-        formatted_cell(ws, summary_top_row + 15, col_offset + 11, border = cell_border['top'], fill=blue_fill)
-        formatted_cell(ws, summary_top_row + 15, col_offset + 12, border = cell_border['top'], fill=blue_fill)
-        formatted_cell(ws, summary_top_row + 15, col_offset + 13, border = cell_border['top'], fill=blue_fill)
-        formatted_cell(ws, summary_top_row + 15, col_offset + 14, border = cell_border['top'], fill=blue_fill)
-        formatted_cell(ws, summary_top_row + 15, col_offset + 15, border = cell_border['top'], fill=blue_fill)
-        formatted_cell(ws, summary_top_row + 15, col_offset + 16, border = cell_border['top'], fill=blue_fill)
-        formatted_cell(ws, summary_top_row + 15, col_offset + 17, 'WEEKDAY', font = font_red_bold, border = cell_border['topleft'], fill=blue_fill)
-        formatted_cell(ws, summary_top_row + 15, col_offset + 18, 'WEEKEND', font = font_red_bold, border = cell_border['topleftright'], fill=blue_fill)
-        formatted_cell(ws, summary_top_row + 16, col_offset + 10, 'MON', font = font_bold, border = cell_border['topleft'])
-        formatted_cell(ws, summary_top_row + 16, col_offset + 11, 'TUE', font = font_bold, border = cell_border['top'])
-        formatted_cell(ws, summary_top_row + 16, col_offset + 12, 'WED', font = font_bold, border = cell_border['top'])
-        formatted_cell(ws, summary_top_row + 16, col_offset + 13, 'THU', font = font_bold, border = cell_border['top'])
-        formatted_cell(ws, summary_top_row + 16, col_offset + 14, 'FRI', font = font_bold, border = cell_border['top'])
-        formatted_cell(ws, summary_top_row + 16, col_offset + 15, 'Total', font = font_bold, border = cell_border['top'])
-        formatted_cell(ws, summary_top_row + 16, col_offset + 16, 'SAT', font = font_green_bold, border = cell_border['topleft'])
-        formatted_cell(ws, summary_top_row + 16, col_offset + 17, 'Awaiting Payment', font = font_red_bold, border = cell_border['topleft'])
-        formatted_cell(ws, summary_top_row + 16, col_offset + 18, 'Awaiting Payment', font = font_red_bold, border = cell_border['topleftright'])
-        ##
-        formatted_cell(ws, summary_top_row + 17, col_offset + 15, '=SUM(K18:O18)', font = font_bold, border = cell_border['bottom'], number_format=accounting_format)#
-        ##
+        # # box 6 - management summary
+        # formatted_cell(ws, summary_top_row + 15, col_offset + 10, 'Management Summary - SALES ONLY - COLUMN F', font = font_bold, border = cell_border['topleft'], fill=blue_fill)
+        # formatted_cell(ws, summary_top_row + 15, col_offset + 11, border = cell_border['top'], fill=blue_fill)
+        # formatted_cell(ws, summary_top_row + 15, col_offset + 12, border = cell_border['top'], fill=blue_fill)
+        # formatted_cell(ws, summary_top_row + 15, col_offset + 13, border = cell_border['top'], fill=blue_fill)
+        # formatted_cell(ws, summary_top_row + 15, col_offset + 14, border = cell_border['top'], fill=blue_fill)
+        # formatted_cell(ws, summary_top_row + 15, col_offset + 15, border = cell_border['top'], fill=blue_fill)
+        # formatted_cell(ws, summary_top_row + 15, col_offset + 16, border = cell_border['top'], fill=blue_fill)
+        # formatted_cell(ws, summary_top_row + 15, col_offset + 17, 'WEEKDAY', font = font_red_bold, border = cell_border['topleft'], fill=blue_fill)
+        # formatted_cell(ws, summary_top_row + 15, col_offset + 18, 'WEEKEND', font = font_red_bold, border = cell_border['topleftright'], fill=blue_fill)
+        # formatted_cell(ws, summary_top_row + 16, col_offset + 10, 'MON', font = font_bold, border = cell_border['topleft'])
+        # formatted_cell(ws, summary_top_row + 16, col_offset + 11, 'TUE', font = font_bold, border = cell_border['top'])
+        # formatted_cell(ws, summary_top_row + 16, col_offset + 12, 'WED', font = font_bold, border = cell_border['top'])
+        # formatted_cell(ws, summary_top_row + 16, col_offset + 13, 'THU', font = font_bold, border = cell_border['top'])
+        # formatted_cell(ws, summary_top_row + 16, col_offset + 14, 'FRI', font = font_bold, border = cell_border['top'])
+        # formatted_cell(ws, summary_top_row + 16, col_offset + 15, 'Total', font = font_bold, border = cell_border['top'])
+        # formatted_cell(ws, summary_top_row + 16, col_offset + 16, 'SAT', font = font_green_bold, border = cell_border['topleft'])
+        # formatted_cell(ws, summary_top_row + 16, col_offset + 17, 'Awaiting Payment', font = font_red_bold, border = cell_border['topleft'])
+        # formatted_cell(ws, summary_top_row + 16, col_offset + 18, 'Awaiting Payment', font = font_red_bold, border = cell_border['topleftright'])
+        # ##
+        # formatted_cell(ws, summary_top_row + 17, col_offset + 15, '=SUM(K18:O18)', font = font_bold, border = cell_border['bottom'], number_format=accounting_format)#
+        # ##
 
-        formatted_cell(ws, summary_top_row + 18, col_offset + 9, 'Successful')
-        formatted_cell(ws, summary_top_row + 19, col_offset + 9, 'Unsuccessful')
-        formatted_cell(ws, summary_top_row + 20, col_offset + 9, 'Success rate')
-        formatted_cell(ws, summary_top_row + 21, col_offset + 9, 'Avg sale')
+        # formatted_cell(ws, summary_top_row + 18, col_offset + 9, 'Successful')
+        # formatted_cell(ws, summary_top_row + 19, col_offset + 9, 'Unsuccessful')
+        # formatted_cell(ws, summary_top_row + 20, col_offset + 9, 'Success rate')
+        # formatted_cell(ws, summary_top_row + 21, col_offset + 9, 'Avg sale')
 
-        formatted_cell(ws, summary_top_row + 18, col_offset + 10, '=K11') 
-        formatted_cell(ws, summary_top_row + 19, col_offset + 10, '=K12')
-        formatted_cell(ws, summary_top_row + 20, col_offset + 10, '=K13', number_format=percentage_format)
-        formatted_cell(ws, summary_top_row + 21, col_offset + 10, '=K18/K19', number_format=accounting_format)
-        formatted_cell(ws, summary_top_row + 18, col_offset + 11, '=L11') 
-        formatted_cell(ws, summary_top_row + 19, col_offset + 11, '=L12')
-        formatted_cell(ws, summary_top_row + 20, col_offset + 11, '=L13', number_format=percentage_format)
-        formatted_cell(ws, summary_top_row + 21, col_offset + 11, '=L18/L19', number_format=accounting_format)
-        formatted_cell(ws, summary_top_row + 18, col_offset + 12, '=M11') 
-        formatted_cell(ws, summary_top_row + 19, col_offset + 12, '=M12')
-        formatted_cell(ws, summary_top_row + 20, col_offset + 12, '=M13', number_format=percentage_format)
-        formatted_cell(ws, summary_top_row + 21, col_offset + 12, '=M18/M19', number_format=accounting_format)
-        formatted_cell(ws, summary_top_row + 18, col_offset + 13, '=N11') 
-        formatted_cell(ws, summary_top_row + 19, col_offset + 13, '=N12')
-        formatted_cell(ws, summary_top_row + 20, col_offset + 13, '=N13', number_format=percentage_format)
-        formatted_cell(ws, summary_top_row + 21, col_offset + 13, '=N18/N19', number_format=accounting_format)
-        formatted_cell(ws, summary_top_row + 18, col_offset + 14, '=O11') 
-        formatted_cell(ws, summary_top_row + 19, col_offset + 14, '=O12')
-        formatted_cell(ws, summary_top_row + 20, col_offset + 14, '=O13', number_format=percentage_format)
-        formatted_cell(ws, summary_top_row + 21, col_offset + 14, '=O18/O19', number_format=accounting_format)
-        formatted_cell(ws, summary_top_row + 18, col_offset + 15, '=P11') 
-        formatted_cell(ws, summary_top_row + 19, col_offset + 15, '=P12')
-        formatted_cell(ws, summary_top_row + 20, col_offset + 15, '=P13', number_format=percentage_format)
-        formatted_cell(ws, summary_top_row + 21, col_offset + 15, '=P18/P19', number_format=accounting_format)
-        formatted_cell(ws, summary_top_row + 18, col_offset + 16, '=Q11') 
-        formatted_cell(ws, summary_top_row + 19, col_offset + 16, '=Q12')
-        formatted_cell(ws, summary_top_row + 20, col_offset + 16, '=Q13', number_format=percentage_format)
-        formatted_cell(ws, summary_top_row + 21, col_offset + 16, '=Q18/Q19', number_format=accounting_format)
+        # formatted_cell(ws, summary_top_row + 18, col_offset + 10, '=K11') 
+        # formatted_cell(ws, summary_top_row + 19, col_offset + 10, '=K12')
+        # formatted_cell(ws, summary_top_row + 20, col_offset + 10, '=K13', number_format=percentage_format)
+        # formatted_cell(ws, summary_top_row + 21, col_offset + 10, '=K18/K19', number_format=accounting_format)
+        # formatted_cell(ws, summary_top_row + 18, col_offset + 11, '=L11') 
+        # formatted_cell(ws, summary_top_row + 19, col_offset + 11, '=L12')
+        # formatted_cell(ws, summary_top_row + 20, col_offset + 11, '=L13', number_format=percentage_format)
+        # formatted_cell(ws, summary_top_row + 21, col_offset + 11, '=L18/L19', number_format=accounting_format)
+        # formatted_cell(ws, summary_top_row + 18, col_offset + 12, '=M11') 
+        # formatted_cell(ws, summary_top_row + 19, col_offset + 12, '=M12')
+        # formatted_cell(ws, summary_top_row + 20, col_offset + 12, '=M13', number_format=percentage_format)
+        # formatted_cell(ws, summary_top_row + 21, col_offset + 12, '=M18/M19', number_format=accounting_format)
+        # formatted_cell(ws, summary_top_row + 18, col_offset + 13, '=N11') 
+        # formatted_cell(ws, summary_top_row + 19, col_offset + 13, '=N12')
+        # formatted_cell(ws, summary_top_row + 20, col_offset + 13, '=N13', number_format=percentage_format)
+        # formatted_cell(ws, summary_top_row + 21, col_offset + 13, '=N18/N19', number_format=accounting_format)
+        # formatted_cell(ws, summary_top_row + 18, col_offset + 14, '=O11') 
+        # formatted_cell(ws, summary_top_row + 19, col_offset + 14, '=O12')
+        # formatted_cell(ws, summary_top_row + 20, col_offset + 14, '=O13', number_format=percentage_format)
+        # formatted_cell(ws, summary_top_row + 21, col_offset + 14, '=O18/O19', number_format=accounting_format)
+        # formatted_cell(ws, summary_top_row + 18, col_offset + 15, '=P11') 
+        # formatted_cell(ws, summary_top_row + 19, col_offset + 15, '=P12')
+        # formatted_cell(ws, summary_top_row + 20, col_offset + 15, '=P13', number_format=percentage_format)
+        # formatted_cell(ws, summary_top_row + 21, col_offset + 15, '=P18/P19', number_format=accounting_format)
+        # formatted_cell(ws, summary_top_row + 18, col_offset + 16, '=Q11') 
+        # formatted_cell(ws, summary_top_row + 19, col_offset + 16, '=Q12')
+        # formatted_cell(ws, summary_top_row + 20, col_offset + 16, '=Q13', number_format=percentage_format)
+        # formatted_cell(ws, summary_top_row + 21, col_offset + 16, '=Q18/Q19', number_format=accounting_format)
 
         # curr_row += 1
 
@@ -390,7 +396,7 @@ def build_workbook(
         # ws.cell(curr_row,6).border = cell_border['topright']
         # ws.cell(curr_row,10, 'BEFORE').font = font_bold
 
-        curr_row = 26
+        curr_row = 45
         # ================ HEADERS ==================
         ws.cell(curr_row, col_offset + 1, 'JOB DETAILS').border = cell_border['topleft']
         ws.cell(curr_row, col_offset + 2).border = cell_border['top']
@@ -606,42 +612,78 @@ def build_workbook(
         # =SUMIF(B{cat_start}:B{cat_end}, date_str, H{cat_start}:H{cat_end}) -- profit
 # monday_str
 
-        days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-        profit_formulas = {day: '=' + ' + '.join([f'SUMIF(C{cat_row_info[cat][0]}:C{cat_row_info[cat][1]}, "{date_strs[day]}", I{cat_row_info[cat][0]}:I{cat_row_info[cat][1]})'for cat in cats_count_for_total]) for day in days}
+        # days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+        # profit_formulas = {day: '=' + ' + '.join([f'SUMIF(C{cat_row_info[cat][0]}:C{cat_row_info[cat][1]}, "{date_strs[day]}", I{cat_row_info[cat][0]}:I{cat_row_info[cat][1]})'for cat in cats_count_for_total]) for day in days}
 
-        formatted_cell(ws, summary_top_row + 9, col_offset + 10, profit_formulas['monday'], font = font_bold, border = cell_border['bottomleft'], number_format=accounting_format) # These all rely on daily totals
-        formatted_cell(ws, summary_top_row + 9, col_offset + 11, profit_formulas['tuesday'], font = font_bold, border = cell_border['bottom'], number_format=accounting_format) # These all rely on daily totals
-        formatted_cell(ws, summary_top_row + 9, col_offset + 12, profit_formulas['wednesday'], font = font_bold, border = cell_border['bottom'], number_format=accounting_format) # These all rely on daily totals
-        formatted_cell(ws, summary_top_row + 9, col_offset + 13, profit_formulas['thursday'], font = font_bold, border = cell_border['bottom'], number_format=accounting_format) # These all rely on daily totals
-        formatted_cell(ws, summary_top_row + 9, col_offset + 14, profit_formulas['friday'], font = font_bold, border = cell_border['bottom'], number_format=accounting_format) # These all rely on daily totals
-        formatted_cell(ws, summary_top_row + 9, col_offset + 16, profit_formulas['saturday'], font = font_green_bold, border = cell_border['bottomleft'], number_format=accounting_format) # These all rely on daily totals
+        dates_in_month = helpers.get_dates_in_month_datetime(end_date.year, end_date.month)
+        profit_formulas = {day: '=' + ' + '.join([f'SUMIF(C{cat_row_info[cat][0]}:C{cat_row_info[cat][1]}, "{day.strftime("%d/%m/%Y")}", I{cat_row_info[cat][0]}:I{cat_row_info[cat][1]})'for cat in cats_count_for_total]) for day in dates_in_month}
+        count_success_formulas = {day: '=' + ' + '.join([f'COUNTIF(C{cat_row_info[cat][0]}:C{cat_row_info[cat][1]}, "{day.strftime("%d/%m/%Y")}")'for cat in cats_count_for_total]) for day in dates_in_month}
+        count_unsuccess_formulas = {day: '=' + ' + '.join([f'COUNTIF(C{cat_row_info[cat][0]}:C{cat_row_info[cat][1]}, "{day.strftime("%d/%m/%Y")}")'for cat in cats_count_for_unsuccessful]) for day in dates_in_month}
 
-        sales_formulas = {day: '=' + ' + '.join([f'SUMIF(C{cat_row_info[cat][0]}:C{cat_row_info[cat][1]}, "{date_strs[day]}", F{cat_row_info[cat][0]}:F{cat_row_info[cat][1]})'for cat in cats_count_for_total]) for day in days}
+        start_row = 9
+        reset_col = 10
+        start_col = reset_col
 
-        formatted_cell(ws, summary_top_row + 17, col_offset + 10, sales_formulas['monday'], font = font_bold, border = cell_border['bottomleft'], number_format=accounting_format) # These all rely on daily totals
-        formatted_cell(ws, summary_top_row + 17, col_offset + 11, sales_formulas['tuesday'], font = font_bold, border = cell_border['bottom'], number_format=accounting_format)#
-        formatted_cell(ws, summary_top_row + 17, col_offset + 12, sales_formulas['wednesday'], font = font_bold, border = cell_border['bottom'], number_format=accounting_format)#
-        formatted_cell(ws, summary_top_row + 17, col_offset + 13, sales_formulas['thursday'], font = font_bold, border = cell_border['bottom'], number_format=accounting_format)#
-        formatted_cell(ws, summary_top_row + 17, col_offset + 14, sales_formulas['friday'], font = font_bold, border = cell_border['bottom'], number_format=accounting_format)#
-        formatted_cell(ws, summary_top_row + 17, col_offset + 16, sales_formulas['saturday'], font = font_green_bold, border = cell_border['bottomleft'], number_format=accounting_format) # These all rely on daily totals
+        SUMMARY_COL_LENGTH = 0
+        for day in dates_in_month:
+            day_row = start_row
+            day_of_week = day.weekday()
+            if day_of_week == 6:
+                # start_col = reset_col
+                start_row += SUMMARY_COL_LENGTH
+                continue
+            if day_of_week == 5:
+                day_of_week += 1
+            curr_col = col_offset + start_col + day_of_week
+            formatted_cell(ws, summary_top_row + day_row, curr_col, day.strftime("%d/%m"), font = font_bold, border = cell_border['top']) 
+            day_row += 1
+            formatted_cell(ws, summary_top_row + day_row, curr_col, profit_formulas[day], font = font_bold, border = cell_border['bottom'], number_format=accounting_format) 
+            day_row += 1
+            formatted_cell(ws, summary_top_row + day_row, curr_col, count_success_formulas[day]) 
+            day_row += 1
+            formatted_cell(ws, summary_top_row + day_row, curr_col, count_unsuccess_formulas[day])
+            day_row += 1
+            curr_col_letter = get_column_letter(curr_col)
+            formatted_cell(ws, summary_top_row + day_row, curr_col, f'={curr_col_letter}{summary_top_row + day_row-2}/({curr_col_letter}{summary_top_row + day_row-2}+{curr_col_letter}{summary_top_row + day_row-1})', number_format=percentage_format)
+            day_row += 1
+            formatted_cell(ws, summary_top_row + day_row, curr_col, f'={curr_col_letter}{summary_top_row + day_row-3}/{curr_col_letter}{summary_top_row + day_row-2}', number_format=accounting_format)
 
-        count_success_formulas = {day: '=' + ' + '.join([f'COUNTIF(C{cat_row_info[cat][0]}:C{cat_row_info[cat][1]}, "{date_strs[day]}")'for cat in cats_count_for_total]) for day in days}
+            SUMMARY_COL_LENGTH = day_row - start_row
 
-        formatted_cell(ws, summary_top_row + 10, col_offset + 10, count_success_formulas['monday']) # Actual count of monday jobs
-        formatted_cell(ws, summary_top_row + 10, col_offset + 11, count_success_formulas['tuesday']) # Actual count of tuesday jobs
-        formatted_cell(ws, summary_top_row + 10, col_offset + 12, count_success_formulas['wednesday']) # Actual count of wednesday jobs
-        formatted_cell(ws, summary_top_row + 10, col_offset + 13, count_success_formulas['thursday']) # Actual count of thursday jobs
-        formatted_cell(ws, summary_top_row + 10, col_offset + 14, count_success_formulas['friday']) # Actual count of friday jobs
-        formatted_cell(ws, summary_top_row + 10, col_offset + 16, count_success_formulas['saturday']) # Actual count of saturday jobs
+        # formatted_cell(ws, summary_top_row + 9, col_offset + 10, profit_formulas['monday'], font = font_bold, border = cell_border['bottomleft'], number_format=accounting_format) # These all rely on daily totals
+        # formatted_cell(ws, summary_top_row + 9, col_offset + 11, profit_formulas['tuesday'], font = font_bold, border = cell_border['bottom'], number_format=accounting_format) # These all rely on daily totals
+        # formatted_cell(ws, summary_top_row + 9, col_offset + 12, profit_formulas['wednesday'], font = font_bold, border = cell_border['bottom'], number_format=accounting_format) # These all rely on daily totals
+        # formatted_cell(ws, summary_top_row + 9, col_offset + 13, profit_formulas['thursday'], font = font_bold, border = cell_border['bottom'], number_format=accounting_format) # These all rely on daily totals
+        # formatted_cell(ws, summary_top_row + 9, col_offset + 14, profit_formulas['friday'], font = font_bold, border = cell_border['bottom'], number_format=accounting_format) # These all rely on daily totals
+        # formatted_cell(ws, summary_top_row + 9, col_offset + 16, profit_formulas['saturday'], font = font_green_bold, border = cell_border['bottomleft'], number_format=accounting_format) # These all rely on daily totals
 
-        count_unsuccess_formulas = {day: '=' + ' + '.join([f'COUNTIF(C{cat_row_info[cat][0]}:C{cat_row_info[cat][1]}, "{date_strs[day]}")'for cat in cats_count_for_unsuccessful]) for day in days}
-        # Unsuccessful counts
-        formatted_cell(ws, summary_top_row + 11, col_offset + 10, count_unsuccess_formulas['monday'])
-        formatted_cell(ws, summary_top_row + 11, col_offset + 11, count_unsuccess_formulas['tuesday'])
-        formatted_cell(ws, summary_top_row + 11, col_offset + 12, count_unsuccess_formulas['wednesday'])
-        formatted_cell(ws, summary_top_row + 11, col_offset + 13, count_unsuccess_formulas['thursday'])
-        formatted_cell(ws, summary_top_row + 11, col_offset + 14, count_unsuccess_formulas['friday'])
-        formatted_cell(ws, summary_top_row + 11, col_offset + 16, count_unsuccess_formulas['saturday'])
+        # sales_formulas = {day: '=' + ' + '.join([f'SUMIF(C{cat_row_info[cat][0]}:C{cat_row_info[cat][1]}, "{date_strs[day]}", F{cat_row_info[cat][0]}:F{cat_row_info[cat][1]})'for cat in cats_count_for_total]) for day in days}
+
+        # formatted_cell(ws, summary_top_row + 17, col_offset + 10, sales_formulas['monday'], font = font_bold, border = cell_border['bottomleft'], number_format=accounting_format) # These all rely on daily totals
+        # formatted_cell(ws, summary_top_row + 17, col_offset + 11, sales_formulas['tuesday'], font = font_bold, border = cell_border['bottom'], number_format=accounting_format)#
+        # formatted_cell(ws, summary_top_row + 17, col_offset + 12, sales_formulas['wednesday'], font = font_bold, border = cell_border['bottom'], number_format=accounting_format)#
+        # formatted_cell(ws, summary_top_row + 17, col_offset + 13, sales_formulas['thursday'], font = font_bold, border = cell_border['bottom'], number_format=accounting_format)#
+        # formatted_cell(ws, summary_top_row + 17, col_offset + 14, sales_formulas['friday'], font = font_bold, border = cell_border['bottom'], number_format=accounting_format)#
+        # formatted_cell(ws, summary_top_row + 17, col_offset + 16, sales_formulas['saturday'], font = font_green_bold, border = cell_border['bottomleft'], number_format=accounting_format) # These all rely on daily totals
+
+        # count_success_formulas = {day: '=' + ' + '.join([f'COUNTIF(C{cat_row_info[cat][0]}:C{cat_row_info[cat][1]}, "{date_strs[day]}")'for cat in cats_count_for_total]) for day in days}
+
+        # formatted_cell(ws, summary_top_row + 10, col_offset + 10, count_success_formulas['monday']) # Actual count of monday jobs
+        # formatted_cell(ws, summary_top_row + 10, col_offset + 11, count_success_formulas['tuesday']) # Actual count of tuesday jobs
+        # formatted_cell(ws, summary_top_row + 10, col_offset + 12, count_success_formulas['wednesday']) # Actual count of wednesday jobs
+        # formatted_cell(ws, summary_top_row + 10, col_offset + 13, count_success_formulas['thursday']) # Actual count of thursday jobs
+        # formatted_cell(ws, summary_top_row + 10, col_offset + 14, count_success_formulas['friday']) # Actual count of friday jobs
+        # formatted_cell(ws, summary_top_row + 10, col_offset + 16, count_success_formulas['saturday']) # Actual count of saturday jobs
+
+        # count_unsuccess_formulas = {day: '=' + ' + '.join([f'COUNTIF(C{cat_row_info[cat][0]}:C{cat_row_info[cat][1]}, "{date_strs[day]}")'for cat in cats_count_for_unsuccessful]) for day in days}
+
+        # # Unsuccessful counts
+        # formatted_cell(ws, summary_top_row + 11, col_offset + 10, count_unsuccess_formulas['monday'])
+        # formatted_cell(ws, summary_top_row + 11, col_offset + 11, count_unsuccess_formulas['tuesday'])
+        # formatted_cell(ws, summary_top_row + 11, col_offset + 12, count_unsuccess_formulas['wednesday'])
+        # formatted_cell(ws, summary_top_row + 11, col_offset + 13, count_unsuccess_formulas['thursday'])
+        # formatted_cell(ws, summary_top_row + 11, col_offset + 14, count_unsuccess_formulas['friday'])
+        # formatted_cell(ws, summary_top_row + 11, col_offset + 16, count_unsuccess_formulas['saturday'])
 
         end_of_comp_paid = cat_row_info['wk_complete_paid'][1]
         formatted_cell(ws, summary_top_row + 3, col_offset + 10, f'=L{end_of_comp_paid+2}', font = font_bold, border = cell_border['left'])
@@ -670,27 +712,27 @@ def build_workbook(
 
         
 
-        wk_profit_awaiting_formula = '=' + ' + '.join([f'SUM(I{cat_row_info[cat][0]}:I{cat_row_info[cat][1]})'for cat in cats_count_awaiting_pay_wk])
-        formatted_cell(ws, summary_top_row + 9, col_offset + 17, wk_profit_awaiting_formula, font = font_red_bold, border = cell_border['bottomleft'], number_format=accounting_format)
-        wkend_profit_awaiting_formula = '=' + ' + '.join([f'SUM(I{cat_row_info[cat][0]}:I{cat_row_info[cat][1]})'for cat in cats_count_awaiting_pay_wkend])
-        formatted_cell(ws, summary_top_row + 9, col_offset + 18, wkend_profit_awaiting_formula, font = font_red_bold, border = cell_border['bottomleftright'], number_format=accounting_format)
+        # wk_profit_awaiting_formula = '=' + ' + '.join([f'SUM(I{cat_row_info[cat][0]}:I{cat_row_info[cat][1]})'for cat in cats_count_awaiting_pay_wk])
+        # formatted_cell(ws, summary_top_row + 9, col_offset + 17, wk_profit_awaiting_formula, font = font_red_bold, border = cell_border['bottomleft'], number_format=accounting_format)
+        # wkend_profit_awaiting_formula = '=' + ' + '.join([f'SUM(I{cat_row_info[cat][0]}:I{cat_row_info[cat][1]})'for cat in cats_count_awaiting_pay_wkend])
+        # formatted_cell(ws, summary_top_row + 9, col_offset + 18, wkend_profit_awaiting_formula, font = font_red_bold, border = cell_border['bottomleftright'], number_format=accounting_format)
 
         #mngment 
-        wk_sales_awaiting_formula = '=' + ' + '.join([f'SUM(F{cat_row_info[cat][0]}:F{cat_row_info[cat][1]})'for cat in cats_count_awaiting_pay_wk])
-        formatted_cell(ws, summary_top_row + 17, col_offset + 17, wk_sales_awaiting_formula, font = font_red_bold, border = cell_border['bottomleft'], number_format=accounting_format)
-        wkend_sales_awaiting_formula = '=' + ' + '.join([f'SUM(F{cat_row_info[cat][0]}:F{cat_row_info[cat][1]})'for cat in cats_count_awaiting_pay_wkend])
-        formatted_cell(ws, summary_top_row + 17, col_offset + 18, wkend_sales_awaiting_formula, font = font_red_bold, border = cell_border['bottomleftright'], number_format=accounting_format)
+        # wk_sales_awaiting_formula = '=' + ' + '.join([f'SUM(F{cat_row_info[cat][0]}:F{cat_row_info[cat][1]})'for cat in cats_count_awaiting_pay_wk])
+        # formatted_cell(ws, summary_top_row + 17, col_offset + 17, wk_sales_awaiting_formula, font = font_red_bold, border = cell_border['bottomleft'], number_format=accounting_format)
+        # wkend_sales_awaiting_formula = '=' + ' + '.join([f'SUM(F{cat_row_info[cat][0]}:F{cat_row_info[cat][1]})'for cat in cats_count_awaiting_pay_wkend])
+        # formatted_cell(ws, summary_top_row + 17, col_offset + 18, wkend_sales_awaiting_formula, font = font_red_bold, border = cell_border['bottomleftright'], number_format=accounting_format)
         
         # potential
 
-        wk_profit_potential_formula = '=' + ' + '.join([f'SUM(I{cat_row_info[cat][0]}:I{cat_row_info[cat][1]})'for cat in cats_count_for_potential_wk])
-        formatted_cell(ws, summary_top_row + 7, col_offset + 6, wk_profit_potential_formula, font = font_red, border = cell_border['topright'], number_format=accounting_format)
-        # wkend_profit_potential_formula = '=' + ' + '.join([f'SUM(I{cat_row_info[cat][0]}:I{cat_row_info[cat][1]})'for cat in cats_count_for_potential_wkend])
-        formatted_cell(ws, summary_top_row + 10, col_offset + 6, border = cell_border['right'])
+        # wk_profit_potential_formula = '=' + ' + '.join([f'SUM(I{cat_row_info[cat][0]}:I{cat_row_info[cat][1]})'for cat in cats_count_for_potential_wk])
+        # formatted_cell(ws, summary_top_row + 7, col_offset + 6, wk_profit_potential_formula, font = font_red, border = cell_border['topright'], number_format=accounting_format)
+        # # wkend_profit_potential_formula = '=' + ' + '.join([f'SUM(I{cat_row_info[cat][0]}:I{cat_row_info[cat][1]})'for cat in cats_count_for_potential_wkend])
+        # formatted_cell(ws, summary_top_row + 10, col_offset + 6, border = cell_border['right'])
         
 
         ws.conditional_formatting.add(
-            f"I{cat_row_info['wk_complete_paid'][0]}:I{cat_row_info['wkend_complete_paid'][1]}", 
+            f"I{cat_row_info['wk_complete_paid'][0]}:I{cat_row_info['ah_wo'][1]}", 
             FormulaRule(formula=[f'$K{cat_row_info["wk_complete_paid"][0]}="N"'], fill=PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid"))
         )
 
