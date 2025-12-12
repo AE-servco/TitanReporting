@@ -11,3 +11,4 @@ google-cloud-secret-manager
 oauth2client
 google-auth
 openpyxl
+holidays
