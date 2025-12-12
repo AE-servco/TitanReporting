@@ -12,6 +12,11 @@ def check_unsuccessful(job, tags):
     job_tags = set(job.get('tagTypeIds'))
     return bool(unsuccessful_tags & job_tags)
 
+def check_complaint(job, tags):
+    complaint_tags = {tag.get("id") for tag in tags if "complaint" in tag.get("name").lower()}
+    job_tags = set(job.get('tagTypeIds'))
+    return bool(complaint_tags & job_tags)
+
 def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='docchecks_live'):
     
     # if 116255355 in job['tagTypeIds'] or 
@@ -53,6 +58,7 @@ def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='d
     externalData = get_external_data_by_key(job['externalData'], key=exdata_key)
     formatted.update(format_external_data_for_xl(externalData))
     formatted['unsuccessful'] = check_unsuccessful(job, tenant_tags)
+    formatted['complaint_tag_present'] = check_complaint(job, tenant_tags)
     return formatted
 
 def get_external_data_by_key(data, key='docchecks'):

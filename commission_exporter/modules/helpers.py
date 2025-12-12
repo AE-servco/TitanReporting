@@ -51,9 +51,14 @@ def get_sales_codes(roles_reponse):
             sales_codes.add(role['id'])
     return sales_codes
 
-def filter_out_unsuccessful_jobs(jobs, client: ServiceTitanClient):
-    unsuccessful_tags = [tag.get("id") for tag in fetching.fetch_tag_types(client) if "Unsuccessful" in tag.get("name")]
-    return [job for job in jobs if unsuccessful_tags[0] not in job.get("tagTypeIds")]
+# def filter_out_unsuccessful_jobs(jobs, client: ServiceTitanClient):
+#     unsuccessful_tags = [tag.get("id") for tag in fetching.fetch_tag_types(client) if "Unsuccessful" in tag.get("name")]
+#     return [job for job in jobs if unsuccessful_tags[0] not in job.get("tagTypeIds")]
+
+# def get_complaint_tags(jobs, client: ServiceTitanClient) -> List[int]:
+#     tag_types = fetching.fetch_tag_types(client)
+#     complaint_tags = [tag.get("id") for tag in tag_types if "complaint" in tag.get("name").lower()]
+#     return complaint_tags
 
 def check_payment_dates(job, end_date):
     if job.get("payment_dates"):
