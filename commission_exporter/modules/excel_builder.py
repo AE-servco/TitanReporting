@@ -193,16 +193,18 @@ def build_workbook(
 
         # box 1
         formatted_cell(ws, summary_top_row + 2, col_offset + 1, 'BOOKED JOBS',font = font_bold, border = cell_border['topleft'])
-        formatted_cell(ws, summary_top_row + 2, col_offset + 2, '=B4+B5', font = font_bold, border = cell_border['topright'])
-        formatted_cell(ws, summary_top_row + 3, col_offset + 1, 'SUCCESSFUL', font = font_bold)
-        formatted_cell(ws, summary_top_row + 3, col_offset + 2, '=O11', font = font_bold, border = cell_border['right'])
-        formatted_cell(ws, summary_top_row + 4, col_offset + 1, 'UNSUCCESSFUL', font = font_bold)
-        formatted_cell(ws, summary_top_row + 4, col_offset + 2, '=O12', font = font_bold, border = cell_border['right'])
-        formatted_cell(ws, summary_top_row + 5, col_offset + 1, 'SUCCESSFUL (%)', font = font_bold)
-        formatted_cell(ws, summary_top_row + 5, col_offset + 2, '=O13', font = font_bold, border = cell_border['right'], number_format=percentage_format)
+        formatted_cell(ws, summary_top_row + 2, col_offset + 2, '=C4+C5', font = font_bold, border = cell_border['topright'])
+        formatted_cell(ws, summary_top_row + 3, col_offset + 1, 'SUCCESSFUL', font = font_bold, border = cell_border['left'])
+        # formatted_cell(ws, summary_top_row + 11, col_offset + 17, '=SUM(K11:O11) + SUM(K17:O17) + SUM(K23:O23) + SUM(K29:O29) + SUM(K35:O35) + SUM(K41:O41)', font = font_bold, border = cell_border['bottomleft'], number_format=accounting_format)
+        formatted_cell(ws, summary_top_row + 3, col_offset + 2, '=SUM(K12:O12) + SUM(K18:O18) + SUM(K24:O24) + SUM(K30:O30) + SUM(K36:O36) + SUM(K42:O42)', font = font_bold, border = cell_border['right'])
+        formatted_cell(ws, summary_top_row + 4, col_offset + 1, 'UNSUCCESSFUL', font = font_bold, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 4, col_offset + 2, '=SUM(K13:O13) + SUM(K19:O19) + SUM(K25:O25) + SUM(K31:O31) + SUM(K37:O37) + SUM(K43:O43)', font = font_bold, border = cell_border['right'])
+        formatted_cell(ws, summary_top_row + 5, col_offset + 1, 'SUCCESSFUL (%)', font = font_bold, border = cell_border['left'])
+        formatted_cell(ws, summary_top_row + 5, col_offset + 2, '=C4/(C4+C5)', font = font_bold, border = cell_border['right'], number_format=percentage_format)
+        formatted_cell(ws, summary_top_row + 6, col_offset + 1, border = cell_border['left'])
         formatted_cell(ws, summary_top_row + 6, col_offset + 2, border = cell_border['right'])
         formatted_cell(ws, summary_top_row + 7, col_offset + 1, 'AVERAGE SALE', font = font_bold, border = cell_border['bottomleft'])
-        formatted_cell(ws, summary_top_row + 7, col_offset + 2, '=O14', font = font_bold, border = cell_border['bottomright'], number_format=accounting_format)
+        formatted_cell(ws, summary_top_row + 7, col_offset + 2, '=R12/C4', font = font_bold, border = cell_border['bottomright'], number_format=accounting_format)
         
         # box 2
         formatted_cell(ws, summary_top_row + 2, col_offset + 4, 'WEEKLY TARGET', font = font_bold, border = cell_border['topleft'])
@@ -223,12 +225,12 @@ def build_workbook(
         # Some down below
 
         formatted_cell(ws, summary_top_row + 8, col_offset + 4, 'UNLOCKED', font = font_bold, border = cell_border['left'])
-        formatted_cell(ws, summary_top_row + 8, col_offset + 5, '=IF(P10>=25000,G5,G4)', border = cell_border['left'], number_format=percentage_format)
+        formatted_cell(ws, summary_top_row + 8, col_offset + 5, '=IF(R12>=25000,G5,G4)', border = cell_border['left'], number_format=percentage_format)
         formatted_cell(ws, summary_top_row + 9, col_offset + 4, 'COMMISSION - PAY OUT', font = font_bold, border = cell_border['left'])
         formatted_cell(ws, summary_top_row + 9, col_offset + 5, '=F8*F9', border = cell_border['left'], number_format=accounting_format)
         formatted_cell(ws, summary_top_row + 9, col_offset + 7, '=F10/1.12', font = font_green_bold, number_format=accounting_format)
         formatted_cell(ws, summary_top_row + 10, col_offset + 4, 'EMERGENCY', font = font_bold, border = cell_border['left'])
-        formatted_cell(ws, summary_top_row + 10, col_offset + 5, '=P10', border = cell_border['left'], number_format=accounting_format)
+        formatted_cell(ws, summary_top_row + 10, col_offset + 5, '=S12', border = cell_border['left'], number_format=accounting_format)
         formatted_cell(ws, summary_top_row + 11, col_offset + 4, 'EMERGENCY - PAY OUT', font = font_bold, border = cell_border['left'])
         formatted_cell(ws, summary_top_row + 11, col_offset + 5, '=F11*0.25', border = cell_border['left'], number_format=accounting_format)
         formatted_cell(ws, summary_top_row + 11, col_offset + 7, '=F12/1.12', font = font_green_bold, number_format=accounting_format)
