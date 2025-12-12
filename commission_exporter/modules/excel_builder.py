@@ -28,7 +28,7 @@ def formatted_cell(worksheet, row: int, col: int, val = None, font: Font | None=
 def build_workbook(
     jobs_by_tech: dict[str, list[dict]],
     end_date: dt.date,
-    monthly_or_weekly: str,
+    # monthly_or_weekly: str,
 ) -> bytes:
     
     CATEGORY_ORDER = {
