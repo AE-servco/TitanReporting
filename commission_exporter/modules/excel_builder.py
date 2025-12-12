@@ -27,7 +27,8 @@ def formatted_cell(worksheet, row: int, col: int, val = None, font: Font | None=
 
 def build_workbook(
     jobs_by_tech: dict[str, list[dict]],
-    end_date: dt.date
+    end_date: dt.date,
+    monthly_or_weekly: str,
 ) -> bytes:
     
     CATEGORY_ORDER = {
@@ -62,6 +63,11 @@ def build_workbook(
     }
     
     date_strs = {day: date.strftime("%d/%m/%Y") for day, date in dates.items()}
+
+    dates_in_month = helpers.get_dates_in_month_datetime(end_date.year, end_date.month)
+    holidays = helpers.get_public_holidays()
+    threshold_day_num = helpers.get_threshold_days(dates_in_month, holidays)
+    
     # monday_str = monday.strftime("%d/%m/%Y")
     # tuesday_str = tuesday.strftime("%d/%m/%Y")
     # wednesday_str = wednesday.strftime("%d/%m/%Y")
@@ -207,14 +213,15 @@ def build_workbook(
         formatted_cell(ws, summary_top_row + 7, col_offset + 2, '=R12/C4', font = font_bold, border = cell_border['bottomright'], number_format=accounting_format)
         
         # box 2
-        formatted_cell(ws, summary_top_row + 2, col_offset + 4, 'WEEKLY TARGET', font = font_bold, border = cell_border['topleft'])
+        formatted_cell(ws, summary_top_row + 2, col_offset + 4, 'PROFIT TARGET', font = font_bold, border = cell_border['topleft'])
+        formatted_cell(ws, summary_top_row + 2, col_offset + 6, threshold_day_num * 5000, font = font_bold, border = cell_border['topleft'], number_format=accounting_format)
         formatted_cell(ws, summary_top_row + 2, col_offset + 5, border = cell_border['top'])
         formatted_cell(ws, summary_top_row + 2, col_offset + 6, border = cell_border['topright'])
         formatted_cell(ws, summary_top_row + 3, col_offset + 4, 'Tier 1', border = cell_border['left'])
-        formatted_cell(ws, summary_top_row + 3, col_offset + 5, '<$25000')
+        formatted_cell(ws, summary_top_row + 3, col_offset + 5, f'<${threshold_day_num * 5000}')
         formatted_cell(ws, summary_top_row + 3, col_offset + 6, '=0.05', border = cell_border['right'], number_format=percentage_format)
         formatted_cell(ws, summary_top_row + 4, col_offset + 4, 'Tier 2', border = cell_border['bottomleft'])
-        formatted_cell(ws, summary_top_row + 4, col_offset + 5, '>=$25000', border = cell_border['bottom'])
+        formatted_cell(ws, summary_top_row + 4, col_offset + 5, f'>=${threshold_day_num * 5000}', border = cell_border['bottom'])
         formatted_cell(ws, summary_top_row + 4, col_offset + 6, '=0.1', border = cell_border['bottomright'], number_format=percentage_format)
 
         # box 3
@@ -225,7 +232,7 @@ def build_workbook(
         # Some down below
 
         formatted_cell(ws, summary_top_row + 8, col_offset + 4, 'UNLOCKED', font = font_bold, border = cell_border['left'])
-        formatted_cell(ws, summary_top_row + 8, col_offset + 5, '=IF(R12>=25000,G5,G4)', border = cell_border['left'], number_format=percentage_format)
+        formatted_cell(ws, summary_top_row + 8, col_offset + 5, f'=IF(R12>={threshold_day_num * 5000},G5,G4)', border = cell_border['left'], number_format=percentage_format)
         formatted_cell(ws, summary_top_row + 9, col_offset + 4, 'COMMISSION - PAY OUT', font = font_bold, border = cell_border['left'])
         formatted_cell(ws, summary_top_row + 9, col_offset + 5, '=F8*F9', border = cell_border['left'], number_format=accounting_format)
         formatted_cell(ws, summary_top_row + 9, col_offset + 7, '=F10/1.12', font = font_green_bold, number_format=accounting_format)
@@ -244,7 +251,7 @@ def build_workbook(
         formatted_cell(ws, summary_top_row + 15, col_offset + 4, '5 Star Notes', font = font_green_bold, border = cell_border['bottomleft'])
         formatted_cell(ws, summary_top_row + 15, col_offset + 5, '=T4', border = cell_border['left'])
 
-        formatted_cell(ws, summary_top_row + 8, col_offset + 6, '==IF(G8>=25000,G5,G4)', font=font_red, border = cell_border['right'], number_format=percentage_format)
+        formatted_cell(ws, summary_top_row + 8, col_offset + 6, f'=IF(G8>={threshold_day_num * 5000},G5,G4)', font=font_red, border = cell_border['right'], number_format=percentage_format)
         formatted_cell(ws, summary_top_row + 9, col_offset + 6, '=G8*G9', font = font_red, border = cell_border['right'], number_format=accounting_format)
         formatted_cell(ws, summary_top_row + 11, col_offset + 6, border = cell_border['right'])
         formatted_cell(ws, summary_top_row + 12, col_offset + 6, 0, font = font_red, border = cell_border['right'])
@@ -631,7 +638,6 @@ def build_workbook(
         formatted_cell(ws, summary_top_row + 7, col_offset + 5, f'=R12-R10-{subtract_red_formula_wk}', border = cell_border['topleft'], number_format=accounting_format)
         # subtract_red_formula_wkend = f'SUMIF(K{cat_row_info["wkend_complete_paid"][0]}:K{cat_row_info["wkend_complete_paid"][1]}, "N", I{cat_row_info["wkend_complete_paid"][0]}:I{cat_row_info["wkend_complete_paid"][1]})'
 
-        dates_in_month = helpers.get_dates_in_month_datetime(end_date.year, end_date.month)
         profit_formulas = {day: '=' + ' + '.join([f'SUMIF(C{cat_row_info[cat][0]}:C{cat_row_info[cat][1]}, "{day.strftime("%d/%m/%Y")}", I{cat_row_info[cat][0]}:I{cat_row_info[cat][1]})'for cat in cats_count_for_total]) for day in dates_in_month}
         count_success_formulas = {day: '=' + ' + '.join([f'COUNTIF(C{cat_row_info[cat][0]}:C{cat_row_info[cat][1]}, "{day.strftime("%d/%m/%Y")}")'for cat in cats_count_for_total]) for day in dates_in_month}
         count_unsuccess_formulas = {day: '=' + ' + '.join([f'COUNTIF(C{cat_row_info[cat][0]}:C{cat_row_info[cat][1]}, "{day.strftime("%d/%m/%Y")}")'for cat in cats_count_for_unsuccessful]) for day in dates_in_month}

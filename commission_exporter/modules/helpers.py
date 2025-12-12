@@ -10,6 +10,8 @@ import streamlit as st
 import streamlit_authenticator as stauth
 from concurrent.futures import ThreadPoolExecutor, Future, as_completed
 
+import holidays
+
 from servicetitan_api_client import ServiceTitanClient
 import modules.google_store as gs
 
@@ -130,3 +132,19 @@ def get_dates_in_month_datetime(year, month):
         dates_in_month.append(current_date)
         current_date += _dt.timedelta(days=1)
     return dates_in_month
+
+def get_public_holidays(state):
+    national = holidays.Australia()
+    state_hols = holidays.Australia(subdiv=state)
+
+    combined = holidays.HolidayBase()
+    combined.update(national)
+    combined.update(state_hols)
+    return combined
+
+def get_threshold_days(dates_in_month: List[_dt.date], holidays: List[_dt.date]):
+    threshold_days = 0
+    for day in dates_in_month:
+        if day not in holidays and day.weekday() not in [5,6]:
+            threshold_days += 1
+    return threshold_days
