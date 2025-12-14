@@ -65,8 +65,8 @@ def build_workbook(
     date_strs = {day: date.strftime("%d/%m/%Y") for day, date in dates.items()}
 
     dates_in_month = helpers.get_dates_in_month_datetime(end_date.year, end_date.month)
-    holidays = helpers.get_public_holidays()
-    threshold_day_num = helpers.get_threshold_days(dates_in_month, holidays)
+    # holidays = helpers.get_public_holidays()
+    threshold_day_num = helpers.get_threshold_days(dates_in_month, holidays=[])
     
     # monday_str = monday.strftime("%d/%m/%Y")
     # tuesday_str = tuesday.strftime("%d/%m/%Y")
