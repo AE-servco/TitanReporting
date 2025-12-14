@@ -40,12 +40,13 @@ def sidebar_filters():
         tenant_filter = st.selectbox(
             "ServiceTitan Tenant",
             [
-                "FoxtrotWhiskey (NSW)",
+                "AlphaBravo (NSW)"
                 "MikeEcho (VIC)",
                 "BravoGolf (QLD)",
                 "SierraDelta (WA)",
                 "EchoZulu (old QLD)",
                 "VictorTango (old VIC)",
+                "FoxtrotWhiskey (NSW)",
             ],
             index = default_tenant_map[st.session_state.username] if st.session_state.username in default_tenant_map else 0
         )

@@ -34,6 +34,7 @@ ATTACHMENT_DOWNLOADER_URL = 'https://attachment-downloader-901775793617.australi
 SIGNED_URL_TTL = 900
 
 TENANTS = [
+    "alphabravo"
     "foxtrotwhiskey", 
     "sierradelta",
     "victortango",
