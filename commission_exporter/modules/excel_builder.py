@@ -182,14 +182,14 @@ def build_workbook(
         formatted_cell(ws, summary_top_row + 2, col_offset + 1, 'BOOKED JOBS',font = font_bold, border = cell_border['topleft'])
         formatted_cell(ws, summary_top_row + 2, col_offset + 2, '=B4+B5', font = font_bold, border = cell_border['topright'])
         formatted_cell(ws, summary_top_row + 3, col_offset + 1, 'SUCCESSFUL', font = font_bold)
-        formatted_cell(ws, summary_top_row + 3, col_offset + 2, '=O11', font = font_bold, border = cell_border['right'])
+        formatted_cell(ws, summary_top_row + 3, col_offset + 2, '=P11', font = font_bold, border = cell_border['right'])
         formatted_cell(ws, summary_top_row + 4, col_offset + 1, 'UNSUCCESSFUL', font = font_bold)
-        formatted_cell(ws, summary_top_row + 4, col_offset + 2, '=O12', font = font_bold, border = cell_border['right'])
+        formatted_cell(ws, summary_top_row + 4, col_offset + 2, '=P12', font = font_bold, border = cell_border['right'])
         formatted_cell(ws, summary_top_row + 5, col_offset + 1, 'SUCCESSFUL (%)', font = font_bold)
-        formatted_cell(ws, summary_top_row + 5, col_offset + 2, '=O13', font = font_bold, border = cell_border['right'], number_format=percentage_format)
+        formatted_cell(ws, summary_top_row + 5, col_offset + 2, '=P13', font = font_bold, border = cell_border['right'], number_format=percentage_format)
         formatted_cell(ws, summary_top_row + 6, col_offset + 2, border = cell_border['right'])
         formatted_cell(ws, summary_top_row + 7, col_offset + 1, 'AVERAGE SALE', font = font_bold, border = cell_border['bottomleft'])
-        formatted_cell(ws, summary_top_row + 7, col_offset + 2, '=O14', font = font_bold, border = cell_border['bottomright'], number_format=accounting_format)
+        formatted_cell(ws, summary_top_row + 7, col_offset + 2, '=P14', font = font_bold, border = cell_border['bottomright'], number_format=accounting_format)
         
         # box 2
         formatted_cell(ws, summary_top_row + 2, col_offset + 4, 'WEEKLY TARGET', font = font_bold, border = cell_border['topleft'])
