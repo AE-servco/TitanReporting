@@ -180,7 +180,7 @@ def build_workbook(
 
         # box 1
         formatted_cell(ws, summary_top_row + 2, col_offset + 1, 'BOOKED JOBS',font = font_bold, border = cell_border['topleft'])
-        formatted_cell(ws, summary_top_row + 2, col_offset + 2, '=B4+B5', font = font_bold, border = cell_border['topright'])
+        formatted_cell(ws, summary_top_row + 2, col_offset + 2, '=C4+C5', font = font_bold, border = cell_border['topright'])
         formatted_cell(ws, summary_top_row + 3, col_offset + 1, 'SUCCESSFUL', font = font_bold)
         formatted_cell(ws, summary_top_row + 3, col_offset + 2, '=P11', font = font_bold, border = cell_border['right'])
         formatted_cell(ws, summary_top_row + 4, col_offset + 1, 'UNSUCCESSFUL', font = font_bold)
