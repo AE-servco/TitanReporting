@@ -7,7 +7,10 @@ import pandas as pd
 import calendar
 
 import modules.google_store as gs
+
 from modules.excel_builder import build_workbook 
+from modules.excel_templates import CommissionSpreadSheetExporter
+
 import modules.helpers as helpers
 import modules.templates as templates
 import modules.data_formatting as format
@@ -42,8 +45,8 @@ if ss["authentication_status"]:
     timeframe = st.selectbox(
         "Select timeframe",
         [
-            'Month',
-            'Week'
+            'Monthly',
+            'Weekly'
         ],
         
     )
@@ -57,12 +60,12 @@ if ss["authentication_status"]:
         # start_date = end_date - dt.timedelta(days=6)
         # submitted = st.form_submit_button("Fetch and build workbook")
 
-        if timeframe == 'Week':
+        if timeframe == 'Weekly':
             end_date = st.date_input("Week ending", value=last_sunday)
             start_date = end_date - dt.timedelta(days=6)
             submitted = st.form_submit_button("Fetch and build workbook")
 
-        elif timeframe == 'Month':
+        elif timeframe == 'Monthly':
             mon_abbr_to_num = {name: num for num, name in enumerate(calendar.month_abbr) if num}
             year = st.selectbox(
                             "Year",
@@ -185,10 +188,13 @@ if ss["authentication_status"]:
                     jobs_by_tech = format.group_jobs_by_tech(job_records, employee_map, end_date)
 
                 with st.spinner("Building spreadsheet..."):
-                    excel_bytes = build_workbook(
-                        jobs_by_tech=jobs_by_tech,
-                        end_date=end_date
-                    )
+                    builder = CommissionSpreadSheetExporter(jobs_by_tech, end_date, timeframe=timeframe.lower(), col_offset=1)
+                    
+                    excel_bytes = builder.build_workbook()
+                    # excel_bytes = build_workbook(
+                    #     jobs_by_tech=jobs_by_tech,
+                    #     end_date=end_date
+                    # )
             
                 templates.show_download_button(excel_bytes, f"commissions_{tenant_code}_{start_date}_{end_date}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
             else:

@@ -491,7 +491,7 @@ def build_workbook(
                     curr_date = job['first_appt_start_str']
 
                     if job['complaint_tag_present']:
-                        formatted_cell(ws, curr_row, col_offset, 'COMPLAINT', font=cat_font, border = job_border)
+                        formatted_cell(ws, curr_row, col_offset, 'COMPLAINT', font=cat_font)#, border = job_border)
                     formatted_cell(ws, curr_row, col_offset + 1, job_count, font=cat_font, border = job_border)
                     formatted_cell(ws, curr_row, col_offset + 2, job['first_appt_start_str'], font=cat_font, border = job_border)
                     formatted_cell(ws, curr_row, col_offset + 3, int(job['num']), font=cat_font, border = job_border)
@@ -634,10 +634,12 @@ def build_workbook(
         # profit_formulas = {day: '=' + ' + '.join([f'SUMIF(C{cat_row_info[cat][0]}:C{cat_row_info[cat][1]}, "{date_strs[day]}", I{cat_row_info[cat][0]}:I{cat_row_info[cat][1]})'for cat in cats_count_for_total]) for day in days}
 
 
+
         subtract_red_formula_wk = f'SUMIF(K{cat_row_info["wk_complete_paid"][0]}:K{cat_row_info["wk_complete_paid"][1]}, "N", I{cat_row_info["wk_complete_paid"][0]}:I{cat_row_info["wk_complete_paid"][1]})'
         formatted_cell(ws, summary_top_row + 7, col_offset + 5, f'=R12-R10-{subtract_red_formula_wk}', border = cell_border['topleft'], number_format=accounting_format)
         # subtract_red_formula_wkend = f'SUMIF(K{cat_row_info["wkend_complete_paid"][0]}:K{cat_row_info["wkend_complete_paid"][1]}, "N", I{cat_row_info["wkend_complete_paid"][0]}:I{cat_row_info["wkend_complete_paid"][1]})'
 
+# Summary profits and counts vv
         profit_formulas = {day: '=' + ' + '.join([f'SUMIF(C{cat_row_info[cat][0]}:C{cat_row_info[cat][1]}, "{day.strftime("%d/%m/%Y")}", I{cat_row_info[cat][0]}:I{cat_row_info[cat][1]})'for cat in cats_count_for_total]) for day in dates_in_month}
         count_success_formulas = {day: '=' + ' + '.join([f'COUNTIF(C{cat_row_info[cat][0]}:C{cat_row_info[cat][1]}, "{day.strftime("%d/%m/%Y")}")'for cat in cats_count_for_total]) for day in dates_in_month}
         count_unsuccess_formulas = {day: '=' + ' + '.join([f'COUNTIF(C{cat_row_info[cat][0]}:C{cat_row_info[cat][1]}, "{day.strftime("%d/%m/%Y")}")'for cat in cats_count_for_unsuccessful]) for day in dates_in_month}
@@ -716,6 +718,8 @@ def build_workbook(
         # formatted_cell(ws, summary_top_row + 11, col_offset + 14, count_unsuccess_formulas['friday'])
         # formatted_cell(ws, summary_top_row + 11, col_offset + 16, count_unsuccess_formulas['saturday'])
 
+
+# Doc check count box vv
         end_of_comp_paid = cat_row_info['wk_complete_paid'][1]
         formatted_cell(ws, summary_top_row + 3, col_offset + 10, f'=L{end_of_comp_paid+2}', font = font_bold, border = cell_border['left'])
         formatted_cell(ws, summary_top_row + 3, col_offset + 11, f'=M{end_of_comp_paid+2}', font = font_bold, border = cell_border['left'])
@@ -742,7 +746,7 @@ def build_workbook(
         formatted_cell(ws, summary_top_row + 4, col_offset + 18, f'=T{end_of_comp_paid+2}/T{end_of_comp_paid+1}', font = font_bold, border = cell_border['bottomleft'], number_format=percentage_format)
 
         
-
+# THese are in daily summary section vv
         wk_profit_awaiting_formula = '=' + ' + '.join([f'SUM(I{cat_row_info[cat][0]}:I{cat_row_info[cat][1]})'for cat in cats_count_awaiting_pay_wk])
         formatted_cell(ws, summary_top_row + 9, col_offset + 17, wk_profit_awaiting_formula, font = font_red_bold, border = cell_border['bottomleft'], number_format=accounting_format)
         wkend_profit_awaiting_formula = '=' + ' + '.join([f'SUM(I{cat_row_info[cat][0]}:I{cat_row_info[cat][1]})'for cat in cats_count_awaiting_pay_wkend])
@@ -762,10 +766,12 @@ def build_workbook(
         # formatted_cell(ws, summary_top_row + 10, col_offset + 6, border = cell_border['right'])
         
 
+        # done in new thing vv
         ws.conditional_formatting.add(
             f"I{cat_row_info['wk_complete_paid'][0]}:I{cat_row_info['ah_wo'][1]}", 
             FormulaRule(formula=[f'$K{cat_row_info["wk_complete_paid"][0]}="N"'], fill=PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid"))
         )
+        # ^^
 
         # 'wk_complete_paid',
         # 'wkend_complete_paid',
