@@ -184,8 +184,10 @@ class CommissionSpreadSheetExporter:
             self.formatted_cell(ws, start_row + 2, col_offset + 2, '=SUM(K13:O13) + SUM(K19:O19) + SUM(K25:O25) + SUM(K31:O31) + SUM(K37:O37) + SUM(K43:O43)', font = self.font_bold, border = self.cell_border['right'])
             self.formatted_cell(ws, start_row + 5, col_offset + 2, '=R12/C4', font = self.font_bold, border = self.cell_border['bottomright'], number_format=self.accounting_format)
         elif self.timeframe == 'weekly':
-            # TODO
-            pass
+            self.formatted_cell(ws, start_row + 1, col_offset + 2, '=P11', font = self.font_bold, border = self.cell_border['right'])
+            self.formatted_cell(ws, start_row + 2, col_offset + 2, '=P12', font = self.font_bold, border = self.cell_border['right'])
+            # self.formatted_cell(ws, start_row + 3, col_offset + 2, '=P13', font = self.font_bold, border = self.cell_border['right'])
+            self.formatted_cell(ws, start_row + 5, col_offset + 2, '=P14', font = self.font_bold, border = self.cell_border['bottomright'], number_format=self.accounting_format)
 
         self.formatted_cell(ws, start_row + 4, col_offset + 1, border = self.cell_border['left'])
         self.formatted_cell(ws, start_row + 4, col_offset + 2, border = self.cell_border['right'])
@@ -221,17 +223,27 @@ class CommissionSpreadSheetExporter:
         ws = self.curr_worksheet
         col_offset = self.col_offset
 
+        if self.timeframe == 'weekly':
+            totals_box_str = 'P10-S10'
+            threshold_if_str = f'=IF(P10>={self.threshold_day_num * 5000},G5,G4)'
+            emergency_str = "=Q10 + R10"
+        elif self.timeframe == 'monthly':
+            totals_box_str = 'R12-R10'
+            threshold_if_str = f'=IF(R12>={self.threshold_day_num * 5000},G5,G4)'
+            emergency_str = "=S12"
+
         self.formatted_cell(ws, start_row, col_offset + 5, 'ACTUAL', font = self.font_bold, border = self.cell_border['topleft'])
         self.formatted_cell(ws, start_row, col_offset + 6, 'POTENTIAL', font = self.font_bold, border = self.cell_border['topright'])
         self.formatted_cell(ws, start_row, col_offset + 7, 'Exc. SUPER', font = self.font_green_bold)
         self.formatted_cell(ws, start_row + 1, col_offset + 4, 'NET PROFIT', font = self.font_bold, border = self.cell_border['topleft'])
         self.formatted_cell(ws, start_row + 2, col_offset + 4, 'UNLOCKED', font = self.font_bold, border = self.cell_border['left'])
-        self.formatted_cell(ws, start_row + 2, col_offset + 5, f'=IF(R12>={self.threshold_day_num * 5000},G5,G4)', border = self.cell_border['left'], number_format=self.percentage_format)
+
+        self.formatted_cell(ws, start_row + 2, col_offset + 5, threshold_if_str, border = self.cell_border['left'], number_format=self.percentage_format)
         self.formatted_cell(ws, start_row + 3, col_offset + 4, 'COMMISSION - PAY OUT', font = self.font_bold, border = self.cell_border['left'])
         self.formatted_cell(ws, start_row + 3, col_offset + 5, '=F8*F9', border = self.cell_border['left'], number_format=self.accounting_format)
         self.formatted_cell(ws, start_row + 3, col_offset + 7, '=F10/1.12', font = self.font_green_bold, number_format=self.accounting_format)
         self.formatted_cell(ws, start_row + 4, col_offset + 4, 'EMERGENCY', font = self.font_bold, border = self.cell_border['left'])
-        self.formatted_cell(ws, start_row + 4, col_offset + 5, '=S12', border = self.cell_border['left'], number_format=self.accounting_format)
+        self.formatted_cell(ws, start_row + 4, col_offset + 5, emergency_str, border = self.cell_border['left'], number_format=self.accounting_format)
         self.formatted_cell(ws, start_row + 5, col_offset + 4, 'EMERGENCY - PAY OUT', font = self.font_bold, border = self.cell_border['left'])
         self.formatted_cell(ws, start_row + 5, col_offset + 5, '=F11*0.25', border = self.cell_border['left'], number_format=self.accounting_format)
         self.formatted_cell(ws, start_row + 5, col_offset + 7, '=F12/1.12', font = self.font_green_bold, number_format=self.accounting_format)
@@ -252,7 +264,8 @@ class CommissionSpreadSheetExporter:
         
         # Subtracting red from payout
         subtract_red_formula_wk = f'SUMIF(K{self.cat_row_info["wk_complete_paid"][0]}:K{self.cat_row_info["wk_complete_paid"][1]}, "N", I{self.cat_row_info["wk_complete_paid"][0]}:I{self.cat_row_info["wk_complete_paid"][1]})'
-        self.formatted_cell(ws, start_row + 1, col_offset + 5, f'=R12-R10-{subtract_red_formula_wk}', border = self.cell_border['topleft'], number_format=self.accounting_format)
+        
+        self.formatted_cell(ws, start_row + 1, col_offset + 5, f'={totals_box_str}-{subtract_red_formula_wk}', border = self.cell_border['topleft'], number_format=self.accounting_format)
         
         wk_profit_potential_formula = '=' + ' + '.join([f'SUM(I{self.cat_row_info[cat][0]}:I{self.cat_row_info[cat][1]})'for cat in self.cats_count_for_potential_wk])
         self.formatted_cell(ws, start_row + 1, col_offset + 6, wk_profit_potential_formula, font = self.font_red, border = self.cell_border['topright'], number_format=self.accounting_format)
@@ -410,7 +423,7 @@ class CommissionSpreadSheetExporter:
     def day_summaries_weekly(self, start_row: int):
 #         =SUMIF(B{cat_start}:B{cat_end}, date_str, E{cat_start}:E{cat_end}) -- sales
 #         =SUMIF(B{cat_start}:B{cat_end}, date_str, H{cat_start}:H{cat_end}) -- profit
-# monday_str
+
         ws = self.curr_worksheet
         col_offset = self.col_offset
 
@@ -454,6 +467,7 @@ class CommissionSpreadSheetExporter:
         self.formatted_cell(ws, start_row + 6, col_offset + 9, 'Avg sale')
 
         days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+
         profit_formulas = {day: '=' + ' + '.join([f'SUMIF(C{self.cat_row_info[cat][0]}:C{self.cat_row_info[cat][1]}, "{date_strs[day]}", I{self.cat_row_info[cat][0]}:I{self.cat_row_info[cat][1]})'for cat in self.cats_count_for_total]) for day in days}
 
         self.formatted_cell(ws, start_row + 2, col_offset + 10, profit_formulas['monday'], font = self.font_bold, border = self.cell_border['bottomleft'], number_format=self.accounting_format) # These all rely on daily totals
@@ -467,6 +481,14 @@ class CommissionSpreadSheetExporter:
 
         self.formatted_cell(ws, start_row + 2, col_offset + 16, profit_formulas['saturday'], font = self.font_green_bold, border = self.cell_border['bottomleft'], number_format=self.accounting_format) 
         self.formatted_cell(ws, start_row + 2, col_offset + 17, profit_formulas['sunday'], font = self.font_green_bold, border = self.cell_border['bottomright'], number_format=self.accounting_format) 
+
+        awaiting_pay_total_wk = '=' + ' + '.join([f'SUM(F{self.cat_row_info[cat][0]}:F{self.cat_row_info[cat][1]})'for cat in self.cats_count_awaiting_pay_wk])
+
+        self.formatted_cell(ws, start_row + 2, col_offset + 18, awaiting_pay_total_wk, font = self.font_red_bold, border = self.cell_border['bottomtopright'])
+
+        awaiting_pay_total_wkend = '=' + ' + '.join([f'SUM(F{self.cat_row_info[cat][0]}:F{self.cat_row_info[cat][1]})'for cat in self.cats_count_awaiting_pay_wkend])
+
+        self.formatted_cell(ws, start_row + 2, col_offset + 19, awaiting_pay_total_wkend, font = self.font_red_bold, border = self.cell_border['bottomtopright'])
 
         # sales_formulas = {day: '=' + ' + '.join([f'SUMIF(C{self.cat_row_info[cat][0]}:C{self.cat_row_info[cat][1]}, "{date_strs[day]}", F{self.cat_row_info[cat][0]}:F{self.cat_row_info[cat][1]})'for cat in self.cats_count_for_total]) for day in days}
 
