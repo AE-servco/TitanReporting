@@ -124,7 +124,7 @@ def get_last_day_of_month_datetime(year, month):
     last_day_of_current_month = first_day_of_next_month - _dt.timedelta(days=1)
     return last_day_of_current_month
 
-def get_dates_in_month_datetime(year, month):
+def get_dates_in_month_datetime(year, month) -> List[_dt.date]:
     start_date = _dt.date(year, month, 1)
     dates_in_month = []
     current_date = start_date

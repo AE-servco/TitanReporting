@@ -31,6 +31,36 @@ class CommissionSpreadSheetExporter:
         self.threshold_day_num = 0
         self.curr_date = ""
 
+        # lists of col letters for each day type
+        self.weekend_cols = set()
+        self.weekday_cols = set()
+
+        # Keep track of rows with the profit dollar totals in them for summation cells later.
+        self.rows_with_dollar_totals = set()
+        self.rows_with_success_counts = set()
+        self.rows_with_unsuccess_counts = set()
+
+        # Important cells
+        self.weekday_total_payable_row = None
+        self.weekday_total_payable_col_num = None
+        self.weekday_total_payable_col_letter = None
+        
+        self.weekend_total_payable_row = None
+        self.weekend_total_payable_col_num = None
+        self.weekend_total_payable_col_num_letter = None
+        
+        self.weekday_total_awaiting_payment_row = None
+        self.weekday_total_awaiting_payment_col_num = None
+        self.weekday_total_awaiting_payment_col_letetr = None
+        
+        self.weekend_total_awaiting_payment_row = None
+        self.weekend_total_awaiting_payment_col_num = None
+        self.weekend_total_awaiting_payment_col_letter = None
+
+        self.review_count_total_row = None
+        self.review_count_total_col_num = None
+        self.review_count_total_col_letter = None
+
         self.cats_count_for_total = [
             'wk_complete_paid',
             'wkend_complete_paid',
@@ -141,6 +171,24 @@ class CommissionSpreadSheetExporter:
             'ah_uncategorised': 'AFTERHOURS UNCATEGORISED',
         }
 
+    def _generate_sum_formula(self, cols: set, rows: set):
+        """
+        Generates an excel formula string that adds every combination of column and row from the given arguments. 
+        E.g. '=A1+A2+A3+B1+B2+B3
+        
+        :param cols: Column letters
+        :type cols: set
+        :param rows: Row numbers
+        :type rows: set
+        """
+        combinations = []
+        for col in cols:
+            for row in rows:
+                combinations.append(f'{col}{row}')
+        # print(combinations)
+        formula = '+'.join(combinations)
+        return formula
+
     def formatted_cell(self, worksheet: Worksheet, row: int, col: int, val = None, font: Font | None=None, border: Border | None=None, number_format: str | None=None, fill: PatternFill | None=None):
         if val or val == 0:
             cell = worksheet.cell(row, col, val)
@@ -168,31 +216,52 @@ class CommissionSpreadSheetExporter:
         return
 
     def job_count_box(self, start_row: int):
-        # THIS IS MONTHLY ===============================
         ws = self.curr_worksheet
         col_offset = self.col_offset
         self.formatted_cell(ws, start_row, col_offset + 1, 'BOOKED JOBS',font = self.font_bold, border = self.cell_border['topleft'])
-        self.formatted_cell(ws, start_row, col_offset + 2, '=C4+C5', font = self.font_bold, border = self.cell_border['topright'])
-        self.formatted_cell(ws, start_row + 1, col_offset + 1, 'SUCCESSFUL', font = self.font_bold, border = self.cell_border['left'])
-        self.formatted_cell(ws, start_row + 2, col_offset + 1, 'UNSUCCESSFUL', font = self.font_bold, border = self.cell_border['left'])
-        self.formatted_cell(ws, start_row + 3, col_offset + 1, 'SUCCESSFUL (%)', font = self.font_bold, border = self.cell_border['left'])
-        self.formatted_cell(ws, start_row + 3, col_offset + 2, '=C4/(C4+C5)', font = self.font_bold, border = self.cell_border['right'], number_format=self.percentage_format)
-        self.formatted_cell(ws, start_row + 5, col_offset + 1, 'AVERAGE SALE', font = self.font_bold, border = self.cell_border['bottomleft'])
-        # self.formatted_cell(ws, start_row + 11, col_offset + 17, '=SUM(K11:O11) + SUM(K17:O17) + SUM(K23:O23) + SUM(K29:O29) + SUM(K35:O35) + SUM(K41:O41)', font = font_bold, border = cell_border['bottomleft'], number_format=accounting_format)
+
+        # row and column definitions for this section
+        label_col_num = col_offset + 1
+        data_col_num = col_offset + 2
+        label_col_letter = get_column_letter(label_col_num)
+        data_col_letter = get_column_letter(data_col_num)
+
+        success_count_row = start_row + 1
+        unsuccess_count_row = start_row + 2
+        success_rate_row = start_row + 3
+        blank_row = start_row + 4
+        avg_sale_row = start_row + 5
+
+        self.formatted_cell(ws, success_count_row, label_col_num, 'SUCCESSFUL', font = self.font_bold, border = self.cell_border['left'])
+        self.formatted_cell(ws, unsuccess_count_row, label_col_num, 'UNSUCCESSFUL', font = self.font_bold, border = self.cell_border['left'])
+        self.formatted_cell(ws, success_rate_row, label_col_num, 'SUCCESSFUL (%)', font = self.font_bold, border = self.cell_border['left'])
+        self.formatted_cell(ws, avg_sale_row, label_col_num, 'AVERAGE SALE', font = self.font_bold, border = self.cell_border['bottomleft'])
+
+        # Booked jobs
+        self.formatted_cell(ws, start_row, data_col_num, f'={data_col_letter}{success_count_row}+{data_col_letter}{unsuccess_count_row}', font = self.font_bold, border = self.cell_border['topright'])
+        # success rate
+        self.formatted_cell(ws, success_rate_row, data_col_num, f'={data_col_letter}{success_count_row}/({data_col_letter}{success_count_row}+{data_col_letter}{unsuccess_count_row})', font = self.font_bold, border = self.cell_border['right'], number_format=self.percentage_format)
+        
         if self.timeframe == 'monthly':
-            self.formatted_cell(ws, start_row + 1, col_offset + 2, '=SUM(K12:O12) + SUM(K18:O18) + SUM(K24:O24) + SUM(K30:O30) + SUM(K36:O36) + SUM(K42:O42)', font = self.font_bold, border = self.cell_border['right'])
-            self.formatted_cell(ws, start_row + 2, col_offset + 2, '=SUM(K13:O13) + SUM(K19:O19) + SUM(K25:O25) + SUM(K31:O31) + SUM(K37:O37) + SUM(K43:O43)', font = self.font_bold, border = self.cell_border['right'])
-            self.formatted_cell(ws, start_row + 5, col_offset + 2, '=R12/C4', font = self.font_bold, border = self.cell_border['bottomright'], number_format=self.accounting_format)
+            # Success count (Only weekday at the moment. Does it need to be weekend?)
+            self.formatted_cell(ws, success_count_row, data_col_num, f'={self._generate_sum_formula(self.weekday_cols, self.rows_with_success_counts)}', font = self.font_bold, border = self.cell_border['right'])
+            # Unsuccess count
+            self.formatted_cell(ws, unsuccess_count_row, data_col_num, f'={self._generate_sum_formula(self.weekday_cols, self.rows_with_unsuccess_counts)}', font = self.font_bold, border = self.cell_border['right'])
+            # Avg sale
+            self.formatted_cell(ws, avg_sale_row, data_col_num, f'={self.weekday_total_payable_col_letter}{self.weekday_total_payable_row}/{data_col_letter}{success_count_row}', font = self.font_bold, border = self.cell_border['bottomright'], number_format=self.accounting_format)
         elif self.timeframe == 'weekly':
-            self.formatted_cell(ws, start_row + 1, col_offset + 2, '=P11', font = self.font_bold, border = self.cell_border['right'])
-            self.formatted_cell(ws, start_row + 2, col_offset + 2, '=P12', font = self.font_bold, border = self.cell_border['right'])
-            # self.formatted_cell(ws, start_row + 3, col_offset + 2, '=P13', font = self.font_bold, border = self.cell_border['right'])
-            self.formatted_cell(ws, start_row + 5, col_offset + 2, '=P14', font = self.font_bold, border = self.cell_border['bottomright'], number_format=self.accounting_format)
+            # TODO: REMOVE HARD CODED LETTERS
+            # Success count (Only weekday at the moment. Does it need to be weekend?)
+            self.formatted_cell(ws, success_count_row, data_col_num, '=P11', font = self.font_bold, border = self.cell_border['right'])
+            # Unsuccess count
+            self.formatted_cell(ws, unsuccess_count_row, data_col_num, '=P12', font = self.font_bold, border = self.cell_border['right'])
+            # Avg sale
+            self.formatted_cell(ws, avg_sale_row, data_col_num, '=P14', font = self.font_bold, border = self.cell_border['bottomright'], number_format=self.accounting_format)
 
-        self.formatted_cell(ws, start_row + 4, col_offset + 1, border = self.cell_border['left'])
-        self.formatted_cell(ws, start_row + 4, col_offset + 2, border = self.cell_border['right'])
+        self.formatted_cell(ws, blank_row, label_col_num, border = self.cell_border['left'])
+        self.formatted_cell(ws, blank_row, data_col_num, border = self.cell_border['right'])
 
-        self.curr_row = start_row + 5
+        self.curr_row = avg_sale_row
         if self.bottom_row < self.curr_row:
             self.bottom_row = self.curr_row
         return
@@ -219,48 +288,58 @@ class CommissionSpreadSheetExporter:
 
     def payout_box(self, start_row: int):
         # TODO: make the letters dynamic in here
-        # Some monthly things here (R12)
         ws = self.curr_worksheet
         col_offset = self.col_offset
 
-        if self.timeframe == 'weekly':
-            totals_box_str = 'P10-S10'
-            threshold_if_str = f'=IF(P10>={self.threshold_day_num * 5000},G5,G4)'
-            emergency_str = "=Q10 + R10"
-        elif self.timeframe == 'monthly':
-            totals_box_str = 'R12-R10'
-            threshold_if_str = f'=IF(R12>={self.threshold_day_num * 5000},G5,G4)'
-            emergency_str = "=S12"
+        # if self.timeframe == 'weekly':
+        #     totals_box_str = 'P10-S10'
+        #     threshold_if_str = f'=IF(P10>={self.threshold_day_num * 5000},G5,G4)'
+        #     emergency_str = "=Q10 + R10"
+        # elif self.timeframe == 'monthly':
+        totals_box_str = f'{self.weekday_total_payable_col_letter}{self.weekday_total_payable_row}-{self.weekday_total_awaiting_payment_col_letter}{self.weekday_total_awaiting_payment_row}'
+        threshold_if_str = f'=IF({self.weekend_total_payable_col_letter}{self.weekday_total_payable_row}>={self.threshold_day_num * 5000},G5,G4)'
+        emergency_str = f'={self.weekend_total_payable_col_letter}{self.weekday_total_payable_row}-{self.weekend_total_awaiting_payment_col_letter}{self.weekend_total_awaiting_payment_row}'
 
-        self.formatted_cell(ws, start_row, col_offset + 5, 'ACTUAL', font = self.font_bold, border = self.cell_border['topleft'])
-        self.formatted_cell(ws, start_row, col_offset + 6, 'POTENTIAL', font = self.font_bold, border = self.cell_border['topright'])
-        self.formatted_cell(ws, start_row, col_offset + 7, 'Exc. SUPER', font = self.font_green_bold)
-        self.formatted_cell(ws, start_row + 1, col_offset + 4, 'NET PROFIT', font = self.font_bold, border = self.cell_border['topleft'])
-        self.formatted_cell(ws, start_row + 2, col_offset + 4, 'UNLOCKED', font = self.font_bold, border = self.cell_border['left'])
+        # cell coords for this box
+        label_col_num = col_offset + 4
+        actual_data_col_num = col_offset + 5
+        potential_data_col_num = col_offset + 6
+        super_data_col_num = col_offset + 7
+        label_col_letter = get_column_letter(label_col_num)
+        actual_data_col_letter = get_column_letter(actual_data_col_num)
+        potential_data_col_letter = get_column_letter(potential_data_col_num)
+        super_data_col_letter = get_column_letter(super_data_col_num)
 
-        self.formatted_cell(ws, start_row + 2, col_offset + 5, threshold_if_str, border = self.cell_border['left'], number_format=self.percentage_format)
-        self.formatted_cell(ws, start_row + 3, col_offset + 4, 'COMMISSION - PAY OUT', font = self.font_bold, border = self.cell_border['left'])
-        self.formatted_cell(ws, start_row + 3, col_offset + 5, '=F8*F9', border = self.cell_border['left'], number_format=self.accounting_format)
-        self.formatted_cell(ws, start_row + 3, col_offset + 7, '=F10/1.12', font = self.font_green_bold, number_format=self.accounting_format)
-        self.formatted_cell(ws, start_row + 4, col_offset + 4, 'EMERGENCY', font = self.font_bold, border = self.cell_border['left'])
-        self.formatted_cell(ws, start_row + 4, col_offset + 5, emergency_str, border = self.cell_border['left'], number_format=self.accounting_format)
-        self.formatted_cell(ws, start_row + 5, col_offset + 4, 'EMERGENCY - PAY OUT', font = self.font_bold, border = self.cell_border['left'])
-        self.formatted_cell(ws, start_row + 5, col_offset + 5, '=F11*0.25', border = self.cell_border['left'], number_format=self.accounting_format)
-        self.formatted_cell(ws, start_row + 5, col_offset + 7, '=F12/1.12', font = self.font_green_bold, number_format=self.accounting_format)
-        self.formatted_cell(ws, start_row + 6, col_offset + 4, 'PREV. WEEK', font = self.font_bold, border = self.cell_border['left'])
-        self.formatted_cell(ws, start_row + 6, col_offset + 5, 0, border = self.cell_border['left'])
-        self.formatted_cell(ws, start_row + 7, col_offset + 4, 'PREV. WEEK - PAY OUT', font = self.font_bold, border = self.cell_border['bottomleft'])
-        self.formatted_cell(ws, start_row + 7, col_offset + 5, '=F13*0.05', border = self.cell_border['bottomleft'], number_format=self.accounting_format)
-        self.formatted_cell(ws, start_row + 7, col_offset + 7, '=F14/1.12', font = self.font_green_bold, number_format=self.accounting_format)
-        self.formatted_cell(ws, start_row + 8, col_offset + 4, '5 Star Review', font = self.font_green_bold, border = self.cell_border['bottomleft'])
-        self.formatted_cell(ws, start_row + 8, col_offset + 5, '=F16*50', border = self.cell_border['left'], number_format=self.accounting_format)
-        self.formatted_cell(ws, start_row + 9, col_offset + 4, '5 Star Notes', font = self.font_green_bold, border = self.cell_border['bottomleft'])
-        self.formatted_cell(ws, start_row + 9, col_offset + 5, '=T4', border = self.cell_border['left'])
-        self.formatted_cell(ws, start_row + 2, col_offset + 6, f'=IF(G8>={self.threshold_day_num * 5000},G5,G4)', font=self.font_red, border = self.cell_border['right'], number_format=self.percentage_format)
-        self.formatted_cell(ws, start_row + 3, col_offset + 6, '=G8*G9', font = self.font_red, border = self.cell_border['right'], number_format=self.accounting_format)
-        self.formatted_cell(ws, start_row + 5, col_offset + 6, border = self.cell_border['right'])
-        self.formatted_cell(ws, start_row + 6, col_offset + 6, 0, font = self.font_red, border = self.cell_border['right'])
-        self.formatted_cell(ws, start_row + 7, col_offset + 6, '==G13*0.05', font = self.font_red, border = self.cell_border['bottomright'], number_format=self.accounting_format)
+
+        self.formatted_cell(ws, start_row, actual_data_col_num, 'ACTUAL', font = self.font_bold, border = self.cell_border['topleft'])
+        self.formatted_cell(ws, start_row, potential_data_col_num, 'POTENTIAL', font = self.font_bold, border = self.cell_border['topright'])
+        self.formatted_cell(ws, start_row, super_data_col_num, 'Exc. SUPER', font = self.font_green_bold)
+        self.formatted_cell(ws, start_row + 1, label_col_num, 'NET PROFIT', font = self.font_bold, border = self.cell_border['topleft'])
+        self.formatted_cell(ws, start_row + 2, label_col_num, 'UNLOCKED', font = self.font_bold, border = self.cell_border['left'])
+
+        self.formatted_cell(ws, start_row + 2, actual_data_col_num, threshold_if_str, border = self.cell_border['left'], number_format=self.percentage_format)
+        self.formatted_cell(ws, start_row + 3, label_col_num, 'COMMISSION - PAY OUT', font = self.font_bold, border = self.cell_border['left'])
+        self.formatted_cell(ws, start_row + 3, actual_data_col_num, f'={actual_data_col_letter}8*{actual_data_col_letter}9', border = self.cell_border['left'], number_format=self.accounting_format)
+        self.formatted_cell(ws, start_row + 3, super_data_col_num, f'={actual_data_col_letter}10/1.12', font = self.font_green_bold, number_format=self.accounting_format)
+        self.formatted_cell(ws, start_row + 4, label_col_num, 'EMERGENCY', font = self.font_bold, border = self.cell_border['left'])
+        self.formatted_cell(ws, start_row + 4, actual_data_col_num, emergency_str, border = self.cell_border['left'], number_format=self.accounting_format)
+        self.formatted_cell(ws, start_row + 5, label_col_num, 'EMERGENCY - PAY OUT', font = self.font_bold, border = self.cell_border['left'])
+        self.formatted_cell(ws, start_row + 5, actual_data_col_num, f'={actual_data_col_letter}11*0.25', border = self.cell_border['left'], number_format=self.accounting_format)
+        self.formatted_cell(ws, start_row + 5, super_data_col_num, f'={actual_data_col_letter}12/1.12', font = self.font_green_bold, number_format=self.accounting_format)
+        self.formatted_cell(ws, start_row + 6, label_col_num, 'PREV. WEEK', font = self.font_bold, border = self.cell_border['left'])
+        self.formatted_cell(ws, start_row + 6, actual_data_col_num, 0, border = self.cell_border['left'])
+        self.formatted_cell(ws, start_row + 7, label_col_num, 'PREV. WEEK - PAY OUT', font = self.font_bold, border = self.cell_border['bottomleft'])
+        self.formatted_cell(ws, start_row + 7, actual_data_col_num, f'={actual_data_col_letter}13*0.05', border = self.cell_border['bottomleft'], number_format=self.accounting_format)
+        self.formatted_cell(ws, start_row + 7, super_data_col_num, f'={actual_data_col_letter}14/1.12', font = self.font_green_bold, number_format=self.accounting_format)
+        self.formatted_cell(ws, start_row + 8, label_col_num, '5 Star Review', font = self.font_green_bold, border = self.cell_border['bottomleft'])
+        self.formatted_cell(ws, start_row + 8, actual_data_col_num, f'={actual_data_col_letter}16*50', border = self.cell_border['left'], number_format=self.accounting_format)
+        self.formatted_cell(ws, start_row + 9, label_col_num, '5 Star Notes', font = self.font_green_bold, border = self.cell_border['bottomleft'])
+        self.formatted_cell(ws, start_row + 9, actual_data_col_num, f'={self.review_count_total_col_letter}{self.review_count_total_row}', border = self.cell_border['left'])
+        self.formatted_cell(ws, start_row + 2, potential_data_col_num, f'=IF({potential_data_col_letter}8>={self.threshold_day_num * 5000},{potential_data_col_letter}5,{potential_data_col_letter}4)', font=self.font_red, border = self.cell_border['right'], number_format=self.percentage_format)
+        self.formatted_cell(ws, start_row + 3, potential_data_col_num, f'={potential_data_col_letter}8*{potential_data_col_letter}9', font = self.font_red, border = self.cell_border['right'], number_format=self.accounting_format)
+        self.formatted_cell(ws, start_row + 5, potential_data_col_num, border = self.cell_border['right'])
+        self.formatted_cell(ws, start_row + 6, potential_data_col_num, 0, font = self.font_red, border = self.cell_border['right'])
+        self.formatted_cell(ws, start_row + 7, potential_data_col_num, f'=={potential_data_col_letter}13*0.05', font = self.font_red, border = self.cell_border['bottomright'], number_format=self.accounting_format)
         
         # Subtracting red from payout
         subtract_red_formula_wk = f'SUMIF(K{self.cat_row_info["wk_complete_paid"][0]}:K{self.cat_row_info["wk_complete_paid"][1]}, "N", I{self.cat_row_info["wk_complete_paid"][0]}:I{self.cat_row_info["wk_complete_paid"][1]})'
@@ -317,8 +396,12 @@ class CommissionSpreadSheetExporter:
         self.formatted_cell(ws, start_row + 2, col_offset + 17, f'=S{end_of_comp_paid+2}', font = self.font_bold, border = self.cell_border['left'])
         self.formatted_cell(ws, start_row + 2, col_offset + 18, f'=T{end_of_comp_paid+2}', font = self.font_bold, border = self.cell_border['left'])
         
+        self.review_count_total_row = start_row + 2
+        self.review_count_total_col_num = col_offset + 19
+        self.review_count_total_col_letter = get_column_letter(self.review_count_total_col_num)
+
         review_count_formula = '=' + ' + '.join([f'SUM(U{self.cat_row_info[cat][0]}:U{self.cat_row_info[cat][1]})'for cat in self.cats_count_for_total])
-        self.formatted_cell(ws, start_row + 2, col_offset + 19, review_count_formula, font = self.font_bold, border = self.cell_border['leftright']) # total 5 star reviews
+        self.formatted_cell(ws, self.review_count_total_row, self.review_count_total_col_num, review_count_formula, font = self.font_bold, border = self.cell_border['leftright']) # total 5 star reviews
 
         self.formatted_cell(ws, start_row + 3, col_offset + 10, f'=L{end_of_comp_paid+2}/L{end_of_comp_paid+1}', font = self.font_bold, border = self.cell_border['bottomleft'], number_format=self.percentage_format)
         self.formatted_cell(ws, start_row + 3, col_offset + 11, f'=M{end_of_comp_paid+2}/M{end_of_comp_paid+1}', font = self.font_bold, border = self.cell_border['bottomleft'], number_format=self.percentage_format)
@@ -349,74 +432,113 @@ class CommissionSpreadSheetExporter:
         self.formatted_cell(ws, start_row, col_offset + 14, border = self.cell_border['top'])
         self.formatted_cell(ws, start_row, col_offset + 15, border = self.cell_border['top'])
         self.formatted_cell(ws, start_row, col_offset + 16, border = self.cell_border['top'])
-        self.formatted_cell(ws, start_row, col_offset + 17, 'WEEKDAY', font = self.font_red_bold, border = self.cell_border['topleft'])
-        self.formatted_cell(ws, start_row, col_offset + 18, 'WEEKEND', font = self.font_red_bold, border = self.cell_border['topleftright'])
-        self.formatted_cell(ws, start_row + 1, col_offset + 10, 'MON', font = self.font_bold, border = self.cell_border['bottomtop_double'])
-        self.formatted_cell(ws, start_row + 1, col_offset + 11, 'TUE', font = self.font_bold, border = self.cell_border['bottomtop_double'])
-        self.formatted_cell(ws, start_row + 1, col_offset + 12, 'WED', font = self.font_bold, border = self.cell_border['bottomtop_double'])
-        self.formatted_cell(ws, start_row + 1, col_offset + 13, 'THU', font = self.font_bold, border = self.cell_border['bottomtop_double'])
-        self.formatted_cell(ws, start_row + 1, col_offset + 14, 'FRI', font = self.font_bold, border = self.cell_border['bottomtop_double'])
-        self.formatted_cell(ws, start_row + 1, col_offset + 15, 'SAT', font = self.font_green_bold, border = self.cell_border['bottomtop_double'])
-        self.formatted_cell(ws, start_row + 1, col_offset + 16, 'SUN', font = self.font_green_bold, border = self.cell_border['bottomtop_double'])
-        self.formatted_cell(ws, start_row + 1, col_offset + 17, 'Awaiting Payment', font = self.font_red_bold, border = self.cell_border['topleft'])
-        self.formatted_cell(ws, start_row + 1, col_offset + 18, 'Awaiting Payment', font = self.font_red_bold, border = self.cell_border['topleftright'])
-        self.formatted_cell(ws, start_row + 3, col_offset + 17, 'Total Payable', font = self.font_bold, border = self.cell_border['topleft'])
-        self.formatted_cell(ws, start_row + 3, col_offset + 18, 'Total Payable', font = self.font_bold, border = self.cell_border['topleftright'])
-        self.formatted_cell(ws, start_row + 4, col_offset + 17, '=SUM(K11:O11) + SUM(K17:O17) + SUM(K23:O23) + SUM(K29:O29) + SUM(K35:O35) + SUM(K41:O41)', font = self.font_bold, border = self.cell_border['bottomleft'], number_format=self.accounting_format)
-        self.formatted_cell(ws, start_row + 4, col_offset + 18, '=SUM(P11:Q11) + SUM(P17:Q17) + SUM(P23:Q23) + SUM(P29:Q29) + SUM(P35:Q35) + SUM(P41:Q41)', font = self.font_bold, border = self.cell_border['bottomright'], number_format=self.accounting_format)
-        self.formatted_cell(ws, start_row + 4, col_offset + 9, 'Successful')
-        self.formatted_cell(ws, start_row + 5, col_offset + 9, 'Unsuccessful')
-        self.formatted_cell(ws, start_row + 6, col_offset + 9, 'Success rate')
-        self.formatted_cell(ws, start_row + 7, col_offset + 9, 'Avg sale')
+        self.formatted_cell(ws, start_row, col_offset + 12, 'WEEKDAY', font = self.font_red_bold, border = self.cell_border['topleft'])
+        self.formatted_cell(ws, start_row, col_offset + 13, 'WEEKEND', font = self.font_red_bold, border = self.cell_border['topleftright'])
+        # self.formatted_cell(ws, start_row + 1, col_offset + 10, 'MON', font = self.font_bold, border = self.cell_border['bottomtop_double'])
+        # self.formatted_cell(ws, start_row + 1, col_offset + 11, 'TUE', font = self.font_bold, border = self.cell_border['bottomtop_double'])
+        # self.formatted_cell(ws, start_row + 1, col_offset + 12, 'WED', font = self.font_bold, border = self.cell_border['bottomtop_double'])
+        # self.formatted_cell(ws, start_row + 1, col_offset + 13, 'THU', font = self.font_bold, border = self.cell_border['bottomtop_double'])
+        # self.formatted_cell(ws, start_row + 1, col_offset + 14, 'FRI', font = self.font_bold, border = self.cell_border['bottomtop_double'])
+        # self.formatted_cell(ws, start_row + 1, col_offset + 15, 'SAT', font = self.font_green_bold, border = self.cell_border['bottomtop_double'])
+        # self.formatted_cell(ws, start_row + 1, col_offset + 16, 'SUN', font = self.font_green_bold, border = self.cell_border['bottomtop_double'])
+        self.formatted_cell(ws, start_row + 1, col_offset + 10, 'Total Payable', font = self.font_bold, border = self.cell_border['top'])
+        # self.formatted_cell(ws, start_row, col_offset + 13, 'Total Payable', font = self.font_bold, border = self.cell_border['top'])
+        self.formatted_cell(ws, start_row + 2, col_offset + 10, 'Awaiting Payment', font = self.font_red_bold, border = self.cell_border['top'])
+        # self.formatted_cell(ws, start_row, col_offset + 15, 'Awaiting Payment', font = self.font_red_bold, border = self.cell_border['top'])
+        # self.formatted_cell(ws, start_row + 4, col_offset + 9, 'Successful')
+        # self.formatted_cell(ws, start_row + 5, col_offset + 9, 'Unsuccessful')
+        # self.formatted_cell(ws, start_row + 6, col_offset + 9, 'Success rate')
+        # self.formatted_cell(ws, start_row + 7, col_offset + 9, 'Avg sale')
 
         profit_formulas = {day: '=' + ' + '.join([f'SUMIF(C{self.cat_row_info[cat][0]}:C{self.cat_row_info[cat][1]}, "{day.strftime("%d/%m/%Y")}", I{self.cat_row_info[cat][0]}:I{self.cat_row_info[cat][1]})'for cat in self.cats_count_for_total]) for day in dates_in_month}
         count_success_formulas = {day: '=' + ' + '.join([f'COUNTIF(C{self.cat_row_info[cat][0]}:C{self.cat_row_info[cat][1]}, "{day.strftime("%d/%m/%Y")}")'for cat in self.cats_count_for_total]) for day in dates_in_month}
         count_unsuccess_formulas = {day: '=' + ' + '.join([f'COUNTIF(C{self.cat_row_info[cat][0]}:C{self.cat_row_info[cat][1]}, "{day.strftime("%d/%m/%Y")}")'for cat in self.cats_count_for_unsuccessful]) for day in dates_in_month}
 
-        day_start_row = start_row + 2
+        day_start_row = start_row + 5
         reset_col = 10
         start_col = reset_col
 
-        SUMMARY_COL_LENGTH = 0
+        SUMMARY_COL_LENGTH = 0 # dynamic to start, but should be constant after first pass through. 
         for day in dates_in_month:
             day_row = day_start_row
             day_of_week = day.weekday()
-            if day_of_week == 0:
-                # If monday, write the LHS words 
-                self.formatted_cell(ws, day_row + 2, col_offset + start_col - 1, 'Successful')
-                self.formatted_cell(ws, day_row + 2 + 1, col_offset + start_col - 1, 'Unsuccessful')
-                self.formatted_cell(ws, day_row + 2 + 2, col_offset + start_col - 1, 'Success rate')
-                self.formatted_cell(ws, day_row + 2 + 3, col_offset + start_col - 1, 'Avg sale')
+            day_position = (day.day-1) % 14 # position when printing by fortnight, 0-indexed
+            if day_position == 0:
+                # If first in row, write the LHS words 
+                self.formatted_cell(ws, day_row+2, col_offset+start_col-1, 'Successful')
+                self.formatted_cell(ws, day_row+2+1, col_offset+start_col-1, 'Unsuccessful')
+                self.formatted_cell(ws, day_row+2+2, col_offset+start_col-1, 'Success rate')
+                self.formatted_cell(ws, day_row+2+3, col_offset+start_col-1, 'Avg sale')
             
             summary_font = self.font_bold
-            if day_of_week in [5,6]:
-                summary_font = self.font_green_bold
 
-            curr_col = col_offset + start_col + day_of_week
-            self.formatted_cell(ws, day_row, curr_col, day.strftime("%d/%m"), font = summary_font, border = self.cell_border['top']) 
-            day_row += 1
-            self.formatted_cell(ws, day_row, curr_col, profit_formulas[day], font = summary_font, number_format=self.accounting_format) 
-            day_row += 1
-            self.formatted_cell(ws, day_row, curr_col, count_success_formulas[day]) 
-            day_row += 1
-            self.formatted_cell(ws, day_row, curr_col, count_unsuccess_formulas[day])
-            day_row += 1
+            curr_col = col_offset + start_col + day_position
             curr_col_letter = get_column_letter(curr_col)
+
+            if day_of_week in [5,6]: # Weekend check
+                summary_font = self.font_green_bold
+                self.weekend_cols.add(curr_col_letter) 
+            else:
+                self.weekday_cols.add(curr_col_letter)
+
+            # "Mon 1/11" row
+            self.formatted_cell(ws, day_row, curr_col, day.strftime("%a %d/%m"), font = summary_font, border = self.cell_border['top'])
+            day_row += 1
+
+            # Profit row
+            self.formatted_cell(ws, day_row, curr_col, profit_formulas[day], font = summary_font, number_format=self.accounting_format)
+            self.rows_with_dollar_totals.add(day_row) # add this row to the list of rows with profit totals for summary generation later
+            day_row += 1
+
+            # Success count row
+            self.formatted_cell(ws, day_row, curr_col, count_success_formulas[day])
+            self.rows_with_success_counts.add(day_row) # add this row to the list of rows with success counts for summary generation later
+            day_row += 1
+
+            # Unsuccess count row
+            self.formatted_cell(ws, day_row, curr_col, count_unsuccess_formulas[day])
+            self.rows_with_unsuccess_counts.add(day_row) # add this row to the list of rows with unsuccess counts for summary generation later
+            day_row += 1
+
+            # Success rate row
             self.formatted_cell(ws, day_row, curr_col, f'={curr_col_letter}{day_row-2}/({curr_col_letter}{day_row-2}+{curr_col_letter}{day_row-1})', number_format=self.percentage_format)
             day_row += 1
+
+            # Avg sale row
             self.formatted_cell(ws, day_row, curr_col, f'={curr_col_letter}{day_row-4}/{curr_col_letter}{day_row-3}', number_format=self.accounting_format)
             day_row += 1
 
             SUMMARY_COL_LENGTH = day_row - day_start_row
-            if day_of_week == 6:
-                # If sunday, push row to next block
+            if day_position == 13:
+                # If last of fortnight, push row to next block
                 day_start_row += SUMMARY_COL_LENGTH
+        
+        self.weekday_total_payable_row = start_row + 1
+        self.weekday_total_payable_col_num = col_offset + 12
+        self.weekday_total_payable_col_letter = get_column_letter(self.weekday_total_payable_col_num)
+        
+        self.weekend_total_payable_row = start_row + 1
+        self.weekend_total_payable_col_num = col_offset + 13
+        self.weekend_total_payable_col_letter = get_column_letter(self.weekend_total_payable_col_num)
+        
+        self.weekday_total_awaiting_payment_row = start_row + 2
+        self.weekday_total_awaiting_payment_col_num = col_offset + 12
+        self.weekday_total_awaiting_payment_col_letter = get_column_letter(self.weekday_total_awaiting_payment_col_num)
+        
+        self.weekend_total_awaiting_payment_row = start_row + 2
+        self.weekend_total_awaiting_payment_col_num = col_offset + 13
+        self.weekend_total_awaiting_payment_col_letter = get_column_letter(self.weekend_total_awaiting_payment_col_num)
 
+        self.formatted_cell(ws, self.weekday_total_payable_row, self.weekday_total_payable_col_num, f'={self._generate_sum_formula(self.weekday_cols, self.rows_with_dollar_totals)}', font = self.font_bold, border = self.cell_border['bottomleft'], number_format=self.accounting_format)
+        self.formatted_cell(ws, self.weekend_total_payable_row, self.weekend_total_payable_col_num, f'={self._generate_sum_formula(self.weekend_cols, self.rows_with_dollar_totals)}', font = self.font_bold, border = self.cell_border['bottomright'], number_format=self.accounting_format)
+
+        # Weekday awaiting payment total
         wk_profit_awaiting_formula = '=' + ' + '.join([f'SUM(I{self.cat_row_info[cat][0]}:I{self.cat_row_info[cat][1]})'for cat in self.cats_count_awaiting_pay_wk])
-        self.formatted_cell(ws, start_row + 2, col_offset + 17, wk_profit_awaiting_formula, font = self.font_red_bold, border = self.cell_border['bottomleft'], number_format=self.accounting_format)
+        self.formatted_cell(ws, self.weekday_total_awaiting_payment_row, self.weekday_total_awaiting_payment_col_num, wk_profit_awaiting_formula, font = self.font_red_bold, border = self.cell_border['bottomleft'], number_format=self.accounting_format)
 
+        # Weekend awaiting payment total
         wkend_profit_awaiting_formula = '=' + ' + '.join([f'SUM(I{self.cat_row_info[cat][0]}:I{self.cat_row_info[cat][1]})'for cat in self.cats_count_awaiting_pay_wkend])
-        self.formatted_cell(ws, start_row + 2, col_offset + 18, wkend_profit_awaiting_formula, font = self.font_red_bold, border = self.cell_border['bottomleftright'], number_format=self.accounting_format)
+        self.formatted_cell(ws, self.weekend_total_awaiting_payment_row, self.weekend_total_awaiting_payment_col_num, wkend_profit_awaiting_formula, font = self.font_red_bold, border = self.cell_border['bottomleftright'], number_format=self.accounting_format)
 
         return
 
@@ -477,18 +599,28 @@ class CommissionSpreadSheetExporter:
         self.formatted_cell(ws, start_row + 2, col_offset + 14, profit_formulas['friday'], font = self.font_bold, border = self.cell_border['bottom'], number_format=self.accounting_format) # These all rely on daily totals
 
         total_wk_profit_formula = '=' + '+'.join([f'SUM({get_column_letter(col_offset + 10 + i)}{start_row + 2})' for i in range(5)])
-        self.formatted_cell(ws, start_row + 2, col_offset + 15, total_wk_profit_formula, font = self.font_bold, border = self.cell_border['bottom'], number_format=self.accounting_format) # These all rely on daily totals
+
+        self.weekday_total_payable_col_num = col_offset + 15
+        self.weekday_total_payable_col_letter = get_column_letter(self.weekday_total_payable_col_num)
+        self.weekday_total_payable_row = start_row + 2
+        self.formatted_cell(ws, self.weekday_total_payable_row, self.weekday_total_payable_col_num, total_wk_profit_formula, font = self.font_bold, border = self.cell_border['bottom'], number_format=self.accounting_format) # These all rely on daily totals
 
         self.formatted_cell(ws, start_row + 2, col_offset + 16, profit_formulas['saturday'], font = self.font_green_bold, border = self.cell_border['bottomleft'], number_format=self.accounting_format) 
         self.formatted_cell(ws, start_row + 2, col_offset + 17, profit_formulas['sunday'], font = self.font_green_bold, border = self.cell_border['bottomright'], number_format=self.accounting_format) 
 
         awaiting_pay_total_wk = '=' + ' + '.join([f'SUM(F{self.cat_row_info[cat][0]}:F{self.cat_row_info[cat][1]})'for cat in self.cats_count_awaiting_pay_wk])
 
-        self.formatted_cell(ws, start_row + 2, col_offset + 18, awaiting_pay_total_wk, font = self.font_red_bold, border = self.cell_border['bottomtopright'])
+        self.weekday_total_awaiting_payment_col_num = col_offset + 18
+        self.weekday_total_awaiting_payment_col_letter = get_column_letter(self.weekday_total_awaiting_payment_col_num)
+        self.weekday_total_awaiting_payment_row = start_row + 2
+        self.formatted_cell(ws, self.weekday_total_awaiting_payment_row, self.weekday_total_awaiting_payment_col_num, awaiting_pay_total_wk, font = self.font_red_bold, border = self.cell_border['bottomtopright'])
 
         awaiting_pay_total_wkend = '=' + ' + '.join([f'SUM(F{self.cat_row_info[cat][0]}:F{self.cat_row_info[cat][1]})'for cat in self.cats_count_awaiting_pay_wkend])
 
-        self.formatted_cell(ws, start_row + 2, col_offset + 19, awaiting_pay_total_wkend, font = self.font_red_bold, border = self.cell_border['bottomtopright'])
+        self.weekend_total_awaiting_payment_row = start_row + 2
+        self.weekend_total_awaiting_payment_col_num = col_offset + 19
+        self.weekend_total_awaiting_payment_col_letter = get_column_letter(self.weekend_total_awaiting_payment_col_num)
+        self.formatted_cell(ws, self.weekend_total_awaiting_payment_row, self.weekend_total_awaiting_payment_col_num, awaiting_pay_total_wkend, font = self.font_red_bold, border = self.cell_border['bottomtopright'])
 
         # sales_formulas = {day: '=' + ' + '.join([f'SUMIF(C{self.cat_row_info[cat][0]}:C{self.cat_row_info[cat][1]}, "{date_strs[day]}", F{self.cat_row_info[cat][0]}:F{self.cat_row_info[cat][1]})'for cat in self.cats_count_for_total]) for day in days}
 
@@ -703,8 +835,9 @@ class CommissionSpreadSheetExporter:
         if cat == 'wk_complete_paid':
             for i in range(10):
                 curr_col = col_offset + 11 + i
-                self.formatted_cell(ws, curr_row, curr_col, f"=COUNT({get_column_letter(curr_col)}{cat_row_start}:{get_column_letter(curr_col)}{cat_row_end})")
-                self.formatted_cell(ws, curr_row + 1, curr_col, f"=SUM({get_column_letter(curr_col)}{cat_row_start}:{get_column_letter(curr_col)}{cat_row_end})")
+                curr_col_letter = get_column_letter(curr_col)
+                self.formatted_cell(ws, curr_row, curr_col, f"=COUNT({curr_col_letter}{cat_row_start}:{curr_col_letter}{cat_row_end})")
+                self.formatted_cell(ws, curr_row + 1, curr_col, f"=SUM({curr_col_letter}{cat_row_start}:{curr_col_letter}{cat_row_end})")
             self.curr_row += 1
 
         if self.bottom_row < self.curr_row:
@@ -829,7 +962,10 @@ class CommissionSpreadSheetExporter:
             self.curr_worksheet.sheet_properties.tabColor = self.unknown_color
         
         # ========================== BOTTOM SECTION - JOBS ==========================
-        job_start_row = 50
+        if self.timeframe == 'monthly':
+            job_start_row = 50
+        elif self.timeframe == 'weekly':
+            job_start_row = 22
         # self.curr_row = job_start_row
         self.job_section_title(job_start_row)
 
@@ -841,16 +977,16 @@ class CommissionSpreadSheetExporter:
         # ========================= TOP SECTION - SUMMARIES =========================
         # Will need to call some of these after doing jobs because they will need to know cat start and ends etc.
         self.title_row(start_row=1)
-        self.job_count_box(start_row=3)
-        self.profit_target_box(start_row=3)
-        self.payout_box(start_row=7)
-        self.doc_check_count_box(start_row=2)
         if self.timeframe == 'weekly':
             self.day_summaries_weekly(start_row=8)
         elif self.timeframe == 'monthly':
             self.day_summaries_monthly(start_row=8)
         else:
             raise ValueError("Timeframe must be 'weekly' or 'monthly'")
+        self.job_count_box(start_row=3)
+        self.payout_box(start_row=7)
+        self.profit_target_box(start_row=3)
+        self.doc_check_count_box(start_row=2)
 
     def build_workbook(self):
         # Final function that actually builds everything
