@@ -25,3 +25,16 @@ def get_tenants():
         'VictorTango (Old VIC)': 'victortango',
     }
     return tenants
+
+def get_state_from_tenant(tenant: str = None):
+    tenants = {
+        'foxtrotwhiskey': 'NSW',
+        'bravogolf': 'QLD',
+        'mikeecho': 'VIC',
+        'sierradelta': 'WA',
+        'alphabravo': 'NSW',
+        'echozulu': 'QLD',
+        'victortango': 'VIC',
+    }
+    if tenant: return tenants[tenant]
+    return tenants

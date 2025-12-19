@@ -18,7 +18,7 @@ def authenticate_app(config_file):
 @st.fragment
 def show_download_button(data, file_name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"):
     st.download_button(
-        "Download Spreadsheet",
+        f"Download {file_name}",
         data=data,
         file_name=file_name,
         mime=mime,

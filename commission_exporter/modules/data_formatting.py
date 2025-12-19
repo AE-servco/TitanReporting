@@ -41,7 +41,8 @@ def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='d
             formatted['sold_by'] = 'Manual Check'
         else:
             # just add to manual check list for now, might separate to different check list in future.
-            formatted['sold_by'] = 'Manual Check'
+            formatted['sold_by'] = str(list(job_appt_techs)[0])
+            # formatted['sold_by'] = 'Manual Check'
 
     if job['first_appt']:
         formatted['first_appt_start_dt'] = client.from_utc(job['first_appt']['start'])
@@ -194,23 +195,26 @@ def format_employee_list(employee_response):
             formatted[employee['userId']] = {'name': employee['name'], 'team': 'O'}
     return formatted
 
-def group_jobs_by_tech(job_records, employee_map, end_date):
+def group_jobs_by_tech(job_records, employee_map, end_date, relevant_holidays):
     jobs_by_tech: dict[str, list[dict]] = {}
     for j in job_records:
         tid = j.get("sold_by")
+        # print(tid)
         if not tid:
             continue
         if tid == 'Manual Check':
             name = tid + 'O'
         else:
             tech_info = employee_map.get(int(tid))
+            # print(tech_info)
             if tech_info is None:
                 name = 'Manual Check' + 'O'
             else:
                 name = tech_info.get("name", f"{tid}")
                 tech_role = tech_info.get('team', 'O')
                 name = name + tech_role
-        j_category = helpers.categorise_job(j, end_date)
+        # print(name)
+        j_category = helpers.categorise_job(j, end_date, relevant_holidays)
         jobs_by_tech.setdefault(name, dict()).setdefault(j_category, []).append(j)
     return jobs_by_tech
 

@@ -18,7 +18,7 @@ import modules.helpers as helpers
 #   - based on public holidays and days per week/month otherwise
 
 class CommissionSpreadSheetExporter:
-    def __init__(self, jobs_by_tech: dict[str, list[dict]], end_date: dt.date, timeframe: str, col_offset: int):
+    def __init__(self, jobs_by_tech: dict[str, list[dict]], end_date: dt.date, timeframe: str, col_offset: int, holidays=[]):
         self.jobs_by_tech = jobs_by_tech
         self.end_date = end_date
         self.timeframe = timeframe
@@ -30,6 +30,7 @@ class CommissionSpreadSheetExporter:
         self.cat_row_info = {}
         self.threshold_day_num = 0
         self.curr_date = ""
+        self.holidays = holidays
 
         # lists of col letters for each day type
         self.weekend_cols = set()
@@ -88,8 +89,10 @@ class CommissionSpreadSheetExporter:
             'ah_wo',
         ]
 
-        self.cats_count_for_afterhours_paid = [
+        self.cats_count_for_emergency_paid = [
+            # Not including weekend here because it is already coded in to use it elsewhere and it is friday arvo.
             'ah_complete_paid',
+            'ph_complete_paid',
         ]
 
         self.cats_count_awaiting_pay_wk = [
@@ -179,21 +182,26 @@ class CommissionSpreadSheetExporter:
         # =========================== CONSTANTS ===========================
         self.CATEGORY_ORDER = {
             'wk_complete_paid': 'COMPLETED & PAID JOBS', 
-            'wkend_complete_paid': 'WEEKEND COMPLETED & PAID JOBS', 
-            'ah_complete_paid': 'AFTERHOURS COMPLETED & PAID JOBS', 
-            'prev': 'PREVIOUS JOBS COMPLETED & PAID (COMMISSION) - Modoras Team Please do ADD to THIS SECTION or AMEND/TOUCH', 
             'wk_complete_unpaid': 'CURRENT JOBS COMPLETED (AWAITING PAYMENT)', 
-            'wkend_complete_unpaid': 'WEEKEND CURRENT JOBS COMPLETED (AWAITING PAYMENT)', 
-            'ah_complete_unpaid': 'AFTERHOURS CURRENT JOBS COMPLETED (AWAITING PAYMENT)', 
             'wk_wo': 'CURRENT WORK ORDERS (AWAITING PAYMENT)', 
-            'wkend_wo': 'WEEKEND WORK ORDERS (AWAITING PAYMENT)', 
-            'ah_wo': 'AFTERHOURS WORK ORDERS (AWAITING PAYMENT)', 
             'wk_unsuccessful': 'UNSUCCESSFUL JOBS',
-            'wkend_unsuccessful': 'WEEKEND UNSUCCESSFUL JOBS',
-            'ah_unsuccessful': 'AFTERHOURS UNSUCCESSFUL JOBS',
             'wk_uncategorised': 'WEEK UNCATEGORISED',
+            'wkend_complete_paid': 'WEEKEND COMPLETED & PAID JOBS', 
+            'wkend_complete_unpaid': 'WEEKEND CURRENT JOBS COMPLETED (AWAITING PAYMENT)', 
+            'wkend_wo': 'WEEKEND WORK ORDERS (AWAITING PAYMENT)', 
+            'wkend_unsuccessful': 'WEEKEND UNSUCCESSFUL JOBS',
             'wkend_uncategorised': 'WEEKEND UNCATEGORISED',
+            'ah_complete_paid': 'AFTERHOURS COMPLETED & PAID JOBS', 
+            'ah_complete_unpaid': 'AFTERHOURS CURRENT JOBS COMPLETED (AWAITING PAYMENT)', 
+            'ah_wo': 'AFTERHOURS WORK ORDERS (AWAITING PAYMENT)', 
+            'ah_unsuccessful': 'AFTERHOURS UNSUCCESSFUL JOBS',
             'ah_uncategorised': 'AFTERHOURS UNCATEGORISED',
+            'ph_complete_paid': 'PUBLIC HOLIDAYS COMPLETED & PAID JOBS', 
+            'ph_complete_unpaid': 'PUBLIC HOLIDAYS CURRENT JOBS COMPLETED (AWAITING PAYMENT)', 
+            'ph_wo': 'PUBLIC HOLIDAYS WORK ORDERS (AWAITING PAYMENT)', 
+            'ph_unsuccessful': 'PUBLIC HOLIDAYS UNSUCCESSFUL JOBS',
+            'ph_uncategorised': 'PUBLIC HOLIDAYS UNCATEGORISED',
+            'prev': 'PREVIOUS JOBS COMPLETED & PAID (COMMISSION) - Modoras Team Please do ADD to THIS SECTION or AMEND/TOUCH', 
         }
 
     def _generate_sum_formula(self, cols: set, rows: set):
@@ -321,7 +329,7 @@ class CommissionSpreadSheetExporter:
         #     emergency_str = "=Q10 + R10"
         # elif self.timeframe == 'monthly':
         totals_box_str = f'{self.weekday_total_payable_col_letter}{self.weekday_total_payable_row}-{self.weekday_total_awaiting_payment_col_letter}{self.weekday_total_awaiting_payment_row}'
-        threshold_if_str = f'=IF({self.weekend_total_payable_col_letter}{self.weekday_total_payable_row}>={self.threshold_day_num * 5000},G5,G4)'
+        threshold_if_str = f'=IF({self.weekday_total_payable_col_letter}{self.weekday_total_payable_row}>={self.threshold_day_num * 5000},G5,G4)'
 
         # TODO: Add in afterhours and ph into this
         emergency_str = f'={self.weekend_total_payable_col_letter}{self.weekday_total_payable_row} - {self.weekend_total_awaiting_payment_col_letter}{self.weekend_total_awaiting_payment_row} + {self.ah_ph_total_col_letter}{self.ah_ph_total_row}'
@@ -451,7 +459,9 @@ class CommissionSpreadSheetExporter:
 
         dates_in_month = helpers.get_dates_in_month_datetime(self.end_date.year, self.end_date.month)
 
-        self.threshold_day_num = helpers.get_threshold_days(dates_in_month, holidays=[]) # TODO: HOLIDAY LOGIC!!
+        # self.holidays = helpers.australian_public_holidays_between(self.end_date, dt.date(self.end_date.year, self.end_date.month, 1))
+
+        self.threshold_day_num = helpers.get_threshold_days(dates_in_month, holidays=self.holidays)
 
         self.formatted_cell(ws, start_row, col_offset + 10, 'DAILY NET PROFIT', font = self.font_bold, border = self.cell_border['topleft'])
         self.formatted_cell(ws, start_row, col_offset + 11, border = self.cell_border['top'])
@@ -460,8 +470,9 @@ class CommissionSpreadSheetExporter:
         self.formatted_cell(ws, start_row, col_offset + 14, border = self.cell_border['top'])
         self.formatted_cell(ws, start_row, col_offset + 15, border = self.cell_border['top'])
         self.formatted_cell(ws, start_row, col_offset + 16, border = self.cell_border['top'])
-        self.formatted_cell(ws, start_row, col_offset + 12, 'WEEKDAY', font = self.font_red_bold, border = self.cell_border['topleft'])
-        self.formatted_cell(ws, start_row, col_offset + 13, 'WEEKEND', font = self.font_red_bold, border = self.cell_border['topleftright'])
+        self.formatted_cell(ws, start_row, col_offset + 12, 'WEEKDAY', font = self.font_bold, border = self.cell_border['topleft'])
+        self.formatted_cell(ws, start_row, col_offset + 13, 'WEEKEND', font = self.font_green_bold, border = self.cell_border['topleft'])
+        self.formatted_cell(ws, start_row, col_offset + 14, 'AH & PH', font = self.font_green_bold, border = self.cell_border['topleftright'])
         self.formatted_cell(ws, start_row + 1, col_offset + 10, 'Total Payable', font = self.font_bold, border = self.cell_border['top'])
         self.formatted_cell(ws, start_row + 2, col_offset + 10, 'Awaiting Payment', font = self.font_red_bold, border = self.cell_border['top'])
 
@@ -543,6 +554,10 @@ class CommissionSpreadSheetExporter:
         self.weekend_total_awaiting_payment_row = start_row + 2
         self.weekend_total_awaiting_payment_col_num = col_offset + 13
         self.weekend_total_awaiting_payment_col_letter = get_column_letter(self.weekend_total_awaiting_payment_col_num)
+        
+        self.ah_ph_total_row = start_row + 1
+        self.ah_ph_total_col_num = col_offset + 14
+        self.ah_ph_total_col_letter = get_column_letter(self.weekend_total_awaiting_payment_col_num)
 
         self.formatted_cell(ws, self.weekday_total_payable_row, self.weekday_total_payable_col_num, f'={self._generate_sum_formula(self.weekday_cols, self.rows_with_dollar_totals)}', font = self.font_bold, border = self.cell_border['bottomleft'], number_format=self.accounting_format)
         self.formatted_cell(ws, self.weekend_total_payable_row, self.weekend_total_payable_col_num, f'={self._generate_sum_formula(self.weekend_cols, self.rows_with_dollar_totals)}', font = self.font_bold, border = self.cell_border['bottomright'], number_format=self.accounting_format)
@@ -555,6 +570,11 @@ class CommissionSpreadSheetExporter:
         wkend_profit_awaiting_formula = '=' + ' + '.join([f'SUM(I{self.cat_row_info[cat][0]}:I{self.cat_row_info[cat][1]})'for cat in self.cats_count_awaiting_pay_wkend])
         self.formatted_cell(ws, self.weekend_total_awaiting_payment_row, self.weekend_total_awaiting_payment_col_num, wkend_profit_awaiting_formula, font = self.font_red_bold, border = self.cell_border['bottomleftright'], number_format=self.accounting_format)
 
+        # Afterhour and Public Holiday total section
+        total_ah_ph_formula = '=' + '+'.join([f'SUM(I{self.cat_row_info[cat][0]}:I{self.cat_row_info[cat][1]})' for cat in self.cats_count_for_emergency_paid])
+
+        self.formatted_cell(ws, self.ah_ph_total_row, self.ah_ph_total_col_num, total_ah_ph_formula, font = self.font_green_bold, border = self.cell_border['bottomtop'], number_format=self.accounting_format) 
+
         return
 
     def day_summaries_weekly(self, start_row: int, management: bool = False):
@@ -564,6 +584,7 @@ class CommissionSpreadSheetExporter:
         ws = self.curr_worksheet
         col_offset = self.col_offset
 
+        # TODO: Make this more robust, if a Sunday is not selected in the filter, this is all wrong...
         dates = {
             'monday': self.end_date - dt.timedelta(days=6),
             'tuesday': self.end_date - dt.timedelta(days=5),
@@ -574,7 +595,9 @@ class CommissionSpreadSheetExporter:
             'sunday': self.end_date
         }
 
-        self.threshold_day_num = helpers.get_threshold_days(list(dates.values()), holidays=[]) # TODO: HOLIDAY LOGIC!!
+        # self.holidays = helpers.australian_public_holidays_between(self.end_date, dates['monday'])
+
+        self.threshold_day_num = helpers.get_threshold_days(list(dates.values()), holidays=self.holidays)
     
         date_strs = {day: date.strftime("%d/%m/%Y") for day, date in dates.items()}
 
@@ -658,7 +681,10 @@ class CommissionSpreadSheetExporter:
         self.formatted_cell(ws, weekend_total_row, weekend_total_col_num, total_wkend_formula, font = self.font_green_bold, border = self.cell_border['bottomtop'], number_format=self.accounting_format) 
         
         # Afterhour and Public Holiday total section
-        total_ah_ph_formula = '=' + '+'.join([f'SUM({column_to_sum}{self.cat_row_info[cat][0]}:{column_to_sum}{self.cat_row_info[cat][1]})' for cat in self.cats_count_for_afterhours_paid])
+        # subtract_red_ah_ph_formula = '(' + '+'.join([f'SUMIF(K{self.cat_row_info[cat][0]}:K{self.cat_row_info[cat][1]}, "N", {column_to_sum}{self.cat_row_info[cat][0]}:{column_to_sum}{self.cat_row_info[cat][1]})' for cat in self.cats_count_for_emergency_paid]) + ')'
+
+        total_ah_ph_formula = '=' + '+'.join(
+            [f'SUM({column_to_sum}{self.cat_row_info[cat][0]}:{column_to_sum}{self.cat_row_info[cat][1]}) - SUMIF(K{self.cat_row_info[cat][0]}:K{self.cat_row_info[cat][1]}, "N", {column_to_sum}{self.cat_row_info[cat][0]}:{column_to_sum}{self.cat_row_info[cat][1]})' for cat in self.cats_count_for_emergency_paid])
         # total_ah_ph_formula = '=' + '+'.join([f'SUM({get_column_letter(col_offset + 10 + i)}{start_row + 2})' for i in [6,7]]) # 6,7 because total column in between weekdays and weekend
         ah_ph_total_col_num = col_offset + 19
         ah_ph_total_col_letter = get_column_letter(ah_ph_total_col_num)
