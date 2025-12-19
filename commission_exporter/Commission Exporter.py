@@ -25,7 +25,7 @@ warnings.filterwarnings("ignore", message=".*cookie_manager.*")
 
 
 
-st.title("Weekly Commission Sheets (per technician)")
+st.title("Commission Spreadsheet Exporter")
 
 CONFIG_FILENAME = 'st_auth_config_commission_exporter.yaml'
 config = gs.load_yaml_from_gcs(CONFIG_FILENAME)
@@ -37,6 +37,8 @@ authenticator = stauth.Authenticate(
 authenticator.login(location='main')
 
 if ss["authentication_status"]:
+    st.write('Please select a timeframe, tenant, and date to filter by, then click "Fetch and build workbook". This will gather all the relevant data and produce the "Download Spreadsheet" button after a short wait. Click this to get the spreadsheet.')
+
     today = dt.date.today()
     # default to last Mon–Sun
     last_monday = today - dt.timedelta(days=today.weekday() + 7)

@@ -142,9 +142,9 @@ def get_public_holidays(state):
     combined.update(state_hols)
     return combined
 
-def get_threshold_days(dates_in_month: List[_dt.date], holidays: List[_dt.date]):
+def get_threshold_days(dates: List[_dt.date], holidays: List[_dt.date]):
     threshold_days = 0
-    for day in dates_in_month:
+    for day in dates:
         if day not in holidays and day.weekday() not in [5,6]:
             threshold_days += 1
     return threshold_days
