@@ -841,46 +841,44 @@ class CommissionSpreadSheetExporter:
         self.formatted_cell(ws, row, col_offset + 25, f"=ROUND(F{row}*1.1,2)", font=self.font_purple)
         self.formatted_cell(ws, row, col_offset + 26, f"=ROUND(Z{row} - W{row} - X{row} - Y{row},2)", font=self.font_purple)
         
-        payments = job.get('payment_amt')
+        payments = job.get('payment_details')
 
         if type(payments) == str:
             payments = payments.split(', ')
             
-            # All payment types:
-            # {
-                # 'AMEX',
-                # 'Applied Payment for AR',
-                # 'Cash',
-                # 'Check',
-                # 'Credit Card',
-                # 'EFT/Bank Transfer',
-                # 'Humm - Finance Fee',
-                # 'Humm Payment Plan',
-                # 'Imported Default Credit Card',
-                # 'MasterCard',
-                # 'Payment Plan',
-                # 'Payment Plan - Fee',
-                # 'Processed in ServiceM8',
-                # 'Refund (check)',
-                # 'Refund (credit card)',
-                # 'Visa'
-            # }
+            missing_type_str = 'missing type'
             
-            p_types = {
-                'Cr': [],
-                'Ca': [],
-                'EF': [],
-                # 'Hu': [],
+            all_payment_types = {
+                'AMEX': 'CC',
+                'Applied Payment for AR': 'DK',
+                'Cash': 'Cash',
+                'Check': 'DK',
+                'Credit Card': 'CC',
+                'EFT/Bank Transfer': 'EFT',
+                'Humm - Finance Fee': 'PP',
+                'Humm Payment Plan': 'PP',
+                'Imported Default Credit Card': 'DK',
+                'MasterCard': 'CC',
+                'Visa': 'CC',
+                'Payment Plan': 'PP',
+                'Payment Plan - Fee': 'PP',
+                'Processed in ServiceM8': 'DK',
+                'Refund (check)': 'REF',
+                'Refund (credit card)': 'REF',
+                missing_type_str: 'DK'
             }
+            
+            p_types = {p_type: [] for p_type in set(all_payment_types.values())}
+            
             for p in payments:
-                try:
-                    p_types[p[:2]].append(p[2:])
-                except:
-                    continue
-            if p_types['EF'] or p_types['Cr']:
-                self.formatted_cell(ws, row, col_offset + 22, f"={'+'.join(p_types['EF'] + p_types['Cr'])}", font=cat_font, number_format=self.accounting_format)
-            if p_types['Ca']:
-                self.formatted_cell(ws, row, col_offset + 23, f"={'+'.join(p_types['Ca'])}", font=cat_font, number_format=self.accounting_format)
+                p_types[p.get('type',missing_type_str)].append(p('amount','0'))
+                
+            # if p_types['EFT'] or p_types['CC']:
+            self.formatted_cell(ws, row, col_offset + 22, f"={'+'.join(p_types['EFT'] + p_types['CC'])}", font=cat_font, number_format=self.accounting_format)
+            # if p_types['Cash']:
+            self.formatted_cell(ws, row, col_offset + 23, f"={'+'.join(p_types['Cash'])}", font=cat_font, number_format=self.accounting_format)
+            # if p_types['PP']:
+            self.formatted_cell(ws, row, col_offset + 24, f"={'+'.join(p_types['PP'])}", font=cat_font, number_format=self.accounting_format)
         return
     
     def category_totals_row(self, cat: str, amt_col: int, materials_col: int, merchantf_col: int, profit_col: int):

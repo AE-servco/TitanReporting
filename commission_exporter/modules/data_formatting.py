@@ -129,7 +129,7 @@ def format_payment(payment, client: ServiceTitanClient):
             # formatted['payment_dates'] = client.st_date_to_local(invoice['appliedOn'])[:10] # cut off at just date
         except KeyError:
             formatted['payment_dates'] = 'no payment date'
-        formatted['payment_amt'] = payment['type'][:2] + invoice.get('appliedAmount', '0')
+        formatted['payment_details'] = {'type': payment['type'], 'amount': invoice.get('appliedAmount', '0')}
         output.append(formatted)
     return output
 
