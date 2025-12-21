@@ -6,7 +6,7 @@ from typing import Dict, List, Set, Tuple, Optional, Any, Iterable
 
 from servicetitan_api_client import ServiceTitanClient
 
-@st.cache_data(show_spinner=False)
+# @st.cache_data(show_spinner=False)
 def fetch_jobs(
     _client: ServiceTitanClient,
     start_date: _dt.date = None,
@@ -41,7 +41,7 @@ def fetch_jobs(
     
     return []
 
-@st.cache_data(show_spinner=False)
+# @st.cache_data(show_spinner=False)
 def fetch_invoices(
     ids: List,
     _client: ServiceTitanClient,
@@ -56,7 +56,7 @@ def fetch_invoices(
     invoices = _client.get_all_id_filter(base_path, ids=ids)
     return invoices
 
-@st.cache_data(show_spinner=False)
+# @st.cache_data(show_spinner=False)
 def fetch_payments(
     invoice_ids: List,
     _client: ServiceTitanClient,
@@ -79,7 +79,7 @@ def fetch_tag_types(client: ServiceTitanClient):
     url = client.build_url('settings', 'tag-types')
     return client.get_all(url)
 
-@st.cache_data(show_spinner=False)
+# @st.cache_data(show_spinner=False)
 def fetch_appt_assmnts(
     _client: ServiceTitanClient,
     start_date: _dt.date = None,
@@ -125,7 +125,7 @@ def fetch_appt_assmnts(
     
     return []
 
-@st.cache_data(show_spinner=False)
+# @st.cache_data(show_spinner=False)
 def fetch_appts(
     _client: ServiceTitanClient,
     start_date: _dt.date,
@@ -161,7 +161,7 @@ def fetch_appts(
     appts = _client.get_all(base_path, params=params)
     return appts
 
-@st.cache_data(show_spinner=False)
+# @st.cache_data(show_spinner=False)
 def fetch_estimates(
     start_date: _dt.date,
     end_date: _dt.date,

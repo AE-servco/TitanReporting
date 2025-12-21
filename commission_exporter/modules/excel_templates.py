@@ -870,6 +870,7 @@ class CommissionSpreadSheetExporter:
                 'Cr': [],
                 'Ca': [],
                 'EF': [],
+                # 'Hu': [],
             }
             for p in payments:
                 try:
