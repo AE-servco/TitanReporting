@@ -124,6 +124,8 @@ if ss["authentication_status"]:
                     invoice_ids = format.get_invoice_ids(jobs)
                     # st.write(len(jobs))
                     # st.write(jobs)
+                    # st.write(len(invoice_ids))
+                    # st.write(invoice_ids)
 
                 with st.spinner("Fetching estimates..."):
                     estimates = fetching.fetch_estimates(start_date, end_date, ss.client)
@@ -134,13 +136,14 @@ if ss["authentication_status"]:
                 with st.spinner("Fetching invoices..."):
                     invoices = fetching.fetch_invoices(invoice_ids, ss.client)
                     # st.write(len(invoices))
-                    # st.write(invoices)
+                    # st.write(pd.DataFrame(invoices))
                     # invoices = []
 
                 with st.spinner("Fetching payments..."):
                     payments = fetching.fetch_payments(invoice_ids, ss.client)
                     # st.write(len(payments))
-                    # st.write(payments)
+                    # st.write('payments list')
+                    # st.write(pd.DataFrame(payments))
                     # # payments = []
                     # st.write(invoice_ids)
                 
@@ -169,12 +172,14 @@ if ss["authentication_status"]:
                     open_estimates_grouped = open_estimates_df.groupby('job_id', as_index=False).agg({'est_subtotal': 'sum'})
                     sold_estimates_grouped = sold_estimates_df.groupby('job_id', as_index=False).agg({'est_subtotal': 'sum'})
 
+                    # st.dataframe(jobs_df)
                     # st.dataframe(invoices_df)
                     # st.dataframe(open_estimates_df)
                     # st.dataframe(sold_estimates_df)
                     # st.dataframe(open_estimates_grouped)
                     # st.dataframe(sold_estimates_grouped)
                     # st.dataframe(payments_df)
+                    # st.dataframe(payments_grouped)
 
                 with st.spinner("Merging data..."):
                     merged = helpers.merge_dfs([jobs_df, invoices_df, payments_grouped], on='invoiceId', how='left')
