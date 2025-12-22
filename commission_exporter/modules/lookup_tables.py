@@ -38,3 +38,27 @@ def get_state_from_tenant(tenant: str = None):
     }
     if tenant: return tenants[tenant]
     return tenants
+
+def get_all_payment_types():
+    output = {
+                'AMEX': 'CC',
+                'Applied Payment for AR': 'DK',
+                'Cash': 'Cash',
+                'Check': 'DK',
+                'Credit Card': 'CC',
+                'EFT/Bank Transfer': 'EFT',
+                'Humm - Finance Fee': 'PP',
+                'Humm Payment Plan': 'PP',
+                'Zip Payment Plan': 'PP',
+                'Zip - Finance Fee': 'PP',
+                'Imported Default Credit Card': 'DK',
+                'MasterCard': 'CC',
+                'Visa': 'CC',
+                'Payment Plan': 'PP',
+                'Payment Plan - Fee': 'PP',
+                'Processed in ServiceM8': 'DK',
+                'Refund (check)': 'REF',
+                'Refund (credit card)': 'REF',
+                '': 'DK'
+            }
+    return output

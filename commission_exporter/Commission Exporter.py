@@ -82,7 +82,8 @@ if ss["authentication_status"]:
                         )
             month = st.selectbox(
                             "Month",
-                            list(mon_abbr_to_num.keys())
+                            list(mon_abbr_to_num.keys()),
+                            index=today.month-2 if today.month > 1 else 0
                         )
             end_date = helpers.get_last_day_of_month_datetime(year, mon_abbr_to_num[month])
             start_date = dt.date(year, mon_abbr_to_num[month], 1)
