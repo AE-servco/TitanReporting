@@ -65,14 +65,14 @@ def fetch_payments(
     Retrieve all invoices given a list of ids
     """
     if type(invoice_ids[0]) != str:
-        invoice_ids = [str(id) for id in invoice_ids]
+        invoice_ids = [str(id).strip() for id in invoice_ids]
     base_path = _client.build_url('accounting', 'payments')
 
     params = {
         # 'appliedToInvoiceIds': ','.join(invoice_ids)
     }
 
-    payments = _client.get_all_id_filter(base_path, ids= invoice_ids, id_filter_name='appliedToInvoiceIds', params=params)
+    payments = _client.get_all_id_filter(base_path, ids=invoice_ids, id_filter_name='appliedToInvoiceIds', params=params)
     return payments
 
 def fetch_tag_types(client: ServiceTitanClient):

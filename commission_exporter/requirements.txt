@@ -1,5 +1,3 @@
-streamlit
-streamlit-authenticator
 pandas
 datetime
 numpy
@@ -11,3 +9,7 @@ google-cloud-secret-manager
 oauth2client
 google-auth
 openpyxl
+holidays
+streamlit==1.52.0
+extra-streamlit-components==0.1.81
+streamlit-authenticator==0.4.2

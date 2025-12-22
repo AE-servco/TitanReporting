@@ -7,7 +7,10 @@ import pandas as pd
 import calendar
 
 import modules.google_store as gs
+
 from modules.excel_builder import build_workbook 
+from modules.excel_templates import CommissionSpreadSheetExporter
+
 import modules.helpers as helpers
 import modules.templates as templates
 import modules.data_formatting as format
@@ -20,9 +23,7 @@ import modules.lookup_tables as lookup
 import warnings
 warnings.filterwarnings("ignore", message=".*cookie_manager.*")
 
-
-
-st.title("Weekly Commission Sheets (per technician)")
+st.title("Commission Spreadsheet Exporter")
 
 CONFIG_FILENAME = 'st_auth_config_commission_exporter.yaml'
 config = gs.load_yaml_from_gcs(CONFIG_FILENAME)
@@ -34,62 +35,71 @@ authenticator = stauth.Authenticate(
 authenticator.login(location='main')
 
 if ss["authentication_status"]:
+
+    if "spreadsheets" not in ss:
+        ss.spreadsheets = {}
+
+    st.write('If there is a yellow box above talking about a Cookie Manager, please disregard. It does not affect the functionality of the app.')
+    st.write('Please select a timeframe, tenant, and date to filter by, then click "Fetch and build workbook". This will gather all the relevant data and produce the "Download Spreadsheet" button after a short wait. Click this to get the spreadsheet.')
+
     today = dt.date.today()
     # default to last Mon–Sun
     last_monday = today - dt.timedelta(days=today.weekday() + 7)
     last_sunday = last_monday + dt.timedelta(days=6)
 
-    # timeframe = st.selectbox(
-    #     "Select timeframe",
-    #     [
-    #         'Month',
-    #         'Week'
-    #     ],
+    timeframe = st.selectbox(
+        "Select timeframe",
+        [
+            'Monthly',
+            'Weekly'
+        ],
         
-    # )
+    )
 
     with st.form("date_select"):
         tenant = st.selectbox(
             "Select tenant",
             lookup.get_tenants().keys()
         )
-        end_date = st.date_input("Week ending", value=last_sunday)
-        start_date = end_date - dt.timedelta(days=6)
-        submitted = st.form_submit_button("Fetch and build workbook")
+        # end_date = st.date_input("Week ending", value=last_sunday)
+        # start_date = end_date - dt.timedelta(days=6)
+        # submitted = st.form_submit_button("Fetch and build workbook")
 
-        # if timeframe == 'Week':
-        #     end_date = st.date_input("Week ending", value=last_sunday)
-        #     start_date = end_date - dt.timedelta(days=6)
-        #     submitted = st.form_submit_button("Fetch and build workbook")
+        if timeframe == 'Weekly':
+            end_date = st.date_input("Week ending", value=last_sunday)
+            start_date = end_date - dt.timedelta(days=6)
+            submitted = st.form_submit_button("Fetch and build workbook")
 
-        # elif timeframe == 'Month':
-        #     mon_abbr_to_num = {name: num for num, name in enumerate(calendar.month_abbr) if num}
-        #     year = st.selectbox(
-        #                     "Year",
-        #                     [
-        #                         2025,
-        #                         2026
-        #                     ]
-        #                 )
-        #     month = st.selectbox(
-        #                     "Month",
-        #                     list(mon_abbr_to_num.keys())
-        #                 )
-        #     end_date = helpers.get_last_day_of_month_datetime(year, mon_abbr_to_num[month])
-        #     start_date = dt.date(year, mon_abbr_to_num[month], 1)
-        #     submitted = st.form_submit_button("Fetch and build workbook")
-        # else: 
-        #     st.write("Select week or month above")
+        elif timeframe == 'Monthly':
+            mon_abbr_to_num = {name: num for num, name in enumerate(calendar.month_abbr) if num}
+            year = st.selectbox(
+                            "Year",
+                            [
+                                2025,
+                                2026
+                            ]
+                        )
+            month = st.selectbox(
+                            "Month",
+                            list(mon_abbr_to_num.keys()),
+                            index=today.month-2 if today.month > 1 else 0
+                        )
+            end_date = helpers.get_last_day_of_month_datetime(year, mon_abbr_to_num[month])
+            start_date = dt.date(year, mon_abbr_to_num[month], 1)
+            submitted = st.form_submit_button("Fetch and build workbook")
+        else: 
+            st.write("Select week or month above")
             
 
         
     if submitted:
         tenant_code = lookup.get_tenants()[tenant]
+        # print(tenant_code)
         with st.spinner("Loading..."):
             ss.client = helpers.get_client(tenant_code)
             with st.spinner("Fetching employee info..."):
                 employee_map = helpers.get_all_employee_ids(ss.client)
-                # employee_map = {}
+                # st.write(employee_map)
 
 
             with st.spinner("Fetching tags..."):
@@ -114,6 +124,8 @@ if ss["authentication_status"]:
                     invoice_ids = format.get_invoice_ids(jobs)
                     # st.write(len(jobs))
                     # st.write(jobs)
+                    # st.write(len(invoice_ids))
+                    # st.write(invoice_ids)
 
                 with st.spinner("Fetching estimates..."):
                     estimates = fetching.fetch_estimates(start_date, end_date, ss.client)
@@ -124,13 +136,14 @@ if ss["authentication_status"]:
                 with st.spinner("Fetching invoices..."):
                     invoices = fetching.fetch_invoices(invoice_ids, ss.client)
                     # st.write(len(invoices))
-                    # st.write(invoices)
+                    # st.write(pd.DataFrame(invoices))
                     # invoices = []
 
                 with st.spinner("Fetching payments..."):
                     payments = fetching.fetch_payments(invoice_ids, ss.client)
                     # st.write(len(payments))
-                    # st.write(payments)
+                    # st.write('payments list')
+                    # st.write(pd.DataFrame(payments))
                     # # payments = []
                     # st.write(invoice_ids)
                 
@@ -159,12 +172,14 @@ if ss["authentication_status"]:
                     open_estimates_grouped = open_estimates_df.groupby('job_id', as_index=False).agg({'est_subtotal': 'sum'})
                     sold_estimates_grouped = sold_estimates_df.groupby('job_id', as_index=False).agg({'est_subtotal': 'sum'})
 
+                    # st.dataframe(jobs_df)
                     # st.dataframe(invoices_df)
                     # st.dataframe(open_estimates_df)
                     # st.dataframe(sold_estimates_df)
                     # st.dataframe(open_estimates_grouped)
                     # st.dataframe(sold_estimates_grouped)
                     # st.dataframe(payments_df)
+                    # st.dataframe(payments_grouped)
 
                 with st.spinner("Merging data..."):
                     merged = helpers.merge_dfs([jobs_df, invoices_df, payments_grouped], on='invoiceId', how='left')
@@ -182,17 +197,24 @@ if ss["authentication_status"]:
                 
                 with st.spinner("Separating by technician..."):
                     # group by tech name
-                    jobs_by_tech = format.group_jobs_by_tech(job_records, employee_map, end_date)
+                    relevant_holidays = helpers.get_holidays(lookup.get_state_from_tenant(tenant_code))
+                    # print(relevant_holidays)
+                    jobs_by_tech = format.group_jobs_by_tech(job_records, employee_map, end_date, relevant_holidays)
 
                 with st.spinner("Building spreadsheet..."):
-                    excel_bytes = build_workbook(
-                        jobs_by_tech=jobs_by_tech,
-                        end_date=end_date
-                    )
+                    builder = CommissionSpreadSheetExporter(jobs_by_tech, end_date, timeframe=timeframe.lower(), col_offset=1, holidays=relevant_holidays)
+                    
+                    excel_bytes = builder.build_workbook()
+                # st.write(jobs_by_tech)
+                    
+                ss.spreadsheets[f"commissions_{tenant_code}_{start_date}_{end_date}.xlsx"] = excel_bytes
             
-                templates.show_download_button(excel_bytes, f"commissions_{tenant_code}_{start_date}_{end_date}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                # templates.show_download_button(excel_bytes, f"commissions_{tenant_code}_{start_date}_{end_date}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
             else:
                 st.write("No data available.")
+
+    for spreadsheet_name, spreadsheet_data in ss.spreadsheets.items():
+        templates.show_download_button(spreadsheet_data, spreadsheet_name, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 elif ss["authentication_status"] is False:
     st.error('Please log in.')

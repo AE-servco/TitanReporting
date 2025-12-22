@@ -12,6 +12,11 @@ def check_unsuccessful(job, tags):
     job_tags = set(job.get('tagTypeIds'))
     return bool(unsuccessful_tags & job_tags)
 
+def check_complaint(job, tags):
+    complaint_tags = {tag.get("id") for tag in tags if "complaint" in tag.get("name").lower()}
+    job_tags = set(job.get('tagTypeIds'))
+    return bool(complaint_tags & job_tags)
+
 def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='docchecks_live'):
     
     # if 116255355 in job['tagTypeIds'] or 
@@ -36,7 +41,8 @@ def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='d
             formatted['sold_by'] = 'Manual Check'
         else:
             # just add to manual check list for now, might separate to different check list in future.
-            formatted['sold_by'] = 'Manual Check'
+            formatted['sold_by'] = str(list(job_appt_techs)[0])
+            # formatted['sold_by'] = 'Manual Check'
 
     if job['first_appt']:
         formatted['first_appt_start_dt'] = client.from_utc(job['first_appt']['start'])
@@ -53,6 +59,7 @@ def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='d
     externalData = get_external_data_by_key(job['externalData'], key=exdata_key)
     formatted.update(format_external_data_for_xl(externalData))
     formatted['unsuccessful'] = check_unsuccessful(job, tenant_tags)
+    formatted['complaint_tag_present'] = check_complaint(job, tenant_tags)
     return formatted
 
 def get_external_data_by_key(data, key='docchecks'):
@@ -122,7 +129,9 @@ def format_payment(payment, client: ServiceTitanClient):
             # formatted['payment_dates'] = client.st_date_to_local(invoice['appliedOn'])[:10] # cut off at just date
         except KeyError:
             formatted['payment_dates'] = 'no payment date'
-        formatted['payment_amt'] = payment['type'][:2] + invoice.get('appliedAmount', '0')
+        all_payment_types = lookup.get_all_payment_types()
+        formatted['payment_details'] = f"{all_payment_types.get(payment['type'], payment['type'])}|{invoice.get('appliedAmount', '0')}"
+        # formatted['payment_details'] = {'type': payment['type'], 'amount': invoice.get('appliedAmount', '0')}
         output.append(formatted)
     return output
 
@@ -188,23 +197,26 @@ def format_employee_list(employee_response):
             formatted[employee['userId']] = {'name': employee['name'], 'team': 'O'}
     return formatted
 
-def group_jobs_by_tech(job_records, employee_map, end_date):
+def group_jobs_by_tech(job_records, employee_map, end_date, relevant_holidays):
     jobs_by_tech: dict[str, list[dict]] = {}
     for j in job_records:
         tid = j.get("sold_by")
+        # print(tid)
         if not tid:
             continue
         if tid == 'Manual Check':
             name = tid + 'O'
         else:
             tech_info = employee_map.get(int(tid))
+            # print(tech_info)
             if tech_info is None:
                 name = 'Manual Check' + 'O'
             else:
                 name = tech_info.get("name", f"{tid}")
                 tech_role = tech_info.get('team', 'O')
                 name = name + tech_role
-        j_category = helpers.categorise_job(j, end_date)
+        # print(name)
+        j_category = helpers.categorise_job(j, end_date, relevant_holidays)
         jobs_by_tech.setdefault(name, dict()).setdefault(j_category, []).append(j)
     return jobs_by_tech
 

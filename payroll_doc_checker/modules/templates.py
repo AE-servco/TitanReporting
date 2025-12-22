@@ -40,7 +40,7 @@ def sidebar_filters():
         tenant_filter = st.selectbox(
             "ServiceTitan Tenant",
             [
-                "AlphaBravo (NSW)",
+                "AlphaBravo (NSW)"
                 "MikeEcho (VIC)",
                 "BravoGolf (QLD)",
                 "SierraDelta (WA)",
