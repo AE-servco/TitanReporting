@@ -23,8 +23,6 @@ import modules.lookup_tables as lookup
 import warnings
 warnings.filterwarnings("ignore", message=".*cookie_manager.*")
 
-
-
 st.title("Commission Spreadsheet Exporter")
 
 CONFIG_FILENAME = 'st_auth_config_commission_exporter.yaml'
@@ -41,6 +39,7 @@ if ss["authentication_status"]:
     if "spreadsheets" not in ss:
         ss.spreadsheets = {}
 
+    st.write('If there is a yellow box above talking about a Cookie Manager, please disregard. It does not affect the functionality of the app.')
     st.write('Please select a timeframe, tenant, and date to filter by, then click "Fetch and build workbook". This will gather all the relevant data and produce the "Download Spreadsheet" button after a short wait. Click this to get the spreadsheet.')
 
     today = dt.date.today()
