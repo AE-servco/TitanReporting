@@ -8,6 +8,8 @@ from openpyxl.comments import Comment
 from openpyxl.formatting.rule import CellIsRule, FormulaRule
 
 import modules.helpers as helpers
+import modules.lookup_tables as lookup
+
 
 
 # function for each "box" in the summary
@@ -845,40 +847,20 @@ class CommissionSpreadSheetExporter:
 
         if type(payments) == str:
             payments = payments.split(', ')
-            
-            missing_type_str = 'missing type'
-            
-            all_payment_types = {
-                'AMEX': 'CC',
-                'Applied Payment for AR': 'DK',
-                'Cash': 'Cash',
-                'Check': 'DK',
-                'Credit Card': 'CC',
-                'EFT/Bank Transfer': 'EFT',
-                'Humm - Finance Fee': 'PP',
-                'Humm Payment Plan': 'PP',
-                'Imported Default Credit Card': 'DK',
-                'MasterCard': 'CC',
-                'Visa': 'CC',
-                'Payment Plan': 'PP',
-                'Payment Plan - Fee': 'PP',
-                'Processed in ServiceM8': 'DK',
-                'Refund (check)': 'REF',
-                'Refund (credit card)': 'REF',
-                missing_type_str: 'DK'
-            }
-            
+        
+            all_payment_types = lookup.get_all_payment_types()
             p_types = {p_type: [] for p_type in set(all_payment_types.values())}
             
             for p in payments:
-                p_types[p.get('type',missing_type_str)].append(p('amount','0'))
+                p_type, amount = p.split('|')
+                p_types[p_type].append(amount)
                 
-            # if p_types['EFT'] or p_types['CC']:
-            self.formatted_cell(ws, row, col_offset + 22, f"={'+'.join(p_types['EFT'] + p_types['CC'])}", font=cat_font, number_format=self.accounting_format)
-            # if p_types['Cash']:
-            self.formatted_cell(ws, row, col_offset + 23, f"={'+'.join(p_types['Cash'])}", font=cat_font, number_format=self.accounting_format)
-            # if p_types['PP']:
-            self.formatted_cell(ws, row, col_offset + 24, f"={'+'.join(p_types['PP'])}", font=cat_font, number_format=self.accounting_format)
+            if p_types['EFT'] or p_types['CC']:
+                self.formatted_cell(ws, row, col_offset + 22, f"={'+'.join(p_types['EFT'] + p_types['CC'])}", font=cat_font, number_format=self.accounting_format)
+            if p_types['Cash']:
+                self.formatted_cell(ws, row, col_offset + 23, f"={'+'.join(p_types['Cash'])}", font=cat_font, number_format=self.accounting_format)
+            if p_types['PP']:
+                self.formatted_cell(ws, row, col_offset + 24, f"={'+'.join(p_types['PP'])}", font=cat_font, number_format=self.accounting_format)
         return
     
     def category_totals_row(self, cat: str, amt_col: int, materials_col: int, merchantf_col: int, profit_col: int):
