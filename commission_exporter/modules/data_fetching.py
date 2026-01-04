@@ -9,9 +9,9 @@ from servicetitan_api_client import ServiceTitanClient
 # @st.cache_data(show_spinner=False)
 def fetch_jobs(
     _client: ServiceTitanClient,
-    start_date: _dt.date = None,
-    end_date: _dt.date = None,
-    job_id_ls: list = None,
+    start_date: Optional[_dt.date] = None,
+    end_date: Optional[_dt.date] = None,
+    job_id_ls: Optional[list] = None,
 ) -> List[Dict[str, Any]]:
     """
     Retrieve all jobs created between `start_date` and `end_date`,
@@ -141,19 +141,6 @@ def fetch_appts(
 
     starts_after = _client.start_of_day_utc_string(start_date)
     starts_before = _client.end_of_day_utc_string(end_date)
-    # If job_id specified, only return that job
-    # if job_id:
-    #     params = {
-    #         "jobId": job_id,
-    #     }
-    #     try:
-    #         resp = _client.get(base_path, params=params)
-    #     except Exception:
-    #         return []
-    #     if not isinstance(resp, dict):
-    #         return []
-    #     page_data: Iterable[Dict[str, Any]] = resp.get("data") or []
-    #     return page_data
     params = {
                 "startsOnOrAfter": starts_after,
                 "startsBefore": starts_before,
