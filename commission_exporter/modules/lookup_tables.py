@@ -1,3 +1,5 @@
+from typing import Dict, List, Set, Tuple, Optional, Any, Iterable
+
 def get_doc_check_criteria():
     checks = {
         'pb': 'Before Photo',
@@ -26,7 +28,7 @@ def get_tenants():
     }
     return tenants
 
-def get_state_from_tenant(tenant: str = None):
+def get_state_from_tenant(tenant: Optional[str] = None):
     tenants = {
         'foxtrotwhiskey': 'NSW',
         'bravogolf': 'QLD',
@@ -38,6 +40,16 @@ def get_state_from_tenant(tenant: str = None):
     }
     if tenant: return tenants[tenant]
     return tenants
+
+def get_tenant_from_state(state: Optional[str] = None) -> dict[str,list] | list:
+    mapping = {
+        'NSW': ['foxtrotwhiskey', 'alphabravo'],
+        'QLD': ['bravogolf', 'echozulu'],
+        'VIC': ['mikeecho', 'victortango'],
+        'WA': ['sierradelta'],
+    }
+    if state: return mapping[state]
+    return mapping
 
 def get_all_payment_types():
     output = {

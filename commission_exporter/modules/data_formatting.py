@@ -197,7 +197,7 @@ def format_employee_list(employee_response):
             formatted[employee['userId']] = {'name': employee['name'], 'team': 'O'}
     return formatted
 
-def group_jobs_by_tech(job_records, employee_map, end_date, relevant_holidays):
+def group_jobs_by_tech(job_records, employee_map, end_date, relevant_holidays) -> dict:
     jobs_by_tech: dict[str, list[dict]] = {}
     for j in job_records:
         tid = j.get("sold_by")
