@@ -16,15 +16,27 @@ steps:
         'australia-southeast1-docker.pkg.dev/${_GCP_PROJECT}/${_ARTIFACT_REPO}/${_IMAGE_NAME}'
       ]
 
-  # Step 3: Deploy to Cloud Run with TCP health checks
+  # Step 3: Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
       [
-        'run', 'services', 'replace', './cloudrun-service.yaml',
+        'run', 'deploy', '${_SERVICE_NAME}',
+        '--image', 'australia-southeast1-docker.pkg.dev/${_GCP_PROJECT}/${_ARTIFACT_REPO}/${_IMAGE_NAME}',
         '--region', 'australia-southeast1',
         '--allow-unauthenticated'
       ]
+
+  # # Step 3: Deploy to Cloud Run with TCP health checks
+  # - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  #   dir: '.'
+  #   entrypoint: gcloud
+  #   args:
+  #     [
+  #       'run', 'services', 'replace', './cloudrun-service.yaml',
+  #       '--region', 'australia-southeast1',
+  #       '--allow-unauthenticated'
+  #     ]
 
 substitutions:
   _IMAGE_NAME: 'payroll_doc_checker'
