@@ -21,7 +21,7 @@ steps:
     entrypoint: gcloud
     args:
       [
-        'run', 'services', 'replace', 'cloudrun-service.yaml',
+        'run', 'services', 'replace', './cloudrun-service.yaml',
         '--region', 'australia-southeast1',
         '--allow-unauthenticated'
       ]

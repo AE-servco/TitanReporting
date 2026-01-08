@@ -6,7 +6,9 @@ metadata:
 spec:
   template:
     metadata:
-      annotations: {}
+      annotations: 
+        autoscaling.knative.dev/minScale: "1"   # keep at least 1 instance warm
+        autoscaling.knative.dev/maxScale: "10"  # never scale above 10 instances
     spec:
       containers:
         - image: australia-southeast1-docker.pkg.dev/${_GCP_PROJECT}/${_ARTIFACT_REPO}/${_IMAGE_NAME}
