@@ -1,0 +1,20 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: ${_SERVICE_NAME}
+  namespace: ${_GCP_PROJECT}
+spec:
+  template:
+    metadata:
+      annotations: {}
+    spec:
+      containers:
+        - image: australia-southeast1-docker.pkg.dev/${_GCP_PROJECT}/${_ARTIFACT_REPO}/${_IMAGE_NAME}
+          ports:
+            - containerPort: 8080
+          startupProbe:
+            tcpSocket:
+              port: 8080
+            periodSeconds: 240
+            timeoutSeconds: 240
+            failureThreshold: 50
