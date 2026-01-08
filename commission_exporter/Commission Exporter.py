@@ -5,6 +5,7 @@ import streamlit_authenticator as stauth
 import datetime as dt
 import pandas as pd
 import calendar
+from pprint import pprint
 
 import modules.google_store as gs
 
@@ -98,6 +99,7 @@ if ss["authentication_status"]:
         data_present = False # flag for checking if data is present. Only here because refactoring for merging states, not the best way to do it I know.
         job_records = []
         for tenant_code in tenant_codes:
+            print(f"Running {tenant_code}")
             with st.spinner("Loading..."):
                 ss.client = helpers.get_client(tenant_code)
                 with st.spinner("Fetching employee info..."):
@@ -111,99 +113,104 @@ if ss["authentication_status"]:
 
                 with st.spinner("Fetching appointments..."):
                     appts = fetching.fetch_appts(ss.client, start_date, end_date)
+                    pprint(f"len(appts) == {len(appts)}")
 
                 if len(appts) == 0:
                     continue
-                else:
-                    data_present = True # Change to true if any data present.
-                    with st.spinner("Fetching appointments..."):
-                        first_appts = format.get_first_appts(appts)
-                        job_ids = format.get_job_ids(first_appts)
-                        appt_ids = [appt['id'] for appt in appts]
+                data_present = True # Change to true if any data present.
+                with st.spinner("Fetching appointments..."):
+                    first_appts = format.get_first_appts(appts)
+                    pprint(f"len(first_appts) == {len(first_appts)}")
+                    if len(first_appts) == 0:
+                        continue
+                    job_ids = format.get_job_ids(first_appts)
+                    pprint(f"len(job_ids) == {len(job_ids)}")
+                    appt_ids = [appt['id'] for appt in appts]
 
-                    with st.spinner("Fetching appointment assignments..."):
-                        appt_assmnts = fetching.fetch_appt_assmnts(ss.client, appt_ids)
-                        # appt_assmnts = []
+                with st.spinner("Fetching appointment assignments..."):
+                    appt_assmnts = fetching.fetch_appt_assmnts(ss.client, appt_ids)
+                    # appt_assmnts = []
 
-                    with st.spinner("Fetching jobs..."):
-                        jobs = fetching.fetch_jobs(ss.client, job_id_ls=job_ids)
-                        invoice_ids = format.get_invoice_ids(jobs)
-                        # st.write(len(jobs))
-                        # st.write(jobs)
-                        # st.write(len(invoice_ids))
-                        # st.write(invoice_ids)
+                with st.spinner("Fetching jobs..."):
+                    jobs = fetching.fetch_jobs(ss.client, job_id_ls=job_ids)
+                    pprint(f"len(jobs) == {len(jobs)}")
+                    invoice_ids = format.get_invoice_ids(jobs)
+                    # st.write(len(jobs))
+                    # st.write(jobs)
+                    # st.write(len(invoice_ids))
+                    # st.write(invoice_ids)
 
-                    with st.spinner("Fetching estimates..."):
-                        estimates = fetching.fetch_estimates(start_date, end_date, ss.client)
-                        # st.write(len(estimates))
-                        # st.write(estimates)
-                        # estimates = []
+                with st.spinner("Fetching estimates..."):
+                    estimates = fetching.fetch_estimates(start_date, end_date, ss.client)
+                    # st.write(len(estimates))
+                    # st.write(estimates)
+                    # estimates = []
 
-                    with st.spinner("Fetching invoices..."):
-                        invoices = fetching.fetch_invoices(invoice_ids, ss.client)
-                        # st.write(len(invoices))
-                        # st.write(pd.DataFrame(invoices))
-                        # invoices = []
+                with st.spinner("Fetching invoices..."):
+                    invoices = fetching.fetch_invoices(invoice_ids, ss.client)
+                    # st.write(len(invoices))
+                    # st.write(pd.DataFrame(invoices))
+                    # invoices = []
 
-                    with st.spinner("Fetching payments..."):
-                        payments = fetching.fetch_payments(invoice_ids, ss.client)
-                        # st.write(len(payments))
-                        # st.write('payments list')
-                        # st.write(pd.DataFrame(payments))
-                        # # payments = []
-                        # st.write(invoice_ids)
+                with st.spinner("Fetching payments..."):
+                    payments = fetching.fetch_payments(invoice_ids, ss.client)
+                    # st.write(len(payments))
+                    # st.write('payments list')
+                    # st.write(pd.DataFrame(payments))
+                    # # payments = []
+                    # st.write(invoice_ids)
+                
+                with st.spinner("Formatting data..."):
+                    appt_assmnts = [format.format_appt_assmt(appt) for appt in appt_assmnts]
+                    appt_assmnts_by_job, num_appts_per_job = format.group_appt_assmnts_by_job(appt_assmnts)
+                    first_appts_by_id = format.extract_id_to_key(first_appts, 'jobId')
+                    for job in jobs:
+                        job['appt_techs'] = set(appt_assmnts_by_job.get(job['id'], []))
+                        job['num_of_appts_in_mem'] = num_appts_per_job.get(job['id'], 0)
+                        job['first_appt'] = first_appts_by_id.get(job['id'], {})
+                    jobs_w_nones = [format.format_job(job, ss.client, tenant_tags, exdata_key='docchecks_live') for job in jobs]
+                    jobs = [job for job in jobs_w_nones if job is not None]
+                    invoices = [format.format_invoice(invoice) for invoice in invoices]
+                    payments = helpers.flatten_list([format.format_payment(payment, ss.client) for payment in payments])
+                    open_estimates = [e for e in [format.format_estimate(est, sold=False) for est in estimates] if e is not None]
+                    sold_estimates = [e for e in [format.format_estimate(est, sold=True) for est in estimates] if e is not None]
+
+                    jobs_df = pd.DataFrame(jobs)
+                    invoices_df = pd.DataFrame(invoices)
+                    payments_df = pd.DataFrame(payments)
+                    # payments_grouped = payments_df.groupby('invoiceId', as_index=False).agg(','.join)
+                    payments_grouped = payments_df.groupby('invoiceId', as_index=False).agg(lambda x: ', '.join(sorted(list(set(x)))))
+                    open_estimates_df = pd.DataFrame(open_estimates)
+                    sold_estimates_df = pd.DataFrame(sold_estimates)
+                    open_estimates_grouped = open_estimates_df.groupby('job_id', as_index=False).agg({'est_subtotal': 'sum'})
+                    sold_estimates_grouped = sold_estimates_df.groupby('job_id', as_index=False).agg({'est_subtotal': 'sum'})
+
+                    # st.dataframe(jobs_df)
+                    # st.dataframe(invoices_df)
+                    # st.dataframe(open_estimates_df)
+                    # st.dataframe(sold_estimates_df)
+                    # st.dataframe(open_estimates_grouped)
+                    # st.dataframe(sold_estimates_grouped)
+                    # st.dataframe(payments_df)
+                    # st.dataframe(payments_grouped)
+
+                with st.spinner("Merging data..."):
+                    merged = helpers.merge_dfs([jobs_df, invoices_df, payments_grouped], on='invoiceId', how='left')
+                    merged = helpers.merge_dfs([merged, open_estimates_grouped], on='job_id')
+                    merged = merged.rename(columns={'est_subtotal': 'open_est_subtotal'})
+                    merged = helpers.merge_dfs([merged, sold_estimates_grouped], on='job_id')
+                    merged = merged.rename(columns={'est_subtotal': 'sold_est_subtotal'})
+                    merged = merged.sort_values(by='first_appt_start_dt')
+                    # merged = pd.merge(pd.merge(jobs_df, invoices_df, on='invoiceId', how='left'), payments_grouped, on='invoiceId', how='left')
+                    job_records_tmp = merged.to_dict(orient='records')
+                    for job in job_records_tmp:
+                        job['payments_in_time'] = helpers.check_payment_dates(job, end_date)
                     
-                    with st.spinner("Formatting data..."):
-                        appt_assmnts = [format.format_appt_assmt(appt) for appt in appt_assmnts]
-                        appt_assmnts_by_job, num_appts_per_job = format.group_appt_assmnts_by_job(appt_assmnts)
-                        first_appts_by_id = format.extract_id_to_key(first_appts, 'jobId')
-                        for job in jobs:
-                            job['appt_techs'] = set(appt_assmnts_by_job.get(job['id'], []))
-                            job['num_of_appts_in_mem'] = num_appts_per_job.get(job['id'], 0)
-                            job['first_appt'] = first_appts_by_id.get(job['id'], {})
-                        jobs_w_nones = [format.format_job(job, ss.client, tenant_tags, exdata_key='docchecks_live') for job in jobs]
-                        jobs = [job for job in jobs_w_nones if job is not None]
-                        invoices = [format.format_invoice(invoice) for invoice in invoices]
-                        payments = helpers.flatten_list([format.format_payment(payment, ss.client) for payment in payments])
-                        open_estimates = [e for e in [format.format_estimate(est, sold=False) for est in estimates] if e is not None]
-                        sold_estimates = [e for e in [format.format_estimate(est, sold=True) for est in estimates] if e is not None]
-
-                        jobs_df = pd.DataFrame(jobs)
-                        invoices_df = pd.DataFrame(invoices)
-                        payments_df = pd.DataFrame(payments)
-                        # payments_grouped = payments_df.groupby('invoiceId', as_index=False).agg(','.join)
-                        payments_grouped = payments_df.groupby('invoiceId', as_index=False).agg(lambda x: ', '.join(sorted(list(set(x)))))
-                        open_estimates_df = pd.DataFrame(open_estimates)
-                        sold_estimates_df = pd.DataFrame(sold_estimates)
-                        open_estimates_grouped = open_estimates_df.groupby('job_id', as_index=False).agg({'est_subtotal': 'sum'})
-                        sold_estimates_grouped = sold_estimates_df.groupby('job_id', as_index=False).agg({'est_subtotal': 'sum'})
-
-                        # st.dataframe(jobs_df)
-                        # st.dataframe(invoices_df)
-                        # st.dataframe(open_estimates_df)
-                        # st.dataframe(sold_estimates_df)
-                        # st.dataframe(open_estimates_grouped)
-                        # st.dataframe(sold_estimates_grouped)
-                        # st.dataframe(payments_df)
-                        # st.dataframe(payments_grouped)
-
-                    with st.spinner("Merging data..."):
-                        merged = helpers.merge_dfs([jobs_df, invoices_df, payments_grouped], on='invoiceId', how='left')
-                        merged = helpers.merge_dfs([merged, open_estimates_grouped], on='job_id')
-                        merged = merged.rename(columns={'est_subtotal': 'open_est_subtotal'})
-                        merged = helpers.merge_dfs([merged, sold_estimates_grouped], on='job_id')
-                        merged = merged.rename(columns={'est_subtotal': 'sold_est_subtotal'})
-                        merged = merged.sort_values(by='first_appt_start_dt')
-                        # merged = pd.merge(pd.merge(jobs_df, invoices_df, on='invoiceId', how='left'), payments_grouped, on='invoiceId', how='left')
-                        job_records_tmp = merged.to_dict(orient='records')
-                        for job in job_records_tmp:
-                            job['payments_in_time'] = helpers.check_payment_dates(job, end_date)
-                        
-                        print(job_records)
-                        print(job_records_tmp)
-                        job_records.extend(job_records_tmp)
-                    # st.write(job_records)
-                    # st.dataframe(merged)
+                    print(job_records)
+                    print(job_records_tmp)
+                    job_records.extend(job_records_tmp)
+                # st.write(job_records)
+                # st.dataframe(merged)
         if data_present:    
             with st.spinner("Separating by technician..."):
                 # group by tech name

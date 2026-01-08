@@ -49,6 +49,8 @@ def fetch_invoices(
     """
     Retrieve all invoices given a list of ids
     """
+    if len(ids) == 0:
+        return []
     if type(ids[0]) != str:
         ids = [str(id) for id in ids]
     base_path = _client.build_url('accounting', 'invoices')
