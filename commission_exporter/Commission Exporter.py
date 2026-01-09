@@ -78,7 +78,8 @@ if ss["authentication_status"]:
                             [
                                 2025,
                                 2026
-                            ]
+                            ],
+                            index=1
                         )
             month = st.selectbox(
                             "Month",
