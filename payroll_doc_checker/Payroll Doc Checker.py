@@ -178,9 +178,13 @@ def main() -> None:
                     imgs = None
                     pdfs = None
                 else:
+                    print(f"attachment status is {job_attachment_status} for job id {job_id}")
+                    if "refresh_5_sec_count" not in st.session_state:
+                        st.session_state.refresh_5_sec_count = 0
                     # If not already prefetched, download synchronously all attachments
                     with st.spinner("Downloading attachments. Refreshing in 5 seconds..."):
-                        # st.write('status = else')
+                        st.session_state.refresh_5_sec_count += 1
+                        print(f"This has refreshed after 5 seconds {st.session_state.refresh_5_sec_count} times for job id {job_id}")
                         fetch.request_job_download(job_id, st.session_state.current_tenant, ATTACHMENT_DOWNLOADER_URL, force_refresh=True)
                         time.sleep(5)
                         st.rerun()

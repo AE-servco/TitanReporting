@@ -179,9 +179,9 @@ def request_job_download(job_id, tenant, base_url=ATTACHMENT_DOWNLOADER_URL, for
     # print(f'requested job download for {job_id}...')
 
     if job_id in st.session_state.jobs_queued.keys():
-        if _dt.datetime.now() - st.session_state.jobs_queued[job_id] < _dt.timedelta(hours=1):
+        # if _dt.datetime.now() - st.session_state.jobs_queued[job_id] < _dt.timedelta(hours=1):
             # print("already queued this session")
-            return
+        return
 
     url = base_url + '/tasks/process-job'
     tasks.create_task(url, job_id, tenant, force_refresh)
