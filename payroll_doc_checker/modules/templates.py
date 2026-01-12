@@ -84,12 +84,16 @@ def nav_button(dir):
     client = st.session_state.clients.get(st.session_state.current_tenant)
     if dir=='next':
         if st.button("**>**", key='next_button', type='tertiary'):
+            if "refresh_5_sec_count" in st.session_state: # reset 5 sec counter
+                st.session_state.refresh_5_sec_count = 0
             if st.session_state.current_index < len(st.session_state.jobs) - 1:
                 st.session_state.current_index += 1
             fetch.schedule_prefetches(client)
             st.rerun()
     elif dir=='prev':
         if st.button("**<**", key='prev_button', type='tertiary'):
+            if "refresh_5_sec_count" in st.session_state: # reset 5 sec counter
+                st.session_state.refresh_5_sec_count = 0
             if st.session_state.current_index > 0:
                 st.session_state.current_index -= 1
             fetch.schedule_prefetches(client)

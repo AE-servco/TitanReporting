@@ -20,8 +20,6 @@ import modules.helpers as helpers
 import modules.tasks as tasks
 
 ATTACHMENT_DOWNLOADER_URL = 'https://attachment-downloader-293142632916.australia-southeast1.run.app'
-# ATTACHMENT_DOWNLOADER_URL = 'https://attachment-downloader-901775793617.australia-southeast1.run.app/'
-# ATTACHMENT_DOWNLOADER_URL = 'http://0.0.0.0:8000'
 
 def fetch_jobs(
     start_date: _dt.date,

@@ -28,8 +28,7 @@ warnings.filterwarnings("ignore", message=".*cookie_manager.*")
 # Configuration and helpers
 ###############################################################################
 
-ATTACHMENT_DOWNLOADER_URL = 'https://attachment-downloader-901775793617.australia-southeast1.run.app/'
-# ATTACHMENT_DOWNLOADER_URL = 'http://0.0.0.0:8000'
+ATTACHMENT_DOWNLOADER_URL = 'https://attachment-downloader-293142632916.australia-southeast1.run.app'
 
 SIGNED_URL_TTL = 900
 
@@ -177,17 +176,31 @@ def main() -> None:
                     st.write("Please reload the page. If you keep seeing this error, please inform Albie (send screenshot of error message if possible).")
                     imgs = None
                     pdfs = None
-                else:
-                    print(f"attachment status is {job_attachment_status} for job id {job_id}")
-                    if "refresh_5_sec_count" not in st.session_state:
-                        st.session_state.refresh_5_sec_count = 0
-                    # If not already prefetched, download synchronously all attachments
-                    with st.spinner("Downloading attachments. Refreshing in 5 seconds..."):
+                elif job_attachment_status == 0:
+                    with st.spinner("Requesting attachments. Refreshing in 5 seconds..."):
+                        if "refresh_5_sec_count" not in st.session_state:
+                            st.session_state.refresh_5_sec_count = 0
+                        if st.session_state.refresh_5_sec_count > 0 and job_id in st.session_state.jobs_queued.keys():
+                            print(f"Deleting {job_id} from jobs_queued.")
+                            del st.session_state.jobs_queued[job_id]
                         st.session_state.refresh_5_sec_count += 1
                         print(f"This has refreshed after 5 seconds {st.session_state.refresh_5_sec_count} times for job id {job_id}")
                         fetch.request_job_download(job_id, st.session_state.current_tenant, ATTACHMENT_DOWNLOADER_URL, force_refresh=True)
                         time.sleep(5)
                         st.rerun()
+                else:
+                    with st.spinner("Unknown code, refreshing in 5 seconds... If this happens more than three times, please refresh the page and let Albie know."):
+                        print(f"UNKNOWN CODE: attachment status is {job_attachment_status} for job id {job_id}")
+                        
+                    # # If not already prefetched, download synchronously all attachments
+                    #     st.session_state.refresh_5_sec_count += 1
+                    #     if st.session_state.refresh_5_sec_count > 2:
+                    #         job_attachment_status_tmp, error_msg_tmp, last_update_time_tmp = fetch.get_job_status(job_id, st.session_state.clients['supabase'], st.session_state.current_tenant)
+                    #         print(job_attachment_status, error_msg_tmp, last_update_time_tmp)
+                    #     print(f"This has refreshed after 5 seconds {st.session_state.refresh_5_sec_count} times for job id {job_id}")
+                    #     fetch.request_job_download(job_id, st.session_state.current_tenant, ATTACHMENT_DOWNLOADER_URL, force_refresh=True)
+                    #     time.sleep(5)
+                    #     st.rerun()
 
                 # Display attachments in tabs: one for images and one for other docs
                 tab_images, tab_docs = st.tabs(["Images", "Other Documents"])
