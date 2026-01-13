@@ -236,11 +236,16 @@ def show_pdfs(pdfs, container_height=1000):
                         st.write("Error fetching PDF, please try again later or go to the job in ServiceTitan.")
 
 def doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks_live'):
+    
+    def all_checks_good():
+        pass
+    
     with st.form(key=f"doccheck_{job_num}"):
         client = st.session_state.clients.get(st.session_state.current_tenant)
         st.subheader(f"Job {job_num} Doc Check")
         checks = {}
 
+        
         initial_checks = job.get("tmp_doccheck_bits", fetch.get_job_external_data(job, exdata_key)) # get tmp bits from prev submission if they exist, otherwise fetch from job's external data.
         if not initial_checks.get("qs", False):
             initial_checks['qs'] = helpers.pre_fill_quote_signed_check(pdfs)
@@ -255,12 +260,22 @@ def doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks
             st.session_state.prefill_txt = "Prefilled: Invoice signed"
         elif initial_checks['qs']:
             st.session_state.prefill_txt = "Prefilled: Quote signed"
+        
+        # Checkboxes
+        allg_box = st.checkbox('All except review', key=f"{job_num}_allg", help='If this is checked, all except "5 Star Review" and "Invoice Not Signed (Client Offsite)" will be counted as complete.')
+        st.write(" ")
         for check_code, check in doc_check_criteria.items():
             default = bool(initial_checks.get(check_code, False))
             checks[check_code] = int(st.checkbox(check, key=f"{job_num}_{check_code}", value=default))
 
+
         submitted = st.form_submit_button("Submit")
         if submitted:
+            if allg_box:
+                for check_code, check in doc_check_criteria.items():
+                    if check_code not in ['ins', '5s']:
+                        checks[check_code] = 1
+                        
             encoded = json.dumps(checks)
             external_data_payload = {
                 "externalData": {
@@ -276,6 +291,7 @@ def doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks
                 st.success("Form submitted successfully")
 
                 job['tmp_doccheck_bits'] = checks # add to job so that when returning to job's doc check page, they stay filled as they were. This is needed because the job data is not re-fetched on "next" or "prev" buttons.
+                    
             except Exception as e:
                 st.error(f"Failed to submit form: {e}")
 
