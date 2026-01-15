@@ -1,0 +1,15 @@
+streamlit==1.51.0
+streamlit-authenticator
+pandas
+datetime
+numpy
+pyyaml
+git+https://github.com/AE-servco/ServiceTitanClient
+google-cloud-storage
+google-cloud-secret-manager
+oauth2client
+google-auth
+streamlit-pdf-viewer
+google-cloud-tasks
+supabase
+bidict
