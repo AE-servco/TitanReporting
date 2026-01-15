@@ -185,29 +185,29 @@ def show_images(imgs, container_height=1000, max_number_of_imgs=35):
 
     client = st.session_state.clients.get(st.session_state.current_tenant)
     with st.container(horizontal=True, height=container_height, border=False):
-        if len(imgs)>max_number_of_imgs:
-            st.write(f"Too many images, please go to job on ServiceTitan to see")
-        else:
-            for img in imgs:
-                if img.get('url'):
+        # if len(imgs)>max_number_of_imgs:
+        #     st.write(f"Too many images, please go to job on ServiceTitan to see")
+        # else:
+        for img in imgs:
+            if img.get('url'):
+                try:
+                    data = gs.fetch_from_signed_url(img.get('url'))
+                    # st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
+                    data_b64 = image_bytes_to_base64(data)
+                    # print(f"img data binary: {data_b64}")
+                    caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}'
+                    display_base64_image(data_b64, caption, width=img_size * 100)
+                except Exception as e:
+                    st.write(f"Error fetching images: ({e}), trying again..")
+                    # st.write("trying again..")
                     try:
                         data = gs.fetch_from_signed_url(img.get('url'))
-                        # st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
-                        data_b64 = image_bytes_to_base64(data)
-                        # print(f"img data binary: {data_b64}")
-                        caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}'
-                        display_base64_image(data_b64, caption, width=img_size * 100)
+                        st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
                     except Exception as e:
-                        st.write(f"Error fetching images: ({e}), trying again..")
-                        # st.write("trying again..")
-                        try:
-                            data = gs.fetch_from_signed_url(img.get('url'))
-                            st.image(data, caption=f'{st.session_state.employee_lists.get(st.session_state.current_tenant).get(int(img.get("file_by")))} at {client.st_date_to_local(img.get("file_date"), fmt="%H:%M on %d/%m/%Y")}', width=img_size * 100)
-                        except Exception as e:
-                            print(f"ERROR: IMAGE FETCHING ({e}) url = {img.get('url')}")
-                            st.write(f"Errored again, please try again later or go to the job in ServiceTitan.")
-                else:
-                    st.write("Missing image URL")
+                        print(f"ERROR: IMAGE FETCHING ({e}) url = {img.get('url')}")
+                        st.write(f"Errored again, please try again later or go to the job in ServiceTitan.")
+            else:
+                st.write("Missing image URL")
 
 def show_pdfs(pdfs, container_height=1000):
     # Provide a search box to filter document names
