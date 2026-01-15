@@ -160,7 +160,7 @@ def show_job_info(job):
 
 
 @st.fragment
-def show_images(imgs, container_height=1000, max_number_of_imgs=35):
+def show_images(imgs, container_height=1000):
     img_size = st.slider(
         "Image Size:",
         min_value=1,
