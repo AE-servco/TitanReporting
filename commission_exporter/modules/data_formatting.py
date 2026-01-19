@@ -215,7 +215,7 @@ def group_jobs_by_tech(job_records, employee_map, end_date, relevant_holidays) -
                 name = tech_info.get("name", f"{tid}")
                 tech_role = tech_info.get('team', 'O')
                 name = name + tech_role
-        # print(name)
+        print(name)
         j_category = helpers.categorise_job(j, end_date, relevant_holidays)
         jobs_by_tech.setdefault(name, dict()).setdefault(j_category, []).append(j)
     return jobs_by_tech

@@ -106,8 +106,8 @@ if ss["authentication_status"]:
                 ss.client = helpers.get_client(tenant_code)
                 with st.spinner("Fetching employee info..."):
                     employee_map = helpers.get_all_employee_ids(ss.client)
-                    pprint("employee_map")
-                    pprint(employee_map)
+                    # pprint("employee_map")
+                    # pprint(employee_map)
                     employee_map_total.update(employee_map)
 
 
@@ -251,7 +251,7 @@ if ss["authentication_status"]:
                 jobs_by_tech = format.group_jobs_by_tech(job_records, employee_map_total, end_date, relevant_holidays)
 
             with st.spinner("Building spreadsheet..."):
-                builder = CommissionSpreadSheetExporter(jobs_by_tech, end_date, timeframe=timeframe.lower(), col_offset=1, holidays=relevant_holidays)
+                builder = CommissionSpreadSheetExporter(jobs_by_tech, end_date, timeframe=timeframe.lower(), col_offset=1, holidays=relevant_holidays, scheme=state)
                 
                 excel_bytes = builder.build_workbook()
                 pprint(f"Workbook built for {state}, {start_date} to {end_date}.")

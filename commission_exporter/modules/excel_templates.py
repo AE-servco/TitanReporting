@@ -20,7 +20,7 @@ import modules.lookup_tables as lookup
 #   - based on public holidays and days per week/month otherwise
 
 class CommissionSpreadSheetExporter:
-    def __init__(self, jobs_by_tech: dict[str, list[dict]], end_date: dt.date, timeframe: str, col_offset: int, holidays=[]):
+    def __init__(self, jobs_by_tech: dict[str, list[dict]], end_date: dt.date, timeframe: str, col_offset: int, scheme, holidays=[]):
         self.jobs_by_tech = jobs_by_tech
         self.end_date = end_date
         self.timeframe = timeframe
@@ -33,6 +33,7 @@ class CommissionSpreadSheetExporter:
         self.threshold_day_num = 0
         self.curr_date = ""
         self.holidays = holidays
+        self.scheme = scheme # "NSW" | "nonNSW"
 
         # lists of col letters for each day type
         self.weekend_cols = set()
@@ -300,7 +301,7 @@ class CommissionSpreadSheetExporter:
             self.bottom_row = self.curr_row
         return
 
-    def profit_target_box(self, start_row: int):
+    def profit_target_box(self, start_row: int, tech_role: str):
         ws = self.curr_worksheet
         col_offset = self.col_offset
 
@@ -310,10 +311,21 @@ class CommissionSpreadSheetExporter:
         self.formatted_cell(ws, start_row, col_offset + 6, border = self.cell_border['topright'])
         self.formatted_cell(ws, start_row + 1, col_offset + 4, 'Tier 1', border = self.cell_border['left'])
         self.formatted_cell(ws, start_row + 1, col_offset + 5, f'<${self.threshold_day_num * 5000}')
-        self.formatted_cell(ws, start_row + 1, col_offset + 6, '=0.05', border = self.cell_border['right'], number_format=self.percentage_format)
+        
+        if self.scheme == "NSW":
+            if tech_role == 'S':
+                self.formatted_cell(ws, start_row + 1, col_offset + 6, '=0', border = self.cell_border['right'], number_format=self.percentage_format)
+            else:
+                self.formatted_cell(ws, start_row + 1, col_offset + 6, '=0.05', border = self.cell_border['right'], number_format=self.percentage_format)
+        else:
+            self.formatted_cell(ws, start_row + 1, col_offset + 6, '=0.05', border = self.cell_border['right'], number_format=self.percentage_format)
+        
         self.formatted_cell(ws, start_row + 2, col_offset + 4, 'Tier 2', border = self.cell_border['bottomleft'])
         self.formatted_cell(ws, start_row + 2, col_offset + 5, f'>=${self.threshold_day_num * 5000}', border = self.cell_border['bottom'])
-        self.formatted_cell(ws, start_row + 2, col_offset + 6, '=0.1', border = self.cell_border['bottomright'], number_format=self.percentage_format)
+        if tech_role == "S":
+            self.formatted_cell(ws, start_row + 2, col_offset + 6, '=0.1', border = self.cell_border['bottomright'], number_format=self.percentage_format)
+        else:
+            self.formatted_cell(ws, start_row + 2, col_offset + 6, '=0.05', border = self.cell_border['bottomright'], number_format=self.percentage_format)
 
         self.curr_row = start_row + 2
         if self.bottom_row < self.curr_row:
@@ -1001,7 +1013,7 @@ class CommissionSpreadSheetExporter:
                 cell.border = self.cell_border_full
         # ----------------------------------------------------------------------------------------
 
-    def build_sheet(self, wb: Workbook, tech: str | int):
+    def build_sheet(self, wb: Workbook, tech: str):
         job_cats = self.jobs_by_tech[tech]
         if not self.curr_worksheet:
             self.curr_worksheet = wb.active
@@ -1042,7 +1054,7 @@ class CommissionSpreadSheetExporter:
             raise ValueError("Timeframe must be 'weekly' or 'monthly'")
         self.job_count_box(start_row=3)
         self.payout_box(start_row=7)
-        self.profit_target_box(start_row=3)
+        self.profit_target_box(start_row=3, tech_role=tech[-1])
         self.doc_check_count_box(start_row=2)
 
     def build_workbook(self):
