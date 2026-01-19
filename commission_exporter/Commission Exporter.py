@@ -67,8 +67,9 @@ if ss["authentication_status"]:
         # submitted = st.form_submit_button("Fetch and build workbook")
 
         if timeframe == 'Weekly':
-            end_date = st.date_input("Week ending", value=last_sunday)
+            end_date = st.date_input("Week ending (Only choose a Sunday)", value=last_sunday)
             start_date = end_date - dt.timedelta(days=6)
+            spare_rows = st.number_input("Spare rows under each job section:", min_value=0, value=5, step=1)
             submitted = st.form_submit_button("Fetch and build workbook")
 
         elif timeframe == 'Monthly':
@@ -88,6 +89,7 @@ if ss["authentication_status"]:
                         )
             end_date = helpers.get_last_day_of_month_datetime(year, mon_abbr_to_num[month])
             start_date = dt.date(year, mon_abbr_to_num[month], 1)
+            spare_rows = st.number_input("Spare rows under each job section:", min_value=0, value=5, step=1)
             submitted = st.form_submit_button("Fetch and build workbook")
         else: 
             st.write("Select week or month above")
@@ -251,7 +253,7 @@ if ss["authentication_status"]:
                 jobs_by_tech = format.group_jobs_by_tech(job_records, employee_map_total, end_date, relevant_holidays)
 
             with st.spinner("Building spreadsheet..."):
-                builder = CommissionSpreadSheetExporter(jobs_by_tech, end_date, timeframe=timeframe.lower(), col_offset=1, holidays=relevant_holidays, scheme=state)
+                builder = CommissionSpreadSheetExporter(jobs_by_tech, end_date, timeframe=timeframe.lower(), col_offset=1, holidays=relevant_holidays, scheme=state, spare_rows=spare_rows)
                 
                 excel_bytes = builder.build_workbook()
                 pprint(f"Workbook built for {state}, {start_date} to {end_date}.")

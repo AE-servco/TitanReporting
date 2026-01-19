@@ -20,7 +20,7 @@ import modules.lookup_tables as lookup
 #   - based on public holidays and days per week/month otherwise
 
 class CommissionSpreadSheetExporter:
-    def __init__(self, jobs_by_tech: dict[str, list[dict]], end_date: dt.date, timeframe: str, col_offset: int, scheme, holidays=[]):
+    def __init__(self, jobs_by_tech: dict[str, list[dict]], end_date: dt.date, timeframe: str, col_offset: int, scheme, holidays=[], spare_rows=5):
         self.jobs_by_tech = jobs_by_tech
         self.end_date = end_date
         self.timeframe = timeframe
@@ -34,6 +34,7 @@ class CommissionSpreadSheetExporter:
         self.curr_date = ""
         self.holidays = holidays
         self.scheme = scheme # "NSW" | "nonNSW"
+        self.spare_rows = spare_rows
 
         # lists of col letters for each day type
         self.weekend_cols = set()
@@ -973,7 +974,7 @@ class CommissionSpreadSheetExporter:
         #     self.bottom_row = self.curr_row
         
         # add 5 rows for any extras to add
-        self.curr_row += 5
+        self.curr_row += self.spare_rows
         if self.bottom_row < self.curr_row:
             self.bottom_row = self.curr_row
 
