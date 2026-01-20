@@ -51,8 +51,8 @@ if ss["authentication_status"]:
     timeframe = st.selectbox(
         "Select timeframe",
         [
+            'Weekly',
             'Monthly',
-            'Weekly'
         ],
         
     )
