@@ -72,13 +72,14 @@ def sidebar_filters():
         )
         doc_check_filters = [doc_check_crits.inv[f] for f in doc_check_filters]
 
+        show_incomplete_only_box = st.checkbox("Only show incomplete jobs", value=False)
 
         fetch_jobs_button = st.form_submit_button("Fetch Jobs", type="primary")
 
 
     # When the fetch button is pressed, call the API and reset state
     if fetch_jobs_button:
-        helpers.fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsuccessful, custom_job_id, doc_check_filters)
+        helpers.fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsuccessful, show_incomplete_only_box, custom_job_id, doc_check_filters)
 
 def nav_button(dir):
     client = st.session_state.clients.get(st.session_state.current_tenant)

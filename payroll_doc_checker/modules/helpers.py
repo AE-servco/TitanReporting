@@ -197,7 +197,7 @@ def filter_out_unsuccessful_jobs(jobs, client: ServiceTitanClient):
 #     for job_id in done_ids:
 #         st.session_state.prefetch_futures.pop(job_id, None)
 
-def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsuccessful, custom_job_id=None, doc_check_filters=None, exdata_key="docchecks_live"):
+def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsuccessful, show_incomplete_only_box, custom_job_id=None, doc_check_filters=None, exdata_key="docchecks_live"):
     with st.spinner("Retrieving jobs..."):
         tenant_filter = tenant_filter.split(" ")[0].lower()
         st.session_state.current_tenant = tenant_filter
@@ -220,7 +220,20 @@ def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filte
             if filter_unsuccessful:
                 jobs = filter_out_unsuccessful_jobs(jobs, client)
 
-        # TODO: Add doc check filter logic
+        if show_incomplete_only_box:
+            # if only showing incomplete jobs, we want to filter for empty boxes in the below criteria. Note that the "invoice not signed, client offsite" option is not included, so some "complete" jobs may pass through if they have that one checked instead of the normal "invoice signed" option. This shouldn't be many jobs so I am leaving it as is.
+            doc_check_filters = [
+                'pb',#: 'Before Photo',
+                'pa',#: 'After Photo',
+                'pr',#: 'Receipt Photo',
+                'qd',#: 'Quote Description',
+                'qs',#: 'Quote Signed',
+                'qe',#: 'Quote Emailed',
+                'id',#: 'Invoice Description',
+                'is',#: 'Invoice Signed',
+                'ie',#: 'Invoice Emailed',
+            ]
+            
         if doc_check_filters:
             filtered_jobs = []
             for job in jobs:    
