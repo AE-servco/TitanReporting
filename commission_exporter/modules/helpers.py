@@ -105,6 +105,8 @@ def categorise_job(
         balance = float(job['balance'])
         payments_in_time = job['payments_in_time']
         completed_dt = job['completed_dt']
+        if not job.get('total') or job.get('total') <= 100: # If less than 100, likely just a dispatch fee, move straight to unsuccessful.
+            return prefix + '_unsuccessful'
         if job['unsuccessful']:
             return prefix + '_unsuccessful'
         if status == 'Completed':
@@ -117,13 +119,10 @@ def categorise_job(
                 return prefix + '_complete_unpaid'
         if status == 'Hold':
             return prefix + '_wo'
-            # return 'wk_hold'
         if status == 'InProgress':
             return prefix + '_wo'
-            # return 'wk_progress'
         if status == 'Scheduled':
             return prefix + '_wo'
-            # return 'wk_scheduled'
         return prefix + '_uncategorised'
     
     day = job['first_appt_start_dt'].weekday()
