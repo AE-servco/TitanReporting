@@ -20,6 +20,7 @@ import modules.helpers as helpers
 import modules.tasks as tasks
 
 ATTACHMENT_DOWNLOADER_URL = 'https://attachment-downloader-293142632916.australia-southeast1.run.app'
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"}
 
 def fetch_jobs(
     start_date: _dt.date,
@@ -93,7 +94,6 @@ def fetch_job_attachments(job_id: str, _client: ServiceTitanClient) -> List[Dict
     """
     attachments_url = _client.build_url("forms", f"jobs/{job_id}/attachments", version=2)
     attachments = _client.get_all(attachments_url)
-    # attachments = data.get("data", []) if isinstance(data, dict) else []
     return attachments
 
 
@@ -117,47 +117,47 @@ def download_attachment_to_gcs(attachment_id: int, _client: ServiceTitanClient, 
     # print(url)
     return url
 
-def download_attachments_for_job(job_id: str, client: ServiceTitanClient) -> Dict[str, List[Tuple[str, Any]]]:
-    """Download all attachments for a job and group them by type.
+# def download_attachments_for_job(job_id: str, client: ServiceTitanClient) -> Dict[str, List[Tuple[str, Any]]]:
+#     """Download all attachments for a job and group them by type.
 
-    This helper performs two API calls: one to list attachments and a
-    second to download each attachment.  It groups attachments into
-    ``imgs`` and ``pdfs`` by default (using the same extension map as
-    :func:`group_attachments_by_type`).  Each entry in the returned
-    dictionary is a list of ``(filename, data)`` tuples, where ``data``
-    is the raw bytes of the attachment.  If no attachments exist for a
-    category, the list will be empty.
-    """
+#     This helper performs two API calls: one to list attachments and a
+#     second to download each attachment.  It groups attachments into
+#     ``imgs`` and ``pdfs`` by default (using the same extension map as
+#     :func:`group_attachments_by_type`).  Each entry in the returned
+#     dictionary is a list of ``(filename, data)`` tuples, where ``data``
+#     is the raw bytes of the attachment.  If no attachments exist for a
+#     category, the list will be empty.
+#     """
 
-    GCS_BUCKET = 'prestigious-doc-check-attachments'
-    # GCS_BUCKET = 'doc-check-attachments'
+#     GCS_BUCKET = 'prestigious-doc-check-attachments'
+#     # GCS_BUCKET = 'doc-check-attachments'
 
-    attachments = fetch_job_attachments(job_id, client)
-    grouped_meta = helpers.group_attachments_by_type(attachments)
-    result: Dict[str, List[Tuple[str, Any]]] = {key: [] for key in grouped_meta}
-    # Download images and PDFs.  Use a ThreadPoolExecutor to parallelise
-    # downloads across all attachments regardless of type.
-    tasks: List[Tuple[str, int, str]] = []  # (category, att_id, filename)
-    for category, items in grouped_meta.items():
-        for filename, att_id, file_date, file_by in items:
-            tasks.append((category, att_id, filename, file_date, file_by))
-    if not tasks:
-        return result
-    max_workers = min(8, len(tasks)) or 1
-    with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        future_map: Dict[Future[bytes], Tuple[str, str]] = {}
-        for category, att_id, filename, file_date, file_by in tasks:
-            fut = pool.submit(download_attachment_to_gcs, att_id, client, GCS_BUCKET, f'{job_id}/{filename}')
-            future_map[fut] = (category, filename, file_date, file_by)
-        for fut in as_completed(future_map):
-            category, filename, file_date, file_by = future_map[fut]
-            try:
-                signed_url = fut.result()
-            except Exception as e:
-                print(f"EXCEPTION: {e}")
-                signed_url = None
-            result[category].append((filename, client.from_utc_string(file_date), file_by, signed_url))
-    return result
+#     attachments = fetch_job_attachments(job_id, client)
+#     grouped_meta = helpers.group_attachments_by_type(attachments)
+#     result: Dict[str, List[Tuple[str, Any]]] = {key: [] for key in grouped_meta}
+#     # Download images and PDFs.  Use a ThreadPoolExecutor to parallelise
+#     # downloads across all attachments regardless of type.
+#     tasks: List[Tuple[str, int, str]] = []  # (category, att_id, filename)
+#     for category, items in grouped_meta.items():
+#         for filename, att_id, file_date, file_by in items:
+#             tasks.append((category, att_id, filename, file_date, file_by))
+#     if not tasks:
+#         return result
+#     max_workers = min(8, len(tasks)) or 1
+#     with ThreadPoolExecutor(max_workers=max_workers) as pool:
+#         future_map: Dict[Future[bytes], Tuple[str, str]] = {}
+#         for category, att_id, filename, file_date, file_by in tasks:
+#             fut = pool.submit(download_attachment_to_gcs, att_id, client, GCS_BUCKET, f'{job_id}/{filename}')
+#             future_map[fut] = (category, filename, file_date, file_by)
+#         for fut in as_completed(future_map):
+#             category, filename, file_date, file_by = future_map[fut]
+#             try:
+#                 signed_url = fut.result()
+#             except Exception as e:
+#                 print(f"EXCEPTION: {e}")
+#                 signed_url = None
+#             result[category].append((filename, client.from_utc_string(file_date), file_by, signed_url))
+#     return result
 
 def get_job_external_data(job, key="docchecks_live"):
     external_entries = job.get("externalData", [])
@@ -168,6 +168,20 @@ def get_job_external_data(job, key="docchecks_live"):
             except Exception:
                 return {}
     return {}
+
+def get_attachment_type(filename):
+    extension_map = {
+            "img": set(IMAGE_EXTENSIONS),
+            "pdf": {".pdf"},
+            "vid": {".mp4", ".mov"},
+        }
+    
+    ext = filename.lower().rsplit(".", 1)[-1] if "." in filename else ""
+    ext_with_dot = f".{ext}" if ext else ""
+    for category, exts in extension_map.items():
+            if ext_with_dot in exts:
+                return category
+    return "oth" # if doesn't match, return other
 
 def get_tag_types(client: ServiceTitanClient):
     url = client.build_url('settings', 'tag-types')

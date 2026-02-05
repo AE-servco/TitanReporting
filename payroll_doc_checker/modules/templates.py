@@ -36,10 +36,9 @@ def sidebar_filters():
     # Sidebar controls for date range and filters
     with st.sidebar.form(key=f"filter_form"):
         st.header("Job filters")
-
-        tenant_filter = st.selectbox(
-            "ServiceTitan Tenant",
-            [
+        
+        default_tenant_index = default_tenant_map[st.session_state.username] if st.session_state.username in default_tenant_map else 0
+        tenants = [
                 "AlphaBravo (NSW)",
                 "MikeEcho (VIC)",
                 "BravoGolf (QLD)",
@@ -47,20 +46,24 @@ def sidebar_filters():
                 "EchoZulu (old QLD)",
                 "VictorTango (old VIC)",
                 "FoxtrotWhiskey (NSW)",
-            ],
-            index = default_tenant_map[st.session_state.username] if st.session_state.username in default_tenant_map else 0
+            ]
+        tenant_filter = st.selectbox(
+            "ServiceTitan Tenant",
+            tenants,
+            index = tenants.index(st.session_state.current_tenant_full) if "current_tenant_full" in st.session_state else default_tenant_index
         )
         today = date.today()
-        default_start = today - timedelta(days=1)
+        yesterday = today - timedelta(days=1)
+        default_start = date(2026,1,1)
         start_date = st.date_input("Start date", value=default_start, format="DD/MM/YYYY")
-        end_date = st.date_input("End date", value=default_start, format="DD/MM/YYYY")
+        end_date = st.date_input("End date", value=yesterday, format="DD/MM/YYYY")
         custom_job_id = st.text_input(
             "Job ID Search", placeholder="Manual search for job", help="Job ID is different to the job number. ID is the number at the end of the URL of the job's page in ServiceTitan. This overrides any date filters and will show only the job specified (if it exists)."
         )
         job_status_filter = st.multiselect(
             "Job statuses to include (leave empty for all)",
             ['Scheduled', 'Dispatched', 'InProgress', 'Hold', 'Completed', 'Canceled'],
-            default=["Completed"]
+            default=["Completed", "InProgress"]
         )
         filter_unsuccessful = st.checkbox("Exclude unsuccessful jobs", value=True)
         
@@ -72,14 +75,16 @@ def sidebar_filters():
         )
         doc_check_filters = [doc_check_crits.inv[f] for f in doc_check_filters]
 
-        show_incomplete_only_box = st.checkbox("Only show incomplete jobs", value=False)
+        show_incomplete_only_box = st.checkbox("Only show incomplete doc checks", value=False)
+        
+        show_untouched_only_box = st.checkbox("Only show unsubmitted doc checks", value=True)
 
         fetch_jobs_button = st.form_submit_button("Fetch Jobs", type="primary")
 
 
     # When the fetch button is pressed, call the API and reset state
     if fetch_jobs_button:
-        helpers.fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsuccessful, show_incomplete_only_box, custom_job_id, doc_check_filters)
+        helpers.fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsuccessful, show_incomplete_only_box, show_untouched_only_box, custom_job_id, doc_check_filters, max_jobs_shown=200)
 
 def nav_button(dir):
     client = st.session_state.clients.get(st.session_state.current_tenant)

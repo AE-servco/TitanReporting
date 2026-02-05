@@ -174,6 +174,9 @@ def filter_out_unsuccessful_jobs(jobs, client: ServiceTitanClient):
     unsuccessful_tags = [tag.get("id") for tag in fetch.get_tag_types(client) if "Unsuccessful" in tag.get("name")]
     return [job for job in jobs if unsuccessful_tags[0] not in job.get("tagTypeIds")]
 
+def filter_out_less_than_100dollar_jobs(jobs):
+    return [job for job in jobs if job.get('total') > 100]
+
 # def process_completed_prefetches() -> None:
 #     """Check prefetch futures and move completed downloads into the cache.
 
@@ -197,8 +200,9 @@ def filter_out_unsuccessful_jobs(jobs, client: ServiceTitanClient):
 #     for job_id in done_ids:
 #         st.session_state.prefetch_futures.pop(job_id, None)
 
-def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsuccessful, show_incomplete_only_box, custom_job_id=None, doc_check_filters=None, exdata_key="docchecks_live"):
+def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsuccessful, show_incomplete_only_box, show_untouched_only_box, custom_job_id=None, doc_check_filters=None, exdata_key="docchecks_live", max_jobs_shown=200):
     with st.spinner("Retrieving jobs..."):
+        st.session_state.current_tenant_full = tenant_filter
         tenant_filter = tenant_filter.split(" ")[0].lower()
         st.session_state.current_tenant = tenant_filter
 
@@ -219,6 +223,11 @@ def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filte
             jobs = fetch.fetch_jobs(start_date, end_date, client, status_filters=job_status_filter)
             if filter_unsuccessful:
                 jobs = filter_out_unsuccessful_jobs(jobs, client)
+            jobs = filter_out_less_than_100dollar_jobs(jobs)
+
+        if (show_untouched_only_box and show_incomplete_only_box) or (show_untouched_only_box and doc_check_filters):
+            st.error('The "only unsubmitted" checkbox cannot be used in conjunction with the "only incomplete" checkbox or the doc check filter selection. Please retry with only one selected.')
+            return
 
         if show_incomplete_only_box:
             # if only showing incomplete jobs, we want to filter for empty boxes in the below criteria. Note that the "invoice not signed, client offsite" option is not included, so some "complete" jobs may pass through if they have that one checked instead of the normal "invoice signed" option. This shouldn't be many jobs so I am leaving it as is.
@@ -233,8 +242,18 @@ def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filte
                 'is',#: 'Invoice Signed',
                 'ie',#: 'Invoice Emailed',
             ]
+
+        if show_untouched_only_box:
+            # Showing untouched means that the job hasn't had a doc check submitted. This should mean that "tmp_doccheck_bits" and get_external_data should both return empty dict.
+            filtered_jobs = []
+            for job in jobs:    
+                initial_checks = job.get("tmp_doccheck_bits", fetch.get_job_external_data(job, exdata_key))
+                if not initial_checks:
+                    filtered_jobs.append(job)
+            jobs = filtered_jobs.copy()
+            del filtered_jobs
             
-        if doc_check_filters:
+        elif doc_check_filters:
             filtered_jobs = []
             for job in jobs:    
                 initial_checks = job.get("tmp_doccheck_bits", fetch.get_job_external_data(job, exdata_key))
@@ -244,6 +263,13 @@ def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filte
                         break
             jobs = filtered_jobs.copy()
             del filtered_jobs
+
+        # Hard cap the number of jobs shown in case things get crazy
+        num_jobs = len(jobs)
+        st.session_state.current_num_jobs = num_jobs
+        st.session_state.max_jobs_shown = max_jobs_shown
+        if num_jobs > max_jobs_shown:
+            jobs = jobs[:max_jobs_shown]
 
         invoice_ids = format.get_invoice_ids(jobs)
         invoices = fetch.fetch_invoices(invoice_ids, client)

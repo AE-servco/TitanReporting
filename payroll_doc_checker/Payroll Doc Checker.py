@@ -96,6 +96,11 @@ def main() -> None:
                 st.session_state.app_guid = helpers.get_secret('st_servco_integrations_guid')
             if "jobs_queued" not in st.session_state:
                 st.session_state.jobs_queued: Dict = {}
+            if "current_num_jobs" not in st.session_state:
+                st.session_state.current_num_jobs: int = 0
+            if "max_jobs_shown" not in st.session_state:
+                st.session_state.max_jobs_shown: int = 0
+            
 
         # st.write(st.session_state.jobs_queued)
         templates.sidebar_filters()
@@ -108,6 +113,9 @@ def main() -> None:
 
         # Display the current job if available
         if st.session_state.jobs:
+            
+            if st.session_state.current_num_jobs > st.session_state.max_jobs_shown: # These are set in helpers
+                st.info(f"NOTE: There are actually {st.session_state.current_num_jobs} jobs for these parameters, but only {st.session_state.max_jobs_shown} are being shown so the website doesn't get overloaded. Please fetch jobs again after finishing to load more jobs in!")
             client = st.session_state.clients.get(st.session_state.current_tenant)
             idx = st.session_state.current_index
             # job, job_id, job_num = templates.job_nav_buttons(idx)
@@ -115,6 +123,9 @@ def main() -> None:
             job_id = str(job.get("id"))
             job_num = str(job.get("jobNumber"))
             idx = st.session_state.current_index
+
+            # Get attachment count by type
+            # attachments
 
             with st.container(horizontal_alignment="center", gap=None):
                 with st.container(horizontal=True, horizontal_alignment="center"):
@@ -133,7 +144,7 @@ def main() -> None:
                             fetch.schedule_prefetches(client)
                             st.rerun()
 
-            job_info, attachments = st.columns([1,4])
+            job_info_col, attachments_col = st.columns([1,4])
 
             project_id = job.get("projectId")
             if project_id:
@@ -143,11 +154,11 @@ def main() -> None:
                         job['other_in_proj'] = project[0].get('jobIds')
                     del project
 
-            with job_info:
+            with job_info_col:
                 # prefill_holder = st.text("")
                 templates.show_job_info(job)
 
-            with attachments:
+            with attachments_col:
                 job_attachment_status, error_msg, last_update_time = fetch.get_job_status(job_id, st.session_state.clients['supabase'], st.session_state.current_tenant)
                 try:
                     last_update_time = datetime.fromisoformat(last_update_time).replace(tzinfo=ZoneInfo("Australia/Sydney"))
@@ -169,7 +180,7 @@ def main() -> None:
                 elif job_attachment_status == 1:
                     with st.spinner("Downloading attachments. Refreshing in 2 seconds..."):
                         # st.write('status = 1')
-                        time.sleep(2)
+                        time.sleep(4)
                         st.rerun()
                 elif job_attachment_status == -1:
                     st.write(error_msg)
@@ -186,7 +197,7 @@ def main() -> None:
                         st.session_state.refresh_5_sec_count += 1
                         print(f"This has refreshed after 5 seconds {st.session_state.refresh_5_sec_count} times for job id {job_id}")
                         fetch.request_job_download(job_id, st.session_state.current_tenant, ATTACHMENT_DOWNLOADER_URL, force_refresh=True)
-                        time.sleep(5)
+                        time.sleep(7)
                         st.rerun()
                 else:
                     with st.spinner("Unknown code, refreshing in 5 seconds... If this happens more than three times, please refresh the page and let Albie know."):
