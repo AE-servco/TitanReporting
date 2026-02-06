@@ -40,9 +40,7 @@ def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='d
         elif len(job_appt_techs) == 0:
             formatted['sold_by'] = 'Manual Check'
         else:
-            # just add to manual check list for now, might separate to different check list in future.
             formatted['sold_by'] = str(list(job_appt_techs)[0])
-            # formatted['sold_by'] = 'Manual Check'
 
     if job['first_appt']:
         formatted['first_appt_start_dt'] = client.from_utc(job['first_appt']['start'])
@@ -141,6 +139,7 @@ def format_appt_assmt(appt):
     formatted['job_id'] = appt['jobId']
     formatted['tech_id'] = appt['technicianId']
     formatted['tech_name'] = appt['technicianName']
+    formatted['assigned_on'] = appt['assignedOn']
     return formatted
 
 def format_appt(appt): # TODO: finish figuring out what "start time" counts.
