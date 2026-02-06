@@ -32,15 +32,19 @@ def format_job(job, client: ServiceTitanClient, tenant_tags: list, exdata_key='d
             url = client.build_url("dispatch", "appointment-assignments")
             appt_assmnts = client.get_all(url, params={'jobId': job['id']})
             appt_assmnts = [format_appt_assmt(appt) for appt in appt_assmnts]
-            job_appt_techs = {appt['tech_id'] for appt in appt_assmnts}
+            # job_appt_techs = {appt['tech_id'] for appt in appt_assmnts}
+            job_appt_techs = [
+                item["tech_id"]
+                for item in sorted(appt_assmnts, key=lambda x: x["assigned_on"])
+            ]
         else:
             job_appt_techs = job['appt_techs']
         if len(job_appt_techs) == 1:
-            formatted['sold_by'] = str(list(job_appt_techs)[0])
+            formatted['sold_by'] = str(job_appt_techs[0])
         elif len(job_appt_techs) == 0:
             formatted['sold_by'] = 'Manual Check'
         else:
-            formatted['sold_by'] = str(list(job_appt_techs)[0])
+            formatted['sold_by'] = str(job_appt_techs[0])
 
     if job['first_appt']:
         formatted['first_appt_start_dt'] = client.from_utc(job['first_appt']['start'])
