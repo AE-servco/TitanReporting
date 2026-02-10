@@ -32,6 +32,8 @@ ATTACHMENT_DOWNLOADER_URL = 'https://attachment-downloader-293142632916.australi
 
 SIGNED_URL_TTL = 900
 
+MAX_ATTACHMENTS = 50
+
 TENANTS = [
     "alphabravo"
     "foxtrotwhiskey", 
@@ -48,7 +50,6 @@ TENANTS = [
 ###############################################################################
 
 def main() -> None:
-
 
     st.set_page_config(page_title="ServiceTitan Job Browser", layout="wide")
     st.markdown(
@@ -124,8 +125,11 @@ def main() -> None:
             job_num = str(job.get("jobNumber"))
             idx = st.session_state.current_index
 
-            # Get attachment count by type
-            # attachments
+            # Get attachment count
+            attachments = fetch.fetch_job_attachments(job_id, client)
+            show_imgs = True
+            if len(attachments) > MAX_ATTACHMENTS:
+                show_imgs = False
 
             with st.container(horizontal_alignment="center", gap=None):
                 with st.container(horizontal=True, horizontal_alignment="center"):
@@ -167,42 +171,43 @@ def main() -> None:
                     # This is broken, always TypeError
                     update_time_diff = timedelta(seconds=0)
 
-                # st.write(update_time_diff)
-                # if job_attachment_status == 2 and update_time_diff < timedelta(seconds=30):
-                if job_attachment_status == 2:# and update_time_diff < timedelta(seconds=(SIGNED_URL_TTL-100)):
-                    attachments_response = fetch.get_attachments_supabase(job_id, st.session_state.clients['supabase'], st.session_state.current_tenant)
+                if show_imgs:
+                    if job_attachment_status == 2:# and update_time_diff < timedelta(seconds=(SIGNED_URL_TTL-100)):
+                        attachments_response = fetch.get_attachments_supabase(job_id, st.session_state.clients['supabase'], st.session_state.current_tenant)
 
-                    imgs = [att for att in attachments_response if att['type'] == 'img']
-                    pdfs = [att for att in attachments_response if att['type'] == 'pdf']
-                    # vids = [att for att in attachments_response if att['type'] == 'vid']
-                    # other = [att for att in attachments_response if att['type'] == 'oth']
+                        imgs = [att for att in attachments_response if att['type'] == 'img']
+                        pdfs = [att for att in attachments_response if att['type'] == 'pdf']
+                        # vids = [att for att in attachments_response if att['type'] == 'vid']
+                        # other = [att for att in attachments_response if att['type'] == 'oth']
 
-                elif job_attachment_status == 1:
-                    with st.spinner("Downloading attachments. Refreshing in 2 seconds..."):
-                        # st.write('status = 1')
-                        time.sleep(4)
-                        st.rerun()
-                elif job_attachment_status == -1:
-                    st.write(error_msg)
-                    st.write("Please reload the page. If you keep seeing this error, please inform Albie (send screenshot of error message if possible).")
-                    imgs = None
-                    pdfs = None
-                elif job_attachment_status == 0:
-                    with st.spinner("Requesting attachments. Refreshing in 5 seconds..."):
-                        if "refresh_5_sec_count" not in st.session_state:
-                            st.session_state.refresh_5_sec_count = 0
-                        if st.session_state.refresh_5_sec_count > 0 and job_id in st.session_state.jobs_queued.keys():
-                            print(f"Deleting {job_id} from jobs_queued.")
-                            del st.session_state.jobs_queued[job_id]
-                        st.session_state.refresh_5_sec_count += 1
-                        print(f"This has refreshed after 5 seconds {st.session_state.refresh_5_sec_count} times for job id {job_id}")
-                        fetch.request_job_download(job_id, st.session_state.current_tenant, ATTACHMENT_DOWNLOADER_URL, force_refresh=True)
-                        time.sleep(7)
-                        st.rerun()
+                    elif job_attachment_status == 1:
+                        with st.spinner("Downloading attachments. Refreshing in 2 seconds..."):
+                            # st.write('status = 1')
+                            time.sleep(4)
+                            st.rerun()
+                    elif job_attachment_status == -1:
+                        st.write(error_msg)
+                        st.write("Please reload the page. If you keep seeing this error, please inform Albie (send screenshot of error message if possible).")
+                        imgs = None
+                        pdfs = None
+                    elif job_attachment_status == 0:
+                        with st.spinner("Requesting attachments. Refreshing in 5 seconds..."):
+                            if "refresh_5_sec_count" not in st.session_state:
+                                st.session_state.refresh_5_sec_count = 0
+                            if st.session_state.refresh_5_sec_count > 0 and job_id in st.session_state.jobs_queued.keys():
+                                print(f"Deleting {job_id} from jobs_queued.")
+                                del st.session_state.jobs_queued[job_id]
+                            st.session_state.refresh_5_sec_count += 1
+                            print(f"This has refreshed after 5 seconds {st.session_state.refresh_5_sec_count} times for job id {job_id}")
+                            fetch.request_job_download(job_id, st.session_state.current_tenant, ATTACHMENT_DOWNLOADER_URL, force_refresh=True)
+                            time.sleep(7)
+                            st.rerun()
+                    else:
+                        with st.spinner("Unknown code, refreshing in 5 seconds... If this happens more than three times, please refresh the page and let Albie know."):
+                            print(f"UNKNOWN CODE: attachment status is {job_attachment_status} for job id {job_id}")
                 else:
-                    with st.spinner("Unknown code, refreshing in 5 seconds... If this happens more than three times, please refresh the page and let Albie know."):
-                        print(f"UNKNOWN CODE: attachment status is {job_attachment_status} for job id {job_id}")
-                        
+                    imgs = []
+                    pdfs = []
                     # # If not already prefetched, download synchronously all attachments
                     #     st.session_state.refresh_5_sec_count += 1
                     #     if st.session_state.refresh_5_sec_count > 2:
@@ -221,7 +226,10 @@ def main() -> None:
                     if pdfs:
                         templates.show_pdfs(pdfs, 900)
                     else:
-                        st.info("No PDFs for this job.")
+                        if not show_imgs:
+                            st.info("Too many attachments, go to job on ServiceTitan (click job number at top of this screen).")
+                        else:
+                            st.info("No PDFs for this job.")
 
                 # Sidebar form for the current job
                 with st.sidebar:
@@ -234,7 +242,10 @@ def main() -> None:
                             imgs.sort(key=lambda img: img['file_date'])
                             templates.show_images(imgs,900)
                     else:
-                        st.info("No image attachments for this job.")
+                        if not show_imgs:
+                            st.info("Too many attachments, go to job on ServiceTitan (click job number at top of this screen).")
+                        else:
+                            st.info("No image attachments for this job.")
 
             
 
