@@ -41,6 +41,7 @@ if ss["authentication_status"]:
             tenant = st.selectbox(
                 "Tenant:",
                 [
+                    "AlphaBravo (NSW - Brofessionals)", 
                     "FoxtrotWhiskey (NSW)", 
                     "SierraDelta (WA)",
                     "VictorTango (VIC)",
