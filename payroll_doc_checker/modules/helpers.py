@@ -14,7 +14,7 @@ import modules.formatting as format
 import modules.fetching as fetch
 from bidict import bidict
 
-
+satisfactory_check_code = 'ds' # ALSO IN templates.py
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"}
 
 def flatten_list(nested_list):
@@ -33,6 +33,7 @@ def get_doc_check_criteria():
         'ins': 'Invoice Sent and Balance $0',
         'ie': 'Invoice Emailed',
         '5s': '5 Star Review',
+        satisfactory_check_code: 'Doc Check Satisfactory',
     })
     return checks
 
@@ -200,7 +201,7 @@ def filter_out_less_than_100dollar_jobs(jobs):
 #     for job_id in done_ids:
 #         st.session_state.prefetch_futures.pop(job_id, None)
 
-def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsuccessful, show_incomplete_only_box, show_untouched_only_box, custom_job_id=None, doc_check_filters=None, exdata_key="docchecks_live", max_jobs_shown=200):
+def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsuccessful, doc_check_status_filter, custom_job_id=None, doc_check_filters=None, exdata_key="docchecks_live", max_jobs_shown=200):
     with st.spinner("Retrieving jobs..."):
         st.session_state.current_tenant_full = tenant_filter
         tenant_filter = tenant_filter.split(" ")[0].lower()
@@ -225,25 +226,50 @@ def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filte
                 jobs = filter_out_unsuccessful_jobs(jobs, client)
             jobs = filter_out_less_than_100dollar_jobs(jobs)
 
-        if (show_untouched_only_box and show_incomplete_only_box) or (show_untouched_only_box and doc_check_filters):
-            st.error('The "only unsubmitted" checkbox cannot be used in conjunction with the "only incomplete" checkbox or the doc check filter selection. Please retry with only one selected.')
-            return
+        # if (show_untouched_only_box and show_incomplete_only_box) or (show_untouched_only_box and doc_check_filters):
+        #     st.error('The "only unsubmitted" checkbox cannot be used in conjunction with the "only incomplete" checkbox or the doc check filter selection. Please retry with only one selected.')
+        #     return
+#   "Reviewed",
+#                 "Unreviewed",
+#                 "Satisfactory",
+#                 "Unsatisfactory",
+#                 "No satisfaction selected"
+        # if "Reviewed" in doc_check_status_filter:
+            
 
-        if show_incomplete_only_box:
+        if doc_check_status_filter == "Only show unsatisfactory doc checks":
             # if only showing incomplete jobs, we want to filter for empty boxes in the below criteria. Note that the "invoice not signed, client offsite" option is not included, so some "complete" jobs may pass through if they have that one checked instead of the normal "invoice signed" option. This shouldn't be many jobs so I am leaving it as is.
-            doc_check_filters = [
-                'pb',#: 'Before Photo',
-                'pa',#: 'After Photo',
-                'pr',#: 'Receipt Photo',
-                'qd',#: 'Quote Description',
-                'qs',#: 'Quote Signed',
-                'qe',#: 'Quote Emailed',
-                'id',#: 'Invoice Description',
-                'is',#: 'Invoice Signed',
-                'ie',#: 'Invoice Emailed',
-            ]
+            filtered_jobs = []
+            for job in jobs:    
+                initial_checks = job.get("tmp_doccheck_bits", fetch.get_job_external_data(job, exdata_key))
+                sat_check = initial_checks.get(satisfactory_check_code)
+                if sat_check is not None and sat_check == 0:
+                        filtered_jobs.append(job)
+            jobs = filtered_jobs.copy()
+            del filtered_jobs
 
-        if show_untouched_only_box:
+        if doc_check_status_filter == "Only show satisfactory doc checks":
+            # Showing completed means that the job has had a doc check submitted. This should mean that one of "tmp_doccheck_bits" get_external_data should return a non-empty dict.
+            filtered_jobs = []
+            for job in jobs:    
+                initial_checks = job.get("tmp_doccheck_bits", fetch.get_job_external_data(job, exdata_key))
+                if initial_checks.get(satisfactory_check_code) and initial_checks.get(satisfactory_check_code) == 1:
+                    filtered_jobs.append(job)
+            jobs = filtered_jobs.copy()
+            del filtered_jobs
+            
+        if doc_check_status_filter == "Only show reviewed but not satisfaction checked doc checks":
+            # Showing completed means that the job has had a doc check submitted. This should mean that one of "tmp_doccheck_bits" get_external_data should return a non-empty dict.
+            filtered_jobs = []
+            for job in jobs:    
+                initial_checks = job.get("tmp_doccheck_bits", fetch.get_job_external_data(job, exdata_key))
+                sat_check_ = initial_checks.get(satisfactory_check_code, 0)
+                if initial_checks and sat_check_ == 0:
+                    filtered_jobs.append(job)
+            jobs = filtered_jobs.copy()
+            del filtered_jobs
+
+        if doc_check_status_filter == "Only show unreviewed doc checks":
             # Showing untouched means that the job hasn't had a doc check submitted. This should mean that "tmp_doccheck_bits" and get_external_data should both return empty dict.
             filtered_jobs = []
             for job in jobs:    

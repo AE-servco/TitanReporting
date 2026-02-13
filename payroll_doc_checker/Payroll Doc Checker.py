@@ -109,6 +109,8 @@ def main() -> None:
         with st.sidebar:
             st.markdown("---")
 
+        do_not_load_imgs_box = st.sidebar.checkbox("Don't load images")
+        
         # Process completed prefetch futures and update prefetched cache
         # helpers.process_completed_prefetches()
 
@@ -129,6 +131,8 @@ def main() -> None:
             attachments = fetch.fetch_job_attachments(job_id, client)
             show_imgs = True
             if len(attachments) > MAX_ATTACHMENTS:
+                show_imgs = False
+            if do_not_load_imgs_box: # Keeping this explicit in case changes need to happen.
                 show_imgs = False
 
             with st.container(horizontal_alignment="center", gap=None):

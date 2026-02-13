@@ -15,6 +15,8 @@ from bidict import bidict
 
 import modules.fetching as fetch
 
+satisfactory_check_code = 'ds' # ALSO IN helpers.py
+
 def authenticate_app(config_file):
     config = gs.load_yaml_from_gcs(config_file)
 
@@ -74,17 +76,31 @@ def sidebar_filters():
             help="Filters for jobs that don't have one of these boxes ticked."
         )
         doc_check_filters = [doc_check_crits.inv[f] for f in doc_check_filters]
-
-        show_incomplete_only_box = st.checkbox("Only show incomplete doc checks", value=False)
         
-        show_untouched_only_box = st.checkbox("Only show unsubmitted doc checks", value=True)
+        doc_check_status_filter = st.selectbox(
+            "Doc Check Status Filter",
+            [
+                "Only show reviewed but not satisfaction checked doc checks",
+                "Only show unreviewed doc checks",
+                "Only show satisfactory doc checks",
+                "Only show unsatisfactory doc checks",
+                "Show all"
+            ],
+            index=1,
+        )
 
+        # show_incomplete_only_box = st.checkbox("Only show unsatisfactory doc checks", value=False)
+        
+        # show_untouched_only_box = st.checkbox("Only show unreviewed doc checks", value=True)
+        
+        # show_completed_only_box = st.checkbox("Only show already completed doc checks", value=True)
+        
         fetch_jobs_button = st.form_submit_button("Fetch Jobs", type="primary")
 
 
     # When the fetch button is pressed, call the API and reset state
     if fetch_jobs_button:
-        helpers.fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsuccessful, show_incomplete_only_box, show_untouched_only_box, custom_job_id, doc_check_filters, max_jobs_shown=200)
+        helpers.fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsuccessful, doc_check_status_filter, custom_job_id, doc_check_filters, max_jobs_shown=200)
 
 def nav_button(dir):
     client = st.session_state.clients.get(st.session_state.current_tenant)
@@ -274,9 +290,31 @@ def doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks
         allg_box = st.checkbox('All except review', key=f"{job_num}_allg", help='If this is checked, all except "5 Star Review" and "Invoice Not Signed (Client Offsite)" will be counted as complete.')
         st.write(" ")
         for check_code, check in doc_check_criteria.items():
+            if check_code == 'ds': 
+                continue
             default = bool(initial_checks.get(check_code, False))
             checks[check_code] = int(st.checkbox(check, key=f"{job_num}_{check_code}", value=default))
 
+        sat_check_default = initial_checks.get(satisfactory_check_code, 0)
+        if sat_check_default == -1: # HARD CODING LOGIC, SORRY FUTURE ALBIE. Streamlit doesn't allow -1 wraparound in lists :(
+            sat_check_default = 2
+        
+        satisfactory_check = st.selectbox(
+            "Satisfactory?",
+            [
+                "",
+                "Yes",
+                "No"
+            ],
+            index=sat_check_default # THIS ONLY WORKS BECAUSE OF THE MAPPING BELOW
+        )
+        
+        if satisfactory_check == "Yes":
+            checks[satisfactory_check_code] = 1
+        elif satisfactory_check == "No":
+            checks[satisfactory_check_code] = -1
+        else:
+            checks[satisfactory_check_code] = 0
 
         submitted = st.form_submit_button("Submit")
         if submitted:
