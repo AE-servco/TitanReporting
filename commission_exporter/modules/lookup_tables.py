@@ -13,6 +13,7 @@ def get_doc_check_criteria():
         'ins': 'Invoice Not Signed (Client Offsite)',
         'ie': 'Invoice Emailed',
         '5s': '5 Star Review',
+        'ds': 'Doc Check Satisfactory',
     }
     return checks
 
@@ -44,8 +45,8 @@ def get_state_from_tenant(tenant: Optional[str] = None):
 def get_tenant_from_state(state: Optional[str] = None) -> dict[str,list] | list:
     mapping = {
         'NSW': ['foxtrotwhiskey', 'alphabravo'],
-        'QLD': ['bravogolf', 'echozulu'],
-        'VIC': ['mikeecho', 'victortango'],
+        'QLD': ['bravogolf'],#, 'echozulu'],
+        'VIC': ['mikeecho'],#, 'victortango'],
         'WA': ['sierradelta'],
     }
     if state: return mapping[state]

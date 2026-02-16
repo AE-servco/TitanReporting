@@ -839,8 +839,9 @@ class CommissionSpreadSheetExporter:
         self.formatted_cell(ws, row, col_offset + 7, "", font=cat_font, border = job_border)
         self.formatted_cell(ws, row, col_offset + 8, f"={get_column_letter(col_offset + 5)}{row}-{get_column_letter(col_offset + 6)}{row}-{get_column_letter(col_offset + 7)}{row}", font=cat_font, border = job_border, number_format=self.accounting_format)
         self.formatted_cell(ws, row, col_offset + 9, job.get('payment_types', ''), font=cat_font, border = job_border)
-        # 10 TODO: all doc checks complete
-        doc_check_complete_col = f'=IF(OR({", ".join([f"{get_column_letter(col_offset + i)}{row}=0" for i in range(11,20)])}), "N","Y")'
+        # doc_check_complete_col = f'=IF(OR({", ".join([f"{get_column_letter(col_offset + i)}{row}=0" for i in range(11,20)])}), "N","Y")'
+        doc_check_satisfied = job.get('Doc Check Satisfactory')
+        doc_check_complete_col = "Y" if doc_check_satisfied == 1 else ("N" if doc_check_satisfied == -1 else "")
         self.formatted_cell(ws, row, col_offset + 10, doc_check_complete_col, font=cat_font, border = job_border).alignment = self.align_center
         self.formatted_cell(ws, row, col_offset + 11, job['Before Photo'], font=cat_font, border = job_border)
         self.formatted_cell(ws, row, col_offset + 12, job['After Photo'], font=cat_font, border = job_border)
