@@ -76,7 +76,7 @@ def get_external_data_by_key(data, key='docchecks'):
 def format_external_data_for_xl(exdata):
     check_map = lookup.get_doc_check_criteria()
     if exdata:
-        output = {check_map[k]: v for k,v in exdata.items()}
+        output = {check_map.get(k,'missing_external_data'): v for k,v in exdata.items()}
         if not output['Invoice Signed']:
             if output.get('Invoice Not Signed (Client Offsite)'):
                 output['Invoice Signed'] = 1
