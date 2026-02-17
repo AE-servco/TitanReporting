@@ -10,7 +10,20 @@ from openpyxl.formatting.rule import CellIsRule, FormulaRule
 import modules.helpers as helpers
 import modules.lookup_tables as lookup
 
+sat_check_mapping = {
+    "": 0,
+    "Yes": 1,
+    "No": 2,
+    "Pending": 3,
+}
 
+sat_check_mapping_reversed = {
+    0: "",
+    1: "Y",
+    2: "N",
+    -1: "N", # Some of the first ones done will have "No" mapped to -1.
+    3: "PENDING",
+}
 
 # function for each "box" in the summary
 # function for the daily summary bits, one for monthly, one for weekly.
@@ -840,8 +853,8 @@ class CommissionSpreadSheetExporter:
         self.formatted_cell(ws, row, col_offset + 8, f"={get_column_letter(col_offset + 5)}{row}-{get_column_letter(col_offset + 6)}{row}-{get_column_letter(col_offset + 7)}{row}", font=cat_font, border = job_border, number_format=self.accounting_format)
         self.formatted_cell(ws, row, col_offset + 9, job.get('payment_types', ''), font=cat_font, border = job_border)
         # doc_check_complete_col = f'=IF(OR({", ".join([f"{get_column_letter(col_offset + i)}{row}=0" for i in range(11,20)])}), "N","Y")'
-        doc_check_satisfied = job.get('Doc Check Satisfactory')
-        doc_check_complete_col = "Y" if doc_check_satisfied == 1 else ("N" if doc_check_satisfied == -1 else "")
+        # doc_check_complete_col = "Y" if doc_check_satisfied == 1 else ("N" if doc_check_satisfied == -1 or doc_check_satisfied == 2 else ("PENDING" if doc_check_satisfied == 3 else "")) # TODO: This is hardcoded, please change in future
+        doc_check_complete_col = sat_check_mapping_reversed.get(job.get('Doc Check Satisfactory', ''), '')
         self.formatted_cell(ws, row, col_offset + 10, doc_check_complete_col, font=cat_font, border = job_border).alignment = self.align_center
         self.formatted_cell(ws, row, col_offset + 11, job['Before Photo'], font=cat_font, border = job_border)
         self.formatted_cell(ws, row, col_offset + 12, job['After Photo'], font=cat_font, border = job_border)

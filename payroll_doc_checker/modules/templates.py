@@ -15,6 +15,16 @@ from bidict import bidict
 
 import modules.fetching as fetch
 
+
+
+sat_check_mapping = {
+    "": 0,
+    "Yes": 1,
+    "No": 2,
+    "Pending": 3,
+}
+        
+
 satisfactory_check_code = 'ds' # ALSO IN helpers.py
 
 def authenticate_app(config_file):
@@ -84,6 +94,7 @@ def sidebar_filters():
                 "Only show unreviewed doc checks",
                 "Only show satisfactory doc checks",
                 "Only show unsatisfactory doc checks",
+                "Only show pending doc checks",
                 "Show all"
             ],
             index=1,
@@ -160,7 +171,10 @@ def show_job_info(job):
     st.write(f"**Invoice subtotal**")
     st.write(f"${inv_subtotal:.2f}")
     st.write(f"**Invoice balance**")
-    st.write(f"${inv_bal:.2f}")
+    if float(inv_bal) > 0:
+        st.error(f"${inv_bal:.2f}", width=130)
+    else:
+        st.success(f"${inv_bal:.2f}", width=130)
     st.write(f"**Amount paid**")
     st.write(f"${inv_amt_paid:.2f}")
     st.write(f"**Job total**")
@@ -301,20 +315,17 @@ def doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks
         
         satisfactory_check = st.selectbox(
             "Satisfactory?",
-            [
-                "",
-                "Yes",
-                "No"
-            ],
-            index=sat_check_default # THIS ONLY WORKS BECAUSE OF THE MAPPING BELOW
+            list(sat_check_mapping.keys()),
+            index=sat_check_default
         )
         
-        if satisfactory_check == "Yes":
-            checks[satisfactory_check_code] = 1
-        elif satisfactory_check == "No":
-            checks[satisfactory_check_code] = -1
-        else:
-            checks[satisfactory_check_code] = 0
+        checks[satisfactory_check_code] = sat_check_mapping[satisfactory_check]
+        # if satisfactory_check == "Yes":
+        #     checks[satisfactory_check_code] = 1
+        # elif satisfactory_check == "No":
+        #     checks[satisfactory_check_code] = -1
+        # else:
+        #     checks[satisfactory_check_code] = 0
 
         submitted = st.form_submit_button("Submit")
         if submitted:

@@ -238,12 +238,11 @@ def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filte
             
 
         if doc_check_status_filter == "Only show unsatisfactory doc checks":
-            # if only showing incomplete jobs, we want to filter for empty boxes in the below criteria. Note that the "invoice not signed, client offsite" option is not included, so some "complete" jobs may pass through if they have that one checked instead of the normal "invoice signed" option. This shouldn't be many jobs so I am leaving it as is.
             filtered_jobs = []
             for job in jobs:    
                 initial_checks = job.get("tmp_doccheck_bits", fetch.get_job_external_data(job, exdata_key))
                 sat_check = initial_checks.get(satisfactory_check_code)
-                if sat_check is not None and sat_check == 0:
+                if sat_check is not None and (sat_check == -1 or sat_check == 2):
                         filtered_jobs.append(job)
             jobs = filtered_jobs.copy()
             del filtered_jobs
@@ -254,6 +253,16 @@ def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filte
             for job in jobs:    
                 initial_checks = job.get("tmp_doccheck_bits", fetch.get_job_external_data(job, exdata_key))
                 if initial_checks.get(satisfactory_check_code) and initial_checks.get(satisfactory_check_code) == 1:
+                    filtered_jobs.append(job)
+            jobs = filtered_jobs.copy()
+            del filtered_jobs
+
+        if doc_check_status_filter == "Only show pending doc checks":
+            # Showing completed means that the job has had a doc check submitted. This should mean that one of "tmp_doccheck_bits" get_external_data should return a non-empty dict.
+            filtered_jobs = []
+            for job in jobs:    
+                initial_checks = job.get("tmp_doccheck_bits", fetch.get_job_external_data(job, exdata_key))
+                if initial_checks.get(satisfactory_check_code) and initial_checks.get(satisfactory_check_code) == 3:
                     filtered_jobs.append(job)
             jobs = filtered_jobs.copy()
             del filtered_jobs
