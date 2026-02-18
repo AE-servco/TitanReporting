@@ -22,6 +22,7 @@ sat_check_mapping = {
     "Yes": 1,
     "No": 2,
     "Pending": 3,
+    "Cancelled": 4,
 }
         
 

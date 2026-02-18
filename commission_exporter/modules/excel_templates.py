@@ -15,6 +15,7 @@ sat_check_mapping = {
     "Yes": 1,
     "No": 2,
     "Pending": 3,
+    "Cancelled": 4,
 }
 
 sat_check_mapping_reversed = {
@@ -23,6 +24,7 @@ sat_check_mapping_reversed = {
     2: "N",
     -1: "N", # Some of the first ones done will have "No" mapped to -1.
     3: "PENDING",
+    4: "CANCELLED",
 }
 
 # function for each "box" in the summary
