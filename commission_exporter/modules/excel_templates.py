@@ -1040,6 +1040,12 @@ class CommissionSpreadSheetExporter:
             FormulaRule(formula=[f'$K{self.cat_row_info["wk_complete_paid"][0]}="PENDING"'], fill=PatternFill(start_color="F5A742", end_color="F5A742", fill_type="solid"))
         )
         # ----------------------------------------------------------------------------------------
+        # Making font white if unreviewed (instead of dealing with blanks for unreviewed)
+        ws.conditional_formatting.add(
+            f"K{self.cat_row_info['wk_complete_paid'][0]}:K{self.cat_row_info['ah_wo'][1]}", 
+            FormulaRule(formula=[f'$K{self.cat_row_info["wk_complete_paid"][0]}="-"'], font=Font(color='FFFFFF'))
+        )
+        # ----------------------------------------------------------------------------------------
         # Border on RHS things
         for row in ws[f'W{self.job_start_row + 2}:Y{self.bottom_row-3}']:
             for cell in row:
