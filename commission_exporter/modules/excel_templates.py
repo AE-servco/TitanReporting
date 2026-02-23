@@ -11,7 +11,7 @@ import modules.helpers as helpers
 import modules.lookup_tables as lookup
 
 sat_check_mapping = {
-    "": 0,
+    "-": 0,
     "Yes": 1,
     "No": 2,
     "Pending": 3,
@@ -19,7 +19,7 @@ sat_check_mapping = {
 }
 
 sat_check_mapping_reversed = {
-    0: "",
+    0: "-",
     1: "Y",
     2: "N",
     -1: "N", # Some of the first ones done will have "No" mapped to -1.
@@ -407,8 +407,12 @@ class CommissionSpreadSheetExporter:
         
         # Subtracting red from payout
         subtract_red_formula_wk = f'SUMIF(K{self.cat_row_info["wk_complete_paid"][0]}:K{self.cat_row_info["wk_complete_paid"][1]}, "N", I{self.cat_row_info["wk_complete_paid"][0]}:I{self.cat_row_info["wk_complete_paid"][1]})'
+        # Subtracting pending (orange) from payout
+        subtract_pending_formula_wk = f'SUMIF(K{self.cat_row_info["wk_complete_paid"][0]}:K{self.cat_row_info["wk_complete_paid"][1]}, "PENDING", I{self.cat_row_info["wk_complete_paid"][0]}:I{self.cat_row_info["wk_complete_paid"][1]})'
+        # Subtracting unreviewed (orange) from payout
+        subtract_unreviewed_formula_wk = f'SUMIF(K{self.cat_row_info["wk_complete_paid"][0]}:K{self.cat_row_info["wk_complete_paid"][1]}, "-", I{self.cat_row_info["wk_complete_paid"][0]}:I{self.cat_row_info["wk_complete_paid"][1]})'
         
-        self.formatted_cell(ws, start_row + 1, actual_data_col_num, f'={totals_box_str}-{subtract_red_formula_wk}', border = self.cell_border['topleft'], number_format=self.accounting_format)
+        self.formatted_cell(ws, start_row + 1, actual_data_col_num, f'={totals_box_str}-{subtract_red_formula_wk}-{subtract_pending_formula_wk}-{subtract_unreviewed_formula_wk}', border = self.cell_border['topleft'], number_format=self.accounting_format)
         
         wk_profit_potential_formula = '=' + ' + '.join([f'SUM(I{self.cat_row_info[cat][0]}:I{self.cat_row_info[cat][1]})'for cat in self.cats_count_for_potential_wk])
         self.formatted_cell(ws, start_row + 1, potential_data_col_num, wk_profit_potential_formula, font = self.font_red, border = self.cell_border['topright'], number_format=self.accounting_format)
@@ -1022,6 +1026,18 @@ class CommissionSpreadSheetExporter:
         ws.conditional_formatting.add(
             f"I{self.cat_row_info['wk_complete_paid'][0]}:I{self.cat_row_info['ah_wo'][1]}", 
             FormulaRule(formula=[f'$K{self.cat_row_info["wk_complete_paid"][0]}="N"'], fill=PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid"))
+        )
+        # ----------------------------------------------------------------------------------------
+        # Highlighting orange for unreviewed doc check
+        ws.conditional_formatting.add(
+            f"I{self.cat_row_info['wk_complete_paid'][0]}:I{self.cat_row_info['ah_wo'][1]}", 
+            FormulaRule(formula=[f'$K{self.cat_row_info["wk_complete_paid"][0]}="-"'], fill=PatternFill(start_color="F5A742", end_color="F5A742", fill_type="solid"))
+        )
+        # ----------------------------------------------------------------------------------------
+        # Highlighting orange for pending doc check
+        ws.conditional_formatting.add(
+            f"I{self.cat_row_info['wk_complete_paid'][0]}:I{self.cat_row_info['ah_wo'][1]}", 
+            FormulaRule(formula=[f'$K{self.cat_row_info["wk_complete_paid"][0]}="PENDING"'], fill=PatternFill(start_color="F5A742", end_color="F5A742", fill_type="solid"))
         )
         # ----------------------------------------------------------------------------------------
         # Border on RHS things
