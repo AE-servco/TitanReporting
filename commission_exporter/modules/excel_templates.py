@@ -831,7 +831,7 @@ class CommissionSpreadSheetExporter:
         self.curr_row += 1
         return
     
-    def put_job_row(self, job: dict, row: int, cat_font: Font):
+    def put_job_row(self, job: dict, row: int, cat_font: Font, afterhours: bool):
         ws = self.curr_worksheet
         col_offset = self.col_offset
 
@@ -849,7 +849,10 @@ class CommissionSpreadSheetExporter:
         self.formatted_cell(ws, row, col_offset + 4, job['suburb'], font=cat_font, border = job_border)
         if not job['unsuccessful']:
             self.formatted_cell(ws, row, col_offset + 5, job['inv_subtotal'], font=cat_font, border = job_border, number_format=self.accounting_format)
-            self.formatted_cell(ws, row, col_offset + 6, job['inv_subtotal']*0.2, font=cat_font, border = job_border, number_format=self.accounting_format)
+            if afterhours:
+                self.formatted_cell(ws, row, col_offset + 6, job['inv_subtotal']*0.25, font=cat_font, border = job_border, number_format=self.accounting_format)
+            else:
+                self.formatted_cell(ws, row, col_offset + 6, job['inv_subtotal']*0.15, font=cat_font, border = job_border, number_format=self.accounting_format)
             self.formatted_cell(ws, row, col_offset + 6, font=cat_font, border = job_border).comment = Comment(job['summary'], "automation")
         else:
             self.formatted_cell(ws, row, col_offset + 5, job['open_est_subtotal'], font=cat_font, border = job_border, number_format=self.accounting_format)
@@ -966,6 +969,10 @@ class CommissionSpreadSheetExporter:
         
         if cat in ['wk_complete_unpaid', 'wk_wo', 'wkend_complete_unpaid', 'wkend_wo']:
             cat_font = self.font_green
+        if cat.startswith(tuple(['wkend','ah','ph'])):
+            afterhours = True
+        else:
+            afterhours = False
         self.formatted_cell(ws, start_row, col_offset + 1,cat_text)#, font=cat_font)
         cat_row = start_row
         cat_row += 1
@@ -985,7 +992,7 @@ class CommissionSpreadSheetExporter:
                 # self.curr_row = cat_row
             self.job_count = 1
             for job in jobs:
-                self.put_job_row(job, cat_row, cat_font)
+                self.put_job_row(job, cat_row, cat_font, afterhours=afterhours)
                 cat_row += 1
                 self.job_count += 1
         
