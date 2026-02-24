@@ -22,6 +22,25 @@ import modules.tasks as tasks
 ATTACHMENT_DOWNLOADER_URL = 'https://attachment-downloader-293142632916.australia-southeast1.run.app'
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"}
 
+def fetch_job(
+        _client: ServiceTitanClient,
+        job_id: str
+):
+    """
+    To fetch only one job. Used in Doc checker Lite.
+    """
+    tenant = _client.tenant or "{tenant}"
+    base_path = f"jpm/v2/tenant/{tenant}/jobs/{job_id}"
+    params = {}
+    if _client.app_guid:
+        params["externalDataApplicationGuid"] = _client.app_guid
+    try:
+        resp = _client.get(base_path, params=params)
+    except Exception as e:
+        print(f"ERROR FETCHING: {e}")
+        return []
+    return resp
+
 def fetch_jobs(
     start_date: _dt.date,
     end_date: _dt.date,

@@ -37,6 +37,29 @@ def authenticate_app(config_file):
 
     authenticator.login(location='main')
 
+def filters_lite():
+    with st.form(key=f"filter_form"):        
+        tenants = [
+                "AlphaBravo (NSW)",
+                "MikeEcho (VIC)",
+                "BravoGolf (QLD)",
+                "SierraDelta (WA)",
+                "EchoZulu (old QLD)",
+                "VictorTango (old VIC)",
+                "FoxtrotWhiskey (NSW)",
+            ]
+        tenant_filter = st.selectbox(
+            "ServiceTitan Tenant",
+            tenants,
+        )
+        custom_job_id = st.text_input(
+            "Job URL ID Search", placeholder="Put ID from job's URL here (NOT job number)"
+        )
+
+        fetch_jobs_button = st.form_submit_button("Search for job", type="primary")
+    if fetch_jobs_button:
+        helpers.fetch_jobs_button_call_lite(tenant_filter, custom_job_id)
+
 def sidebar_filters():
 
     default_tenant_map = {
@@ -71,7 +94,7 @@ def sidebar_filters():
         start_date = st.date_input("Start date", value=default_start, format="DD/MM/YYYY")
         end_date = st.date_input("End date", value=yesterday, format="DD/MM/YYYY")
         custom_job_id = st.text_input(
-            "Job ID Search", placeholder="Manual search for job", help="Job ID is different to the job number. ID is the number at the end of the URL of the job's page in ServiceTitan. This overrides any date filters and will show only the job specified (if it exists)."
+            "Job URL ID Search", placeholder="Put ID from job's URL here (NOT job number)"
         )
         job_status_filter = st.multiselect(
             "Job statuses to include (leave empty for all)",
@@ -276,10 +299,6 @@ def show_pdfs(pdfs, container_height=1000):
                         st.write("Error fetching PDF, please try again later or go to the job in ServiceTitan.")
 
 def doc_check_form(job_num, job, pdfs, doc_check_criteria, exdata_key='docchecks_live'):
-    
-    def all_checks_good():
-        pass
-    
     with st.form(key=f"doccheck_{job_num}"):
         client = st.session_state.clients.get(st.session_state.current_tenant)
         st.subheader(f"Job {job_num} Doc Check")

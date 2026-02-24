@@ -201,6 +201,23 @@ def filter_out_less_than_100dollar_jobs(jobs):
 #     for job_id in done_ids:
 #         st.session_state.prefetch_futures.pop(job_id, None)
 
+def fetch_jobs_button_call_lite(tenant_filter, job_id):
+    with st.spinner("Retrieving job..."):
+        st.session_state.current_tenant_full = tenant_filter
+        tenant_filter = tenant_filter.split(" ")[0].lower()
+        st.session_state.current_tenant = tenant_filter
+
+        if tenant_filter not in st.session_state.clients:
+            st.session_state.clients[tenant_filter] = get_client(tenant_filter)
+
+        client = st.session_state.clients.get(tenant_filter)
+
+        if tenant_filter not in st.session_state.employee_lists:
+            st.session_state.employee_lists[tenant_filter] = get_all_employee_ids(client)
+        job = fetch.fetch_job(client, job_id)
+        st.session_state.jobs = [job] # Put in as list to keep consistent when calling from ss.jobs in main page.
+        st.rerun()
+
 def fetch_jobs_button_call(tenant_filter, start_date, end_date, job_status_filter, filter_unsuccessful, doc_check_status_filter, custom_job_id=None, doc_check_filters=None, exdata_key="docchecks_live", max_jobs_shown=200):
     with st.spinner("Retrieving jobs..."):
         st.session_state.current_tenant_full = tenant_filter

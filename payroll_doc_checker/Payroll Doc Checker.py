@@ -50,7 +50,7 @@ TENANTS = [
 ###############################################################################
 
 def main() -> None:
-
+    
     st.set_page_config(page_title="ServiceTitan Job Browser", layout="wide")
     st.markdown(
         """
@@ -77,8 +77,12 @@ def main() -> None:
             doc_check_criteria = helpers.get_doc_check_criteria()
 
             # Initialise session state collections
-            if "jobs" not in st.session_state:
+            if "jobs" not in st.session_state or ("curr_page" in st.session_state and st.session_state.curr_page != 'full_checker'):
                 st.session_state.jobs: List[Dict[str, Any]] = []
+            if "curr_page" not in st.session_state or st.session_state.curr_page != 'full_checker':
+                st.session_state.curr_page = 'full_checker'
+            # if "curr_page" in st.session_state and st.session_state.curr_page != 'full_checker':
+            #     st.session_state.jobs: List[Dict[str, Any]] = []
             if "clients" not in st.session_state:
                 st.session_state.clients: Dict[str, Any] = {}
             if "employee_lists" not in st.session_state:
