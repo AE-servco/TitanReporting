@@ -852,7 +852,7 @@ class CommissionSpreadSheetExporter:
             if afterhours:
                 self.formatted_cell(ws, row, col_offset + 6, job['inv_subtotal']*0.25, font=cat_font, border = job_border, number_format=self.accounting_format)
             else:
-                self.formatted_cell(ws, row, col_offset + 6, job['inv_subtotal']*0.15, font=cat_font, border = job_border, number_format=self.accounting_format)
+                self.formatted_cell(ws, row, col_offset + 6, job['inv_subtotal']*0.2, font=cat_font, border = job_border, number_format=self.accounting_format)
             self.formatted_cell(ws, row, col_offset + 6, font=cat_font, border = job_border).comment = Comment(job['summary'], "automation")
         else:
             self.formatted_cell(ws, row, col_offset + 5, job['open_est_subtotal'], font=cat_font, border = job_border, number_format=self.accounting_format)
