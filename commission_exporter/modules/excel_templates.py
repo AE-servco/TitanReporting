@@ -130,18 +130,18 @@ class CommissionSpreadSheetExporter:
             'wk_complete_paid',
             'wk_complete_unpaid',
             'wk_wo',
-            'wk_unsuccessful',
+            # 'wk_unsuccessful',
         ]
 
         self.cats_count_for_potential_wkend = [
             'wkend_complete_paid',
             'wkend_complete_unpaid',
             'wkend_wo',
-            'wkend_unsuccessful',
+            # 'wkend_unsuccessful',
             'ah_complete_paid',
             'ah_complete_unpaid',
             'ah_wo',
-            'ah_unsuccessful',
+            # 'ah_unsuccessful',
         ]
 
         self.cats_count_for_unsuccessful = [
@@ -411,8 +411,10 @@ class CommissionSpreadSheetExporter:
         subtract_pending_formula_wk = f'SUMIF(K{self.cat_row_info["wk_complete_paid"][0]}:K{self.cat_row_info["wk_complete_paid"][1]}, "PENDING", I{self.cat_row_info["wk_complete_paid"][0]}:I{self.cat_row_info["wk_complete_paid"][1]})'
         # Subtracting unreviewed (orange) from payout
         subtract_unreviewed_formula_wk = f'SUMIF(K{self.cat_row_info["wk_complete_paid"][0]}:K{self.cat_row_info["wk_complete_paid"][1]}, "-", I{self.cat_row_info["wk_complete_paid"][0]}:I{self.cat_row_info["wk_complete_paid"][1]})'
+        # Subtracting complaints (Only if not already subtracted i.e. doc check is Y)
+        subtract_complaint_formula_wk = f'SUMIFS(I{self.cat_row_info["wk_complete_paid"][0]}:I{self.cat_row_info["wk_complete_paid"][1]}, K{self.cat_row_info["wk_complete_paid"][0]}:K{self.cat_row_info["wk_complete_paid"][1]}, "Y", A{self.cat_row_info["wk_complete_paid"][0]}:A{self.cat_row_info["wk_complete_paid"][1]}, "COMPLAINT")'
         
-        self.formatted_cell(ws, start_row + 1, actual_data_col_num, f'={totals_box_str}-{subtract_red_formula_wk}-{subtract_pending_formula_wk}-{subtract_unreviewed_formula_wk}', border = self.cell_border['topleft'], number_format=self.accounting_format)
+        self.formatted_cell(ws, start_row + 1, actual_data_col_num, f'={totals_box_str}-{subtract_red_formula_wk}-{subtract_pending_formula_wk}-{subtract_unreviewed_formula_wk}-{subtract_complaint_formula_wk}', border = self.cell_border['topleft'], number_format=self.accounting_format)
         
         wk_profit_potential_formula = '=' + ' + '.join([f'SUM(I{self.cat_row_info[cat][0]}:I{self.cat_row_info[cat][1]})'for cat in self.cats_count_for_potential_wk])
         self.formatted_cell(ws, start_row + 1, potential_data_col_num, wk_profit_potential_formula, font = self.font_red, border = self.cell_border['topright'], number_format=self.accounting_format)
