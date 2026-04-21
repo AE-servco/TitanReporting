@@ -53,6 +53,7 @@ if ss["authentication_status"]:
         [
             'Weekly',
             'Monthly',
+            'Custom',
         ],
         
     )
@@ -69,6 +70,13 @@ if ss["authentication_status"]:
         if timeframe == 'Weekly':
             end_date = st.date_input("Week ending (Only choose a Sunday)", value=last_sunday)
             start_date = end_date - dt.timedelta(days=6)
+            spare_rows = st.number_input("Spare rows under each job section:", min_value=0, value=5, step=1)
+            submitted = st.form_submit_button("Fetch and build workbook")
+            
+        elif timeframe == 'Custom':
+            date_range = st.date_input("Choose dates:", (last_sunday, 'today'))
+            start_date = date_range[0]
+            end_date = date_range[1]
             spare_rows = st.number_input("Spare rows under each job section:", min_value=0, value=5, step=1)
             submitted = st.form_submit_button("Fetch and build workbook")
 
@@ -217,6 +225,8 @@ if ss["authentication_status"]:
                     jobs_by_tech = format.group_jobs_by_tech(job_records, employee_map_total, end_date, relevant_holidays)
 
                 with st.spinner("Building spreadsheet..."):
+                    if timeframe == "Custom":
+                        timeframe = 'Weekly' # will possibly break a lot of summary functionality, but there are a lot of hardcoded things for weekly/monthly!
                     builder = CommissionSpreadSheetExporter(jobs_by_tech, end_date, timeframe=timeframe.lower(), col_offset=1, holidays=relevant_holidays, scheme=state, spare_rows=spare_rows)
                     
                     excel_bytes = builder.build_workbook()
